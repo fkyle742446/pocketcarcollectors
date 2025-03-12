@@ -1,0 +1,21 @@
+{
+  "images" : [
+    {
+      "filename" : "fkyle._A_carspotted-looking_Lamborghini_Veneno_on_the_street__1f09224f-53fc-4582-aef8-41dbd2d3169b_2.png",
+      "idiom" : "universal",
+      "scale" : "1x"
+    },
+    {
+      "idiom" : "universal",
+      "scale" : "2x"
+    },
+    {
+      "idiom" : "universal",
+      "scale" : "3x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

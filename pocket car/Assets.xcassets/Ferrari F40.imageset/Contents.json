@@ -1,0 +1,21 @@
+{
+  "images" : [
+    {
+      "filename" : "fkyle._a_photo_of_a_ferrari_F40_spotted_on_the_street_without_62422755-4fb5-4ebb-a88e-ac243cc021a8_1.png",
+      "idiom" : "universal",
+      "scale" : "1x"
+    },
+    {
+      "idiom" : "universal",
+      "scale" : "2x"
+    },
+    {
+      "idiom" : "universal",
+      "scale" : "3x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
