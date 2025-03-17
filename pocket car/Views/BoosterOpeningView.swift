@@ -86,30 +86,33 @@ struct ParticleSystem: View {
     
     var body: some View {
         GeometryReader { geometry in
-            ForEach(particles, id: \.id) { particle in
+            ForEach(particles.prefix(100), id: \.id) { particle in
                 Circle()
                     .fill(haloColor(for: rarity))
-                    .frame(width: 5, height: 5) // Increased particle size
+                    .frame(width: 3, height: 3)
                     .position(particle.position)
                     .opacity(particle.opacity)
             }
         }
+        .drawingGroup()
         .onAppear {
             createParticles()
         }
     }
     
     private func createParticles() {
-        particles = [] // Reset particles array
-        for i in 0...200 { // Increased number of particles
+        particles = []
+        for i in 0..<100 {
             let angle = Double.random(in: -Double.pi...Double.pi)
-            let speed = Double.random(in: 150...500) // Increased speed range
-            let startPosition = CGPoint(x: 120, y: 170) // Center of card
+            let speed = Double.random(in: 100...300)
+            let startPosition = CGPoint(x: 120, y: 170)
             
-            var particle = (id: i, position: startPosition, opacity: 0.8)
+            var particle = (id: i, position: startPosition, opacity: 0.6)
             particles.append(particle)
             
-            withAnimation(.easeOut(duration: 1.0)) {
+            withAnimation(
+                .easeOut(duration: 0.8)
+            ) {
                 let dx = cos(angle) * speed
                 let dy = sin(angle) * speed
                 particle.position.x += CGFloat(dx)
@@ -157,7 +160,7 @@ struct BoosterOpeningView: View {
     @State private var dragOffset: CGFloat = 0
     @State private var showArrowIndicator = true
     @State private var currentCard: BoosterCard? = nil
-    @State private var isTransitioning = false // Add this state variable
+    @State private var isTransitioning = false
     @State private var rotationAngle: Double = 0
     @State private var cardGlowOpacity: Double = 0
     @State private var shakeOffset: CGFloat = 0
@@ -335,15 +338,15 @@ struct BoosterOpeningView: View {
                         }
                 } else {
                     // Révélation des cartes
-                    if currentCardIndex < 5 { // Exemple : 5 cartes par booster
+                    if currentCardIndex < 5 {
                         let selectedCard = currentCard ?? randomCard()
 
-                        VStack(spacing: 60) { // Increased spacing between card and rarity label
+                        VStack(spacing: 60) {
                             ZStack {
                                 // Particles for all cards
                                 ParticleSystem(rarity: selectedCard.rarity)
-                                    .frame(width: 300, height: 400) // Increased particle area
-                                    .id(currentCardIndex) // Force view recreation for each card
+                                    .frame(width: 300, height: 400)
+                                    .id(currentCardIndex)
                                 
                                 // Halo effect that follows holographic animation
                                 HolographicCard(
@@ -363,17 +366,17 @@ struct BoosterOpeningView: View {
                                     .gesture(
                                         DragGesture()
                                             .onChanged { gesture in
-                                                if isTransitioning { return } // Ignore gestures during transition
+                                                if isTransitioning { return }
                                                 let translation = gesture.translation.height
-                                                if translation < 0 { // Only allow upward swipes
+                                                if translation < 0 {
                                                     dragOffset = translation
                                                     showArrowIndicator = false
                                                 }
                                             }
                                             .onEnded { gesture in
-                                                if isTransitioning { return } // Ignore gestures during transition
-                                                if dragOffset < -50 { // Threshold for card switch
-                                                    isTransitioning = true // Start transition
+                                                if isTransitioning { return }
+                                                if dragOffset < -50 {
+                                                    isTransitioning = true
                                                     withAnimation(.easeInOut(duration: 0.3)) {
                                                         cardOffset = -UIScreen.main.bounds.height
                                                     }
@@ -384,12 +387,11 @@ struct BoosterOpeningView: View {
                                                         currentCardIndex += 1
                                                         dragOffset = 0
                                                         showArrowIndicator = true
-                                                        // Generate next card before playing sound
                                                         if currentCardIndex < 5 {
                                                             currentCard = randomCard()
                                                             SoundManager.shared.playSound(for: currentCard!.rarity)
                                                         }
-                                                        isTransitioning = false // End transition
+                                                        isTransitioning = false
                                                     }
                                                 } else {
                                                     withAnimation {
@@ -400,8 +402,8 @@ struct BoosterOpeningView: View {
                                             }
                                     )
                                     .onTapGesture {
-                                        if isTransitioning { return } // Ignore taps during transition
-                                        isTransitioning = true // Start transition
+                                        if isTransitioning { return }
+                                        isTransitioning = true
                                         withAnimation(.easeInOut(duration: 0.3)) {
                                             cardOffset = -UIScreen.main.bounds.height
                                         }
@@ -412,19 +414,17 @@ struct BoosterOpeningView: View {
                                             currentCardIndex += 1
                                             dragOffset = 0
                                             showArrowIndicator = true
-                                            // Generate next card before playing sound
                                             if currentCardIndex < 5 {
                                                 currentCard = randomCard()
                                                 SoundManager.shared.playSound(for: currentCard!.rarity)
                                             }
-                                            isTransitioning = false // End transition
+                                            isTransitioning = false
                                         }
                                     }
                                     .onAppear {
                                         withAnimation(.easeOut(duration: 0.3)) {
                                             cardScale = 1.3
                                         }
-                                        // Play sound when card appears
                                         SoundManager.shared.playSound(for: selectedCard.rarity)
                                     }
                             }
@@ -488,9 +488,9 @@ struct BoosterOpeningView: View {
         case .epic:
             return Color.purple
         case .legendary:
-            return Color(red: 1, green: 0.84, blue: 0) // Golden color
+            return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
-            return Color(red: 1, green: 0.84, blue: 0) // Golden color
+            return Color(red: 1, green: 0.84, blue: 0)
         }
     }
 }
@@ -527,3 +527,4 @@ struct BoosterOpeningPreview_Previews: PreviewProvider {
         BoosterOpeningPreview()
     }
 }
+

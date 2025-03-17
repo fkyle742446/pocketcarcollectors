@@ -30,13 +30,18 @@ extension View where Self: Shape {
     }
 }
 
+enum ViewSize {
+    case compact
+    case regular
+}
+
 struct ContentView: View {
     @StateObject var collectionManager = CollectionManager()
     @State private var floatingOffset: CGFloat = 0
     @State private var shadowRadius: CGFloat = 15
-    @State private var boosterAvailableIn: TimeInterval = 1 * 1800 // 3 seconds for testing
+    @State private var boosterAvailableIn: TimeInterval = 6 * 3600 // 6 hours in seconds
     @State private var timer: Timer? = nil
-    @State private var giftAvailableIn: TimeInterval = 1 * 1800 // 10 seconds for testing
+    @State private var giftAvailableIn: TimeInterval = 1 * 6 // 10 seconds for testing
     
     @State private var audioPlayer: AVAudioPlayer?
     @State private var isFadingOut: Bool = false
@@ -44,382 +49,446 @@ struct ContentView: View {
     @State private var booster1GlareOffset: CGFloat = -200
     @State private var booster2GlareOffset: CGFloat = -200
     @State private var rotationAngle: Double = 0
-    @State private var rotationAngle2: Double = 180 // Added second rotation angle
     @State private var isCollectionPressed: Bool = false
-    @State private var isShopPressed: Bool = false
+    
+    @AppStorage("isFirstLaunch") private var isFirstLaunch = true
+    @AppStorage("remainingFirstBoosters") private var remainingFirstBoosters = 4
+    
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    
+    private var viewSize: ViewSize {
+        horizontalSizeClass == .compact ? .compact : .regular
+    }
+    
+    private var logoHeight: CGFloat {
+        viewSize == .compact ? 60 : 100
+    }
+    
+    private var boosterHeight: CGFloat {
+        viewSize == .compact ? 240 : 300
+    }
+    
+    private var mainSpacing: CGFloat {
+        viewSize == .compact ? -13 : 30
+    }
+    
+    private var horizontalPadding: CGFloat {
+        viewSize == .compact ? 12 : 32
+    }
+    
+    @State private var glowRotationAngle: Double = 0
     
     var body: some View {
         NavigationView {
-            ZStack {
-                // Background gradient
-                LinearGradient(
-                    gradient: Gradient(colors: [.white, Color(.systemGray5)]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+            GeometryReader { geometry in
+                ZStack {
+                    // Background gradient
+                    LinearGradient(
+                        gradient: Gradient(colors: [.white, Color(.systemGray5)]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    // Top logo and gift button
-                    VStack(spacing: -80) {
-                        // Logo with glare effect
-                        ZStack {
-                            Image("logo")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 80)
-            
-                            
-                            // Glare effect
-                            Rectangle()
-                                .fill(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            .clear,
-                                            .white.opacity(0.5),
-                                            .clear
-                                        ]),
-                                        startPoint: .leading,
-                                        endPoint: .trailing
+                    VStack {
+                        Spacer()
+                    }
+
+                    VStack(spacing: mainSpacing) {
+                        // Top logo section - Adjust size for iPad
+                        VStack(spacing: -30) {
+                            // Logo with glare effect
+                            ZStack {
+                                Image("logo")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: logoHeight)
+                                
+                                // Glare effect
+                                Rectangle()
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                .clear,
+                                                .white.opacity(0.5),
+                                                .clear
+                                            ]),
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
                                     )
-                                )
-                                .frame(width: 50)
-                                .offset(x: glareOffset)
-                                .blur(radius: 5)
-                        }
-                        .mask(
-                            Image("logo")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 80)
-                        )
-                        .onAppear {
-                            withAnimation(Animation.linear(duration: 15.0).repeatForever(autoreverses: false)) {
-                                glareOffset = 200
+                                    .frame(width: 50)
+                                    .offset(x: glareOffset)
+                                    .blur(radius: 5)
                             }
-                            
-                            // Request notification permission when view appears
-                            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { success, error in
-                                if let error = error {
-                                    print(error.localizedDescription)
+                            .mask(
+                                Image("logo")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: logoHeight)
+                            )
+                            .onAppear {
+                                withAnimation(Animation.linear(duration: 15.0).repeatForever(autoreverses: false)) {
+                                    glareOffset = 200
+                                }
+                                
+                                // Request notification permission when view appears
+                                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { success, error in
+                                    if let error = error {
+                                        print(error.localizedDescription)
+                                    }
                                 }
                             }
-                        }
-                        
-                        // 3D Model View with Legendary Halo
-                        ZStack {
-                            // Base rectangle with depth effect
-                            RoundedRectangle(cornerRadius: 25)
-                                .fill(Color("mint").opacity(0.1))
-                                .frame(height: 250)
-                                .overlay(
-                                    
-                                    RoundedRectangle(cornerRadius: 25)
-                                        .stroke(Color("mint").opacity(0.3), lineWidth: 1)
-                                )
-                                .shadow(color: Color("mint").opacity(0.1), radius: 10, x: 0, y: 5)
                             
-                            // Surface rectangle
-                            RoundedRectangle(cornerRadius: 25)
-                                .fill(Color.white.opacity(1))
-                                .frame(height: 170)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 25)
-                                        .stroke(Color.white, lineWidth: 1)
-                                    
-                                )
-                                .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
-                            
-                                .offset(y: 30) // Added offset to move down
-
-                            
-                            // 3D Model positioned above halo
-                            VStack(spacing: -80) {
-                                // 3D Model
-                                SpriteView(scene: { () -> SKScene in
-                                    let scene = SKScene()
-                                    scene.backgroundColor = UIColor.clear
-                                    
-                                    let model = SK3DNode(viewportSize: .init(width: 12, height: 12))
-                                    model.scnScene = {
-                                        let scnScene = SCNScene(named: "car.obj")!
-                                        scnScene.background.contents = UIColor.clear
+                            // 3D Model View with Legendary Halo
+                            ZStack {
+                                // Base rectangle with depth effect
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(Color("mint").opacity(0.1))
+                                    .frame(height: viewSize == .compact ? 200 : 250)
+                                    .overlay(
                                         
-                                        let node = scnScene.rootNode.childNodes.first!
-                                        
-                                        // Add rotation animation
-                                        let rotation = CABasicAnimation(keyPath: "rotation")
-                                        rotation.fromValue = NSValue(scnVector4: SCNVector4(0, 1, 0, 0))
-                                        rotation.toValue = NSValue(scnVector4: SCNVector4(0, 1, 0, Float.pi * 2))
-                                        rotation.duration = 15
-                                        rotation.repeatCount = .infinity
-                                        node.addAnimation(rotation, forKey: "rotate")
-                                        
-                                        
-                                        // Ajouter les textures au matériau
-                                                let material = SCNMaterial()
-                                                material.diffuse.contents = UIImage(named: "texture_diffuse.png") // Texture diffuse
-                                                material.metalness.contents = UIImage(named: "texture_metallic.png") // Texture métallique
-                                                material.normal.contents = UIImage(named: "texture_normal.png") // Carte de normales
-                                                material.roughness.contents = UIImage(named: "texture_roughness.png") // Rugosité
-                                        
-                                        // Ajouter une émission pour rendre l'objet plus lumineux
-                                        material.emission.contents = UIColor.white // Couleur émise
-                                        material.emission.intensity = 0.2 // Intensité de la lumière émise
-                                        
-                                        // Augmenter la réflexion spéculaire
-                                        material.specular.contents = UIColor.white
-                                        material.shininess = 0.7 // Contrôle la brillance
-                                    
-                                        
-                                        
-                                        // Ajouter la texture shaded comme diffuse alternative (si besoin)
-                                                    let shadedMaterial = SCNMaterial()
-                                                    shadedMaterial.diffuse.contents = UIImage(named: "shaded.png") // Shaded texture
-                                        
-                                        // Appliquer le matériau à la géométrie
-                                               node.geometry?.materials = [material]
-
-                                        
-                                        // Add camera to the scene
-                                        let cameraNode = SCNNode()
-                                        cameraNode.camera = SCNCamera()
-                                        cameraNode.position = SCNVector3(x: -1.6, y: 0, z: 14)
-                                        scnScene.rootNode.addChildNode(cameraNode)
-                                        
-                                        return scnScene
-                                    }()
-                                    
-                                    scene.addChild(model)
-                                    return scene
-                                }(), options: [.allowsTransparency])
-                                .frame(height: 150)
-                                .background(Color.clear)
-                                .zIndex(2) // Ensure model is above halo
+                                        RoundedRectangle(cornerRadius: 25)
+                                            .stroke(Color("mint").opacity(0.3), lineWidth: 1)
+                                    )
+                                    .shadow(color: Color("mint").opacity(0.1), radius: 10, x: 0, y: 5)
                                 
-                                // Legendary halo effect positioned below model
-                                                      ZStack {
-                                                          // Base glow
-                                                          RoundedRectangle(cornerRadius: 25)
+                                // Surface rectangle
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(Color.white.opacity(1))
+                                    .frame(height: 170)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 25)
+                                            .stroke(Color.white, lineWidth: 1)
+                                        
+                                    )
+                                    .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
+                                
+                                    .offset(y: 30) // Added offset to move down
+
+                                
+                                // 3D Model positioned above halo
+                                VStack(spacing: -80) {
+                                    // 3D Model
+                                    SpriteView(scene: { () -> SKScene in
+                                        let scene = SKScene()
+                                        scene.backgroundColor = UIColor.clear
+                                        
+                                        let model = SK3DNode(viewportSize: .init(width: 12, height: 12))
+                                        model.scnScene = {
+                                            let scnScene = SCNScene(named: "car.obj")!
+                                            scnScene.background.contents = UIColor.clear
+                                            
+                                            let node = scnScene.rootNode.childNodes.first!
+                                            
+                                            // Add rotation animation
+                                            let rotation = CABasicAnimation(keyPath: "rotation")
+                                            rotation.fromValue = NSValue(scnVector4: SCNVector4(0, 1, 0, 0))
+                                            rotation.toValue = NSValue(scnVector4: SCNVector4(0, 1, 0, Float.pi * 2))
+                                            rotation.duration = 15
+                                            rotation.repeatCount = .infinity
+                                            node.addAnimation(rotation, forKey: "rotate")
+                                            
+                                            
+                                            // Ajouter les textures au matériau
+                                                    let material = SCNMaterial()
+                                                    material.diffuse.contents = UIImage(named: "texture_diffuse.png") // Texture diffuse
+                                                    material.metalness.contents = UIImage(named: "texture_metallic.png") // Texture métallique
+                                                    material.normal.contents = UIImage(named: "texture_normal.png") // Carte de normales
+                                                    material.roughness.contents = UIImage(named: "texture_roughness.png") // Rugosité
+                                            
+                                            // Ajouter une émission pour rendre l'objet plus lumineux
+                                            material.emission.contents = UIColor.white // Couleur émise
+                                            material.emission.intensity = 0.2 // Intensité de la lumière émise
+                                            
+                                            // Augmenter la réflexion spéculaire
+                                            material.specular.contents = UIColor.white
+                                            material.shininess = 0.7 // Contrôle la brillance
+                                    
+                                            
+                                            
+                                            // Ajouter la texture shaded comme diffuse alternative (si besoin)
+                                                        let shadedMaterial = SCNMaterial()
+                                                        shadedMaterial.diffuse.contents = UIImage(named: "shaded.png") // Shaded texture
+                                            
+                                            // Appliquer le matériau à la géométrie
+                                                   node.geometry?.materials = [material]
+
+                                            
+                                            // Add camera to the scene
+                                            let cameraNode = SCNNode()
+                                            cameraNode.camera = SCNCamera()
+                                            cameraNode.position = SCNVector3(x: -1.6, y: 0, z: 14)
+                                            scnScene.rootNode.addChildNode(cameraNode)
+                                            
+                                            return scnScene
+                                        }()
+                                        
+                                        scene.addChild(model)
+                                        return scene
+                                    }(), options: [.allowsTransparency])
+                                    .frame(height: 150)
+                                    .background(Color.clear)
+                                    .zIndex(2) // Ensure model is above halo
+                                    
+                                    // Legendary halo effect positioned below model
+                                                  ZStack {
+                                                      // Base glow
+                                                      RoundedRectangle(cornerRadius: 25)
+                                                          .fill(
+                                                              RadialGradient(
+                                                                  gradient: Gradient(colors: [
+                                                                    Color.white.opacity(0.1),
+                                                                    Color.white.opacity(0.1),
+                                                                      Color.clear
+                                                                  ]),
+                                                                  center: .center,
+                                                                  startRadius: 80,
+                                                                  endRadius: 150
+                                                              )
+                                                          )
+                                                          .frame(width: 300, height: 200)
+                                                          .blur(radius: 45)
+                                                   
+                                                      // Animated rays
+                                                      ForEach(0..<10) { i in
+                                                          Rectangle()
                                                               .fill(
-                                                                  RadialGradient(
-                                                                      gradient: Gradient(colors: [
-                                                                        Color.white.opacity(0.1),
-                                                                        Color.white.opacity(0.1),
+                                                                  LinearGradient(
+                                                                      colors: [
+                                                                          Color.yellow.opacity(0.6),
+                                                                          Color.orange.opacity(0.3),
                                                                           Color.clear
-                                                                      ]),
-                                                                      center: .center,
-                                                                      startRadius: 80,
-                                                                      endRadius: 150
+                                                                      ],
+                                                                      startPoint: .center,
+                                                                      endPoint: .trailing
                                                                   )
                                                               )
-                                                              .frame(width: 300, height: 200)
-                                                              .blur(radius: 45)
-                                                          
-                                                          // Animated rays
-                                                          ForEach(0..<10) { i in
-                                                              Rectangle()
-                                                                  .fill(
-                                                                      LinearGradient(
-                                                                          colors: [
-                                                                              Color.yellow.opacity(0.6),
-                                                                              Color.orange.opacity(0.3),
-                                                                              Color.clear
-                                                                          ],
-                                                                          startPoint: .center,
-                                                                          endPoint: .trailing
-                                                                      )
-                                                                  )
-                                                                  .frame(width: 200, height: 0.2)
-                                                                  .rotationEffect(.degrees(Double(i) * 45))
-                                                                  .blur(radius: 5)
-                                                          }
+                                                              .frame(width: 200, height: 0.2)
+                                                              .rotationEffect(.degrees(Double(i) * 45))
+                                                              .blur(radius: 5)
                                                       }
-                                                      .offset(y: -0)
-                                                      .zIndex(1)
-                                
-                                
-                                
-                                // Season availability bubble
-                                                              Text("Only available this season")
-                                                                  .font(.system(size: 12, weight: .medium))
-                                                                  .foregroundColor(.white)
-                                                                  .padding(.horizontal, 12)
-                                                                  .padding(.vertical, 6)
-                                                                  .background(
-                                                                      Capsule()
-                                                                        .fill(
-                                                                                                                       LinearGradient(
-                                                                                                                           colors: [Color.yellow, Color.orange],
-                                                                                                                           startPoint: .leading,
-                                                                                                                           endPoint: .trailing
-                                                                                                                       )
+                                                  }
+                                                  .offset(y: -0)
+                                                  .zIndex(1)
+                                    
+                                    
+                                    
+                                    // Season availability bubble
+                                                  Text("Only available this season")
+                                                      .font(.system(size: 12, weight: .medium))
+                                                      .foregroundColor(.white)
+                                                      .padding(.horizontal, 12)
+                                                      .padding(.vertical, 6)
+                                                      .background(
+                                                          Capsule()
+                                                            .fill(
+                                                                                                                   LinearGradient(
+                                                                                                                       colors: [Color.yellow, Color.orange],
+                                                                                                                       startPoint: .leading,
+                                                                                                                       endPoint: .trailing
                                                                                                                    )
-                                                                        .shadow(color: .black.opacity(0.2), radius: 4)
-                                                                  )
-                                                                  .overlay(
-                                                                      Capsule()
-                                                                          .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                                                                  )
-                                                                  .offset(y: -15)
-                                                                  .zIndex(3)
-                            }
-                            .padding(-10)
-                        }
-                        .padding(.horizontal)
-                    }
-                    .padding(.top, -10)
-                    .padding(.horizontal)
-                    
-                    Spacer()
-
-                    VStack(spacing: 15) {
-                        // Boosters section
-                        ZStack {
-                            // Base rectangle with depth effect
-                            RoundedRectangle(cornerRadius: 25)
-                                .fill(Color("mint").opacity(0.1))
-                                .frame(height: 280)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 25)
-                                        .stroke(Color("mint").opacity(0.3), lineWidth: 1)
-                                )
-                                .shadow(color: Color("mint").opacity(0.1), radius: 10, x: 0, y: 5)
-                            
-                            // Surface rectangle
-                            RoundedRectangle(cornerRadius: 25)
-                                .fill(Color.white.opacity(1))
-                                .frame(height: 280)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 25)
-                                        .stroke(Color.white, lineWidth: 1)
-                                )
-                                .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
-                            
-                            VStack {
-                                Spacer()
-                                HStack(spacing: 20) {
-                                    // First booster with glare
-                                    NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 1)
-                                        .onDisappear {
-                                            boosterAvailableIn = 1 * 3 // Reset timer when returning from booster opening
-                                        }
-                                    ) {
-                                        ZStack {
-                                            Image("booster_closed_1")
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(height: 200)
-                                            
-                                            // Glare effect for booster 1
-                                            Rectangle()
-                                                .fill(
-                                                    LinearGradient(
-                                                        gradient: Gradient(colors: [
-                                                            .clear,
-                                                            .white.opacity(0.5),
-                                                            .clear
-                                                        ]),
-                                                        startPoint: .leading,
-                                                        endPoint: .trailing
-                                                    )
-                                                )
-                                                .frame(width: 50)
-                                                .offset(x: booster1GlareOffset)
-                                                .blur(radius: 5)
-                                        }
-                                        .mask(
-                                            Image("booster_closed_1")
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(height: 200)
-                                        )
-                                        .shadow(color: .gray.opacity(0.2), radius: 10)
-                                    }
-                                    .disabled(boosterAvailableIn > 0)
-                                    .onAppear {
-                                        withAnimation(Animation.linear(duration: 9.0).repeatForever(autoreverses: false)) {
-                                            booster1GlareOffset = 50
-                                        }
-                                    }
-
-                                    // Second booster with glare
-                                    NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 2)
-                                        .onDisappear {
-                                            boosterAvailableIn = 1 * 3 // Reset timer when returning from booster opening
-                                        }
-                                    ) {
-                                        ZStack {
-                                            Image("booster_closed_2")
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(height: 200)
-                                            
-                                            // Glare effect for booster 2
-                                            Rectangle()
-                                                .fill(
-                                                    LinearGradient(
-                                                        gradient: Gradient(colors: [
-                                                            .clear,
-                                                            .white.opacity(0.5),
-                                                            .clear
-                                                        ]),
-                                                        startPoint: .leading,
-                                                        endPoint: .trailing
-                                                    )
-                                                )
-                                                .frame(width: 50)
-                                                .offset(x: booster2GlareOffset)
-                                                .blur(radius: 5)
-                                        }
-                                        .mask(
-                                            Image("booster_closed_2")
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(height: 200)
-                                        )
-                                        .shadow(color: .gray.opacity(0.2), radius: 10)
-                                    }
-                                    .disabled(boosterAvailableIn > 0)
-                                    .onAppear {
-                                        withAnimation(Animation.linear(duration: 9.0).repeatForever(autoreverses: false)) {
-                                            booster2GlareOffset = 50
-                                        }
-                                    }
+                                                                                                               )
+                                                            .shadow(color: .black.opacity(0.2), radius: 4)
+                                                      )
+                                                      .overlay(
+                                                          Capsule()
+                                                              .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                                                      )
+                                                      .offset(y: -15)
+                                                      .zIndex(3)
                                 }
-                                Spacer()
+                                .padding(0)
+                            }
+                            .padding(.horizontal)
+                        }
+                        .padding(.top, viewSize == .compact ? 10 : 20)
+                        
+                        Spacer()
+
+                        VStack(spacing: viewSize == .compact ? 15 : 25) {
+                            // Boosters section - Adjust for iPad
+                            ZStack {
+                                // Base rectangle with depth effect
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(Color("mint").opacity(0.1))
+                                    .frame(height: viewSize == .compact ? 350 : 450)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 25)
+                                            .stroke(Color("mint").opacity(0.3), lineWidth: 1)
+                                    )
+                                    .shadow(color: Color("mint").opacity(0.1), radius: 10, x: 0, y: 5)
                                 
-                                // Timer display or instruction text
-                                HStack {
-                                    if boosterAvailableIn > 0 {
-                                        Image(systemName: "clock")
-                                            .foregroundColor(.gray)
-                                        Text(timeRemainingString())
-                                            .font(.system(size: 14, weight: .medium))
-                                            .foregroundColor(.gray)
-                                    } else {
-                                        Image(systemName: "hand.tap")
-                                            .foregroundColor(.gray)
-                                        Text("Click on a booster")
-                                            .font(.system(size: 14, weight: .medium))
-                                            .foregroundColor(.gray)
-                                    }
-                                }
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 15)
-                                .background(
-                                    Capsule()
-                                        .fill(Color.white)
-                                        .shadow(color: .gray.opacity(0.4), radius: 4)
-                                )
-                                .padding(.bottom, 10)
-                            }
-                        }
-                        .padding(.horizontal)
+                                // Surface rectangle
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(Color.white.opacity(1))
+                                    .frame(height: viewSize == .compact ? 320 : 420)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 25)
+                                            .stroke(Color.white, lineWidth: 1)
+                                    )
+                                    .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
+                                    .offset(y: 0)
+                                
+                                VStack {
+                                    Spacer()
+                                    HStack(spacing: viewSize == .compact ? 30 : 50) {
+                                        // First booster with glare
+                                        NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 1)
+                                            .onDisappear {
+                                                if isFirstLaunch && remainingFirstBoosters > 0 {
+                                                    remainingFirstBoosters -= 1
+                                                    if remainingFirstBoosters == 0 {
+                                                        isFirstLaunch = false
+                                                        boosterAvailableIn = 6 * 3600 // Start 6-hour timer
+                                                    }
+                                                } else if !isFirstLaunch {
+                                                    boosterAvailableIn = 6 * 3600 // Reset to 6 hours
+                                                }
+                                            }
+                                        ) {
+                                            ZStack {
+                                                Image("booster_closed_1")
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(height: boosterHeight)
+                                                
+                                                // Glare effect for booster 1
+                                                Rectangle()
+                                                    .fill(
+                                                        LinearGradient(
+                                                            gradient: Gradient(colors: [
+                                                                .clear,
+                                                                .white.opacity(0.5),
+                                                                .clear
+                                                            ]),
+                                                            startPoint: .leading,
+                                                            endPoint: .trailing
+                                                        )
+                                                    )
+                                                    .frame(width: 50)
+                                                    .offset(x: booster1GlareOffset)
+                                                    .blur(radius: 5)
+                                            }
+                                            .mask(
+                                                Image("booster_closed_1")
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(height: boosterHeight)
+                                            )
+                                            .shadow(color: .gray.opacity(0.2), radius: 10)
+                                        }
+                                        .disabled(!isFirstLaunch && boosterAvailableIn > 0)
+                                        .onAppear {
+                                            withAnimation(Animation.linear(duration: 9.0).repeatForever(autoreverses: false)) {
+                                                booster1GlareOffset = 50
+                                            }
+                                        }
 
-                        // Collection and Shop buttons
-                        HStack(spacing: 20) {
-                            // Collection Button with animated glow effect
+                                        // Second booster with glare
+                                        NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 2)
+                                            .onDisappear {
+                                                if isFirstLaunch && remainingFirstBoosters > 0 {
+                                                    remainingFirstBoosters -= 1
+                                                    if remainingFirstBoosters == 0 {
+                                                        isFirstLaunch = false
+                                                        boosterAvailableIn = 6 * 3600 // Start 6-hour timer
+                                                    }
+                                                } else if !isFirstLaunch {
+                                                    boosterAvailableIn = 6 * 3600 // Reset to 6 hours
+                                                }
+                                            }
+                                        ) {
+                                            ZStack {
+                                                Image("booster_closed_2")
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(height: boosterHeight)
+                                                
+                                                // Glare effect for booster 2
+                                                Rectangle()
+                                                    .fill(
+                                                        LinearGradient(
+                                                            gradient: Gradient(colors: [
+                                                                .clear,
+                                                                .white.opacity(0.5),
+                                                                .clear
+                                                            ]),
+                                                            startPoint: .leading,
+                                                            endPoint: .trailing
+                                                        )
+                                                    )
+                                                    .frame(width: 50)
+                                                    .offset(x: booster2GlareOffset)
+                                                    .blur(radius: 5)
+                                            }
+                                            .mask(
+                                                Image("booster_closed_2")
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(height: boosterHeight)
+                                            )
+                                            .shadow(color: .gray.opacity(0.2), radius: 10)
+                                        }
+                                        .disabled(!isFirstLaunch && boosterAvailableIn > 0)
+                                        .onAppear {
+                                            withAnimation(Animation.linear(duration: 9.0).repeatForever(autoreverses: false)) {
+                                                booster2GlareOffset = 50
+                                            }
+                                        }
+                                    }
+                                    Spacer()
+                                    
+                                    // Timer display or instruction text
+                                    HStack {
+                                        if isFirstLaunch && remainingFirstBoosters > 0 {
+                                            Image(systemName: "gift.fill")
+                                                .foregroundColor(.gray)
+                                            Text("\(remainingFirstBoosters) free boosters remaining")
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.gray)
+                                        } else if boosterAvailableIn > 0 {
+                                            Image(systemName: "clock")
+                                                .foregroundColor(.gray)
+                                            Text(timeRemainingString())
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.gray)
+                                        } else {
+                                            Image(systemName: "hand.tap")
+                                                .foregroundColor(.gray)
+                                            Text("Click on a booster")
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.gray)
+                                        }
+                                    }
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 15)
+                                    .background(
+                                        ZStack {
+                                            Capsule()
+                                                .glow(
+                                                    fill: .angularGradient(
+                                                        colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                                        center: .center,
+                                                        startAngle: .degrees(glowRotationAngle),
+                                                        endAngle: .degrees(glowRotationAngle + 360)
+                                                    ),
+                                                    lineWidth: 2.0,
+                                                    blurRadius: 4.0
+                                                )
+                                                .opacity(0.4)
+                                            
+                                            Capsule()
+                                                .fill(Color.white)
+                                        }
+                                    )
+                                    .padding(.bottom, 0)
+                                }
+                            }
+                            .padding(.horizontal, horizontalPadding)
+                            .padding(.vertical, viewSize == .compact ? 15 : 25)
+
+                            // Collection and Shop buttons
                             NavigationLink(destination: CollectionView(collectionManager: collectionManager)) {
                                 ZStack {
                                     // Animated Glowing border
@@ -428,8 +497,8 @@ struct ContentView: View {
                                             fill: .angularGradient(
                                                 colors: [.blue, .purple, .red, .orange, .yellow, .blue],
                                                 center: .center,
-                                                startAngle: .degrees(rotationAngle),
-                                                endAngle: .degrees(rotationAngle + 360)
+                                                startAngle: .degrees(glowRotationAngle),
+                                                endAngle: .degrees(glowRotationAngle + 360)
                                             ),
                                             lineWidth: 3.0,
                                             blurRadius: 6.0
@@ -439,12 +508,12 @@ struct ContentView: View {
                                     // Button content
                                     VStack {
                                         Image(systemName: "rectangle.stack.fill")
-                                            .font(.system(size: 30))
+                                            .font(.system(size: viewSize == .compact ? 30 : 40))
                                         Text("Collection")
-                                            .font(.system(size: 14, weight: .medium))
+                                            .font(.system(size: viewSize == .compact ? 14 : 18, weight: .medium))
                                     }
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 20)
+                                    .frame(height: viewSize == .compact ? 60 : 100)
                                     .background(
                                         RoundedRectangle(cornerRadius: 20)
                                             .fill(Color.white.opacity(1))
@@ -455,113 +524,77 @@ struct ContentView: View {
                                             .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
                                     )
                                 }
-                                .scaleEffect(isCollectionPressed ? 0.5 : 1.0)
-                                .onLongPressGesture(minimumDuration: .infinity, maximumDistance: .infinity, pressing: { pressing in
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        isCollectionPressed = pressing
-                                    }
-                                }, perform: { })
                             }
                             .foregroundColor(.gray)
+                            .padding(.horizontal, horizontalPadding)
                             
-                            NavigationLink(destination: Text("Shop")) {
+                            // Bottom progress bar
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("Register 108 cards in collection")
+                                        .font(.system(size: viewSize == .compact ? 14 : 18, weight: .medium))
+                                        .foregroundColor(.gray)
+                                    Spacer()
+                                    Text("\(collectionManager.cards.count)/108")
+                                        .font(.system(size: viewSize == .compact ? 14 : 18, weight: .medium))
+                                        .foregroundColor(.gray)
+                                }
+                                
+                                ProgressView(value: Double(collectionManager.cards.count), total: 108)
+                                    .frame(height: 8)
+                                    .tint(
+                                        LinearGradient(
+                                            colors: [Color.yellow, Color.orange],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .background(Color.white)
+                            }
+                            .padding(20)
+                            .background(
                                 ZStack {
-                                    // Animated Glowing border
                                     RoundedRectangle(cornerRadius: 20)
                                         .glow(
                                             fill: .angularGradient(
                                                 colors: [.blue, .purple, .red, .orange, .yellow, .blue],
                                                 center: .center,
-                                                startAngle: .degrees(rotationAngle2),
-                                                endAngle: .degrees(rotationAngle2 + 360)
+                                                startAngle: .degrees(glowRotationAngle),
+                                                endAngle: .degrees(glowRotationAngle + 360)
                                             ),
-                                            lineWidth: 3.0,
-                                            blurRadius: 6.0
+                                            lineWidth: 2.0,
+                                            blurRadius: 4.0
                                         )
-                                        .opacity(0.7)
+                                        .opacity(0.4)
                                     
-                                    // Button content
-                                    VStack {
-                                        Image(systemName: "bag.fill")
-                                            .font(.system(size: 30))
-                                        Text("Shop")
-                                            .font(.system(size: 14, weight: .medium))
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 20)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .fill(Color.white.opacity(1))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 20)
-                                                    .stroke(Color.white, lineWidth: 1)
-                                            )
-                                            .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
-                                    )
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(Color.white)
                                 }
-                                .scaleEffect(isShopPressed ? 0.5 : 1.0)
-                                .onLongPressGesture(minimumDuration: .infinity, maximumDistance: .infinity, pressing: { pressing in
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        isShopPressed = pressing
-                                    }
-                                }, perform: { })
-                            }
-                            .foregroundColor(.gray)
+                            )
+                            .padding(.horizontal, horizontalPadding)
+                            .padding(.bottom, 30)
                         }
-                        .onAppear {
-                            withAnimation(.linear(duration: 3)
-                                .repeatForever(autoreverses: false)) {
-                                rotationAngle = 360
-                            }
-                            withAnimation(.linear(duration: 5)
-                                .repeatForever(autoreverses: false)) {
-                                rotationAngle2 = 540 // Different speed and starting point
-                            }
-                        }
-                        .padding(.horizontal)
-
-                        // Bottom progress bar
-                        VStack(alignment: .leading, spacing: 5) {
-                            HStack {
-                                Text("Register 108 cards in collection")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.gray)
-                                Spacer()
-                                Text("\(collectionManager.cards.count)/108")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.gray)
-                            }
-                            
-                            ProgressView(value: Double(collectionManager.cards.count), total: 108)
-                                .tint(
-                                    LinearGradient(
-                                        colors: [Color.yellow, Color.orange],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .background(Color.white)
-                        }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color.white)
-                                .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
-                        )
-                        .padding(.horizontal)
-                        .padding(.bottom, 20)
                     }
+                    .padding(.horizontal, viewSize == .compact ? 0 : geometry.size.width * 0.1)
                 }
             }
+            .onAppear {
+                withAnimation(
+                    .linear(duration: 10)
+                    .repeatForever(autoreverses: false)
+                ) {
+                    glowRotationAngle = 360
+                }
+                startTimer()
+                startGiftTimer()
+                playMusic()
+            }
+            .onDisappear {
+                stopMusic()
+            }
         }
-        .onAppear {
-            startTimer()
-            startGiftTimer()
-            playMusic()
-        }
-        .onDisappear {
-            stopMusic()
-        }
+        // Improved iPad navigation style
+        .navigationViewStyle(StackNavigationViewStyle())
     }
     
     // Timer functionality
@@ -652,3 +685,4 @@ struct ContentView: View {
 #Preview {
     ContentView()
 }
+
