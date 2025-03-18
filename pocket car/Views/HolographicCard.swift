@@ -26,7 +26,7 @@ struct HolographicCard: View {
             return Color(red: 1, green: 0.84, blue: 0) // Gold
             
         case .HolyT:
-            return Color(red: 1, green: 0.84, blue: 0) // Golden color
+            return Color(red: 0.1, green: 0.1, blue: 0.1) // Noir carbone profond
         }
     }
 
@@ -48,9 +48,31 @@ struct HolographicCard: View {
             RoundedRectangle(cornerRadius: 15)
                 .fill(cardThemeColor(for: rarity))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 15)
-                        .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                        .blur(radius: 1)
+                    Group {
+                        if rarity == .HolyT {
+                            CarbonPatternView()
+                                .clipShape(RoundedRectangle(cornerRadius: 15))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 15)
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color(white: 0.9),
+                                                    Color(white: 0.6),
+                                                    Color(white: 0.9)
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            lineWidth: 2
+                                        )
+                                )
+                        } else {
+                            RoundedRectangle(cornerRadius: 15)
+                                .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                                .blur(radius: 1)
+                        }
+                    }
                 )
                 .frame(width: 250, height: 350)
             
@@ -103,7 +125,7 @@ struct HolographicCard: View {
                 VStack(spacing: 12) {
                     // Card number with decorative elements
                     HStack {
-                        Text("POCKET CAR ILLUSTRATION ©")
+                        Text("POCKET CAR ILLUSTRATION ")
                             .font(.system(size: 8, weight: .bold))
                             .foregroundColor(.white)
                             .shadow(color: .black.opacity(0.3), radius: 1, x: 1, y: 1)
@@ -151,7 +173,11 @@ struct HolographicCard: View {
             RoundedRectangle(cornerRadius: 15)
                 .strokeBorder(
                     LinearGradient(
-                        colors: [
+                        colors: rarity == .HolyT ? [
+                            Color(white: 0.9),
+                            Color(white: 0.6),
+                            Color(white: 0.9)
+                        ] : [
                             cardThemeColor(for: rarity).opacity(0.8),
                             .white.opacity(0.5),
                             cardThemeColor(for: rarity).opacity(0.8)
@@ -172,3 +198,22 @@ struct HolographicCard: View {
     }
 }
 
+struct CarbonPatternView: View {
+    var body: some View {
+        ZStack {
+            // Premier motif de base
+            Path { path in
+                let size: CGFloat = 12
+                for x in stride(from: 0, to: 500, by: size) {
+                    for y in stride(from: 0, to: 500, by: size) {
+                        path.move(to: CGPoint(x: x, y: y))
+                        path.addLine(to: CGPoint(x: x + size, y: y + size))
+                        path.move(to: CGPoint(x: x + size, y: y))
+                        path.addLine(to: CGPoint(x: x, y: y + size))
+                    }
+                }
+            }
+            .stroke(Color.white.opacity(0.15), lineWidth: 1)
+        }
+    }
+}

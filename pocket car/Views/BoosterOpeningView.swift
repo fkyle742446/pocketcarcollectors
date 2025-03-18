@@ -25,7 +25,7 @@ class SoundManager {
             
         case .HolyT:
             soundName = "legendary_reveal"
-            volume = 0.7
+            volume = 0.9
         }
         
         guard let path = Bundle.main.path(forResource: soundName, ofType: "mp3") else {
@@ -135,8 +135,91 @@ struct ParticleSystem: View {
             return Color(red: 1, green: 0.84, blue: 0)
             
         case .HolyT:
-            return Color(red: 1, green: 0.84, blue: 0)
+            return Color(white: 0.8)
         }
+    }
+}
+
+struct EnhancedRarityButton: View {
+    let rarity: CardRarity
+    
+    private func getGradientColors(for rarity: CardRarity) -> [Color] {
+        switch rarity {
+        case .common:
+            return [Color(red: 0.7, green: 0.7, blue: 0.7), Color(red: 0.85, green: 0.85, blue: 0.85)]
+        case .rare:
+            return [Color(red: 0.0, green: 0.3, blue: 0.8), Color(red: 0.0, green: 0.48, blue: 0.97)]
+        case .epic:
+            return [Color(red: 0.4, green: 0.0, blue: 0.4), Color(red: 0.6, green: 0.0, blue: 0.6)]
+        case .legendary:
+            return [Color(red: 0.8, green: 0.6, blue: 0.0), Color(red: 1.0, green: 0.84, blue: 0.0)]
+        case .HolyT:
+            return [Color(red: 0.1, green: 0.1, blue: 0.1), Color(red: 0.2, green: 0.2, blue: 0.2)]
+        }
+    }
+    
+    var body: some View {
+        ZStack {
+            // Fond avec dégradé
+            RoundedRectangle(cornerRadius: 20)
+                .fill(
+                    LinearGradient(
+                        colors: getGradientColors(for: rarity),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    // Ajout d'un effet de texture subtil
+                    rarity == .HolyT ? CarbonPatternView().opacity(0.1) : nil
+                )
+                .overlay(
+                    // Bordure brillante
+                    RoundedRectangle(cornerRadius: 20)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [.white.opacity(0.6), .white.opacity(0.2)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+                .frame(width: 160, height: 45)
+            
+            // Texte
+            Text(rarity.rawValue.uppercased())
+                .font(.system(size: 15, weight: .black, design:.default))
+                .foregroundColor(.white)
+                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+        }
+        .shadow(color: getGradientColors(for: rarity).first?.opacity(0.3) ?? .clear, radius: 5, x: 0, y: 2)
+    }
+}
+
+struct NewCardBadge: View {
+    var body: some View {
+        Text("NEW")
+            .font(.system(size: 8, weight: .black))
+            .foregroundColor(.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.green, Color.green.opacity(0.8)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
+                    )
+            )
+            .rotationEffect(.degrees(0))
+            .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
     }
 }
 
@@ -164,6 +247,8 @@ struct BoosterOpeningView: View {
     @State private var rotationAngle: Double = 0
     @State private var cardGlowOpacity: Double = 0
     @State private var shakeOffset: CGFloat = 0
+    @State private var isNewCard: Bool = false
+    @State private var showNewBadge: Bool = false
     
     let allCards: [BoosterCard] = [
             // Common (70%) - Cards 1-70
@@ -349,100 +434,110 @@ struct BoosterOpeningView: View {
                                     .id(currentCardIndex)
                                 
                                 // Halo effect that follows holographic animation
-                                HolographicCard(
-                                    cardImage: selectedCard.name,
-                                    rarity: selectedCard.rarity,
-                                    cardNumber: selectedCard.number
+                                ZStack(alignment: .topTrailing) {
+                                    HolographicCard(
+                                        cardImage: selectedCard.name,
+                                        rarity: selectedCard.rarity,
+                                        cardNumber: selectedCard.number
+                                    )
+                                    
+                                    if showNewBadge {
+                                        NewCardBadge()
+                                            .offset(x: -20, y: -35)
+                                            .transition(.scale.combined(with: .opacity))
+                                    }
+                                }
+                                .background(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(haloColor(for: selectedCard.rarity))
+                                        .blur(radius: 20)
+                                        .opacity(0.7)
                                 )
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .fill(haloColor(for: selectedCard.rarity))
-                                            .blur(radius: 20)
-                                            .opacity(0.7)
-                                    )
-                                    .scaleEffect(cardScale)
-                                    .offset(y: cardOffset + dragOffset)
-                                    .modifier(AutoHolographicAnimation())
-                                    .gesture(
-                                        DragGesture()
-                                            .onChanged { gesture in
-                                                if isTransitioning { return }
-                                                let translation = gesture.translation.height
-                                                if translation < 0 {
-                                                    dragOffset = translation
-                                                    showArrowIndicator = false
+                                .scaleEffect(cardScale)
+                                .offset(y: cardOffset + dragOffset)
+                                .modifier(AutoHolographicAnimation())
+                                .gesture(
+                                    DragGesture()
+                                        .onChanged { gesture in
+                                            if isTransitioning { return }
+                                            let translation = gesture.translation.height
+                                            if translation < 0 {
+                                                dragOffset = translation
+                                                showArrowIndicator = false
+                                            }
+                                        }
+                                        .onEnded { gesture in
+                                            if isTransitioning { return }
+                                            if dragOffset < -50 {
+                                                isTransitioning = true
+                                                withAnimation(.easeInOut(duration: 0.3)) {
+                                                    cardOffset = -UIScreen.main.bounds.height
+                                                }
+                                                let newCard = collectionManager.addCard(selectedCard)
+                                                withAnimation {
+                                                    isNewCard = newCard
+                                                }
+                                                
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                                    cardOffset = 0
+                                                    currentCardIndex += 1
+                                                    dragOffset = 0
+                                                    showArrowIndicator = true
+                                                    isNewCard = false
+                                                    if currentCardIndex < 5 {
+                                                        currentCard = randomCard()
+                                                        SoundManager.shared.playSound(for: currentCard!.rarity)
+                                                    }
+                                                    isTransitioning = false
+                                                }
+                                            } else {
+                                                withAnimation {
+                                                    dragOffset = 0
+                                                    showArrowIndicator = true
                                                 }
                                             }
-                                            .onEnded { gesture in
-                                                if isTransitioning { return }
-                                                if dragOffset < -50 {
-                                                    isTransitioning = true
-                                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                                        cardOffset = -UIScreen.main.bounds.height
-                                                    }
-                                                    collectionManager.addCard(selectedCard)
-                                                    
-                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                                        cardOffset = 0
-                                                        currentCardIndex += 1
-                                                        dragOffset = 0
-                                                        showArrowIndicator = true
-                                                        if currentCardIndex < 5 {
-                                                            currentCard = randomCard()
-                                                            SoundManager.shared.playSound(for: currentCard!.rarity)
-                                                        }
-                                                        isTransitioning = false
-                                                    }
-                                                } else {
-                                                    withAnimation {
-                                                        dragOffset = 0
-                                                        showArrowIndicator = true
-                                                    }
-                                                }
-                                            }
-                                    )
-                                    .onTapGesture {
-                                        if isTransitioning { return }
-                                        isTransitioning = true
-                                        withAnimation(.easeInOut(duration: 0.3)) {
-                                            cardOffset = -UIScreen.main.bounds.height
                                         }
-                                        collectionManager.addCard(selectedCard)
-                                        
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                            cardOffset = 0
-                                            currentCardIndex += 1
-                                            dragOffset = 0
-                                            showArrowIndicator = true
-                                            if currentCardIndex < 5 {
-                                                currentCard = randomCard()
-                                                SoundManager.shared.playSound(for: currentCard!.rarity)
-                                            }
-                                            isTransitioning = false
+                                )
+                                .onTapGesture {
+                                    if isTransitioning { return }
+                                    isTransitioning = true
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        cardOffset = -UIScreen.main.bounds.height
+                                    }
+                                    let newCard = collectionManager.addCard(selectedCard)
+                                    withAnimation {
+                                        isNewCard = newCard
+                                    }
+                                    
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        cardOffset = 0
+                                        currentCardIndex += 1
+                                        dragOffset = 0
+                                        showArrowIndicator = true
+                                        isNewCard = false
+                                        if currentCardIndex < 5 {
+                                            currentCard = randomCard()
+                                            SoundManager.shared.playSound(for: currentCard!.rarity)
+                                        }
+                                        isTransitioning = false
+                                    }
+                                }
+                                .onAppear {
+                                    withAnimation(.easeOut(duration: 0.3)) {
+                                        cardScale = 1.3
+                                    }
+                                    isNewCard = collectionManager.isNewCard(selectedCard)
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                        withAnimation(.spring()) {
+                                            showNewBadge = isNewCard
                                         }
                                     }
-                                    .onAppear {
-                                        withAnimation(.easeOut(duration: 0.3)) {
-                                            cardScale = 1.3
-                                        }
-                                        SoundManager.shared.playSound(for: selectedCard.rarity)
-                                    }
+                                    SoundManager.shared.playSound(for: selectedCard.rarity)
+                                }
                             }
                             
                             // Rarity bubble below card
-                            ZStack {
-                                Capsule()
-                                    .fill(haloColor(for: selectedCard.rarity).opacity(0.4))
-                                    .frame(width: 140, height: 40)
-                                    .overlay(
-                                        Capsule()
-                                            .strokeBorder(haloColor(for: selectedCard.rarity), lineWidth: 1)
-                                    )
-                                
-                                Text(selectedCard.rarity.rawValue.uppercased())
-                                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                                    .foregroundColor(haloColor(for: selectedCard.rarity))
-                            }
+                            EnhancedRarityButton(rarity: selectedCard.rarity)
                         }
                     } else {
                         Text("")
@@ -463,15 +558,16 @@ struct BoosterOpeningView: View {
     // Fonction pour tirer une carte aléatoire
     func randomCard() -> BoosterCard {
         let probabilities: [CardRarity: Double] = [
-            .common: 0.7,
-            .rare: 0.25,
-            .epic: 0.1,
-            .legendary: 0.02
+            .common: 0.7 / 70,
+            .rare: 0.25 / 20,
+            .epic: 0.1 / 10,
+            .legendary: 0.02 / 8,
+            .HolyT: 0.01 / 3
         ]
 
         let weightedCards = allCards.flatMap { card -> [BoosterCard] in
             let weight = probabilities[card.rarity] ?? 0
-            let count = Int(weight * 100)
+            let count = Int(weight * 10000)
             return Array(repeating: card, count: count)
         }
 
@@ -490,7 +586,7 @@ struct BoosterOpeningView: View {
         case .legendary:
             return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
-            return Color(red: 1, green: 0.84, blue: 0)
+            return Color(white: 0.9)
         }
     }
 }
@@ -527,4 +623,3 @@ struct BoosterOpeningPreview_Previews: PreviewProvider {
         BoosterOpeningPreview()
     }
 }
-

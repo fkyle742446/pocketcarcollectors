@@ -69,7 +69,7 @@ struct ContentView: View {
     }
     
     private var mainSpacing: CGFloat {
-        viewSize == .compact ? -13 : 30
+        viewSize == .compact ? -25 : 20
     }
     
     private var horizontalPadding: CGFloat {
@@ -94,9 +94,9 @@ struct ContentView: View {
                         Spacer()
                     }
 
-                    VStack(spacing: mainSpacing) {
+                    VStack(spacing: viewSize == .compact ? 1 : 5) {
                         // Top logo section - Adjust size for iPad
-                        VStack(spacing: -30) {
+                        VStack(spacing: -50) {
                             // Logo with glare effect
                             ZStack {
                                 Image("logo")
@@ -275,7 +275,7 @@ struct ContentView: View {
                                     
                                     
                                     // Season availability bubble
-                                                  Text("Only available this season")
+                                                  Text("only available this season 1")
                                                       .font(.system(size: 12, weight: .medium))
                                                       .foregroundColor(.white)
                                                       .padding(.horizontal, 12)
@@ -529,19 +529,19 @@ struct ContentView: View {
                             .padding(.horizontal, horizontalPadding)
                             
                             // Bottom progress bar
-                            VStack(alignment: .leading, spacing: 8) {
+                            VStack(alignment: .leading, spacing: 4) {
                                 HStack {
-                                    Text("Register 108 cards in collection")
-                                        .font(.system(size: viewSize == .compact ? 14 : 18, weight: .medium))
+                                    Text("108 cards in collection")
+                                        .font(.system(size: viewSize == .compact ? 12 : 16))
                                         .foregroundColor(.gray)
                                     Spacer()
                                     Text("\(collectionManager.cards.count)/108")
-                                        .font(.system(size: viewSize == .compact ? 14 : 18, weight: .medium))
+                                        .font(.system(size: viewSize == .compact ? 12 : 16))
                                         .foregroundColor(.gray)
                                 }
                                 
                                 ProgressView(value: Double(collectionManager.cards.count), total: 108)
-                                    .frame(height: 8)
+                                    .frame(height: 6)
                                     .tint(
                                         LinearGradient(
                                             colors: [Color.yellow, Color.orange],
@@ -551,7 +551,7 @@ struct ContentView: View {
                                     )
                                     .background(Color.white)
                             }
-                            .padding(20)
+                            .padding(15)
                             .background(
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 20)
@@ -572,7 +572,7 @@ struct ContentView: View {
                                 }
                             )
                             .padding(.horizontal, horizontalPadding)
-                            .padding(.bottom, 30)
+                            .padding(.bottom, 20)
                         }
                     }
                     .padding(.horizontal, viewSize == .compact ? 0 : geometry.size.width * 0.1)
@@ -685,4 +685,3 @@ struct ContentView: View {
 #Preview {
     ContentView()
 }
-
