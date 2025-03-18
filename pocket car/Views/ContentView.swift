@@ -53,6 +53,8 @@ struct ContentView: View {
     
     @AppStorage("isFirstLaunch") private var isFirstLaunch = true
     @AppStorage("remainingFirstBoosters") private var remainingFirstBoosters = 4
+    @AppStorage("lastBoosterOpenTime") private var lastBoosterOpenTime: Double = Date().timeIntervalSince1970
+    @AppStorage("nextBoosterAvailableTime") private var nextBoosterAvailableTime: Double = Date().timeIntervalSince1970
     
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     
@@ -340,10 +342,45 @@ struct ContentView: View {
                                                     remainingFirstBoosters -= 1
                                                     if remainingFirstBoosters == 0 {
                                                         isFirstLaunch = false
-                                                        boosterAvailableIn = 6 * 3600 // Start 6-hour timer
+                                                        lastBoosterOpenTime = Date().timeIntervalSince1970
+                                                        nextBoosterAvailableTime = lastBoosterOpenTime + (6 * 3600)
+                                                        boosterAvailableIn = 6 * 3600
+                                                        
+                                                        // Programmer la notification pour 6 heures plus tard
+                                                        let content = UNMutableNotificationContent()
+                                                        content.title = "Booster Available!"
+                                                        content.body = "Your next booster is ready to open!"
+                                                        content.sound = .default
+                                                        
+                                                        // Créer un trigger pour la notification
+                                                        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 6 * 3600, repeats: false)
+                                                        let request = UNNotificationRequest(identifier: "boosterTimer", content: content, trigger: trigger)
+                                                        
+                                                        // Supprimer les notifications existantes
+                                                        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["boosterTimer"])
+                                                        
+                                                        // Ajouter la nouvelle notification
+                                                        UNUserNotificationCenter.current().add(request)
                                                     }
                                                 } else if !isFirstLaunch {
-                                                    boosterAvailableIn = 6 * 3600 // Reset to 6 hours
+                                                    lastBoosterOpenTime = Date().timeIntervalSince1970
+                                                    nextBoosterAvailableTime = lastBoosterOpenTime + (6 * 3600)
+                                                    boosterAvailableIn = 6 * 3600
+                                                    
+                                                    // Programmer la notification pour 6 heures plus tard
+                                                    let content = UNMutableNotificationContent()
+                                                    content.title = "Booster Available!"
+                                                    content.body = "Your next booster is ready to open!"
+                                                    content.sound = .default
+                                                    
+                                                    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 6 * 3600, repeats: false)
+                                                    let request = UNNotificationRequest(identifier: "boosterTimer", content: content, trigger: trigger)
+                                                    
+                                                    // Supprimer les notifications existantes
+                                                    UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["boosterTimer"])
+                                                    
+                                                    // Ajouter la nouvelle notification
+                                                    UNUserNotificationCenter.current().add(request)
                                                 }
                                             }
                                         ) {
@@ -392,10 +429,45 @@ struct ContentView: View {
                                                     remainingFirstBoosters -= 1
                                                     if remainingFirstBoosters == 0 {
                                                         isFirstLaunch = false
-                                                        boosterAvailableIn = 6 * 3600 // Start 6-hour timer
+                                                        lastBoosterOpenTime = Date().timeIntervalSince1970
+                                                        nextBoosterAvailableTime = lastBoosterOpenTime + (6 * 3600)
+                                                        boosterAvailableIn = 6 * 3600
+                                                        
+                                                        // Programmer la notification pour 6 heures plus tard
+                                                        let content = UNMutableNotificationContent()
+                                                        content.title = "Booster Available!"
+                                                        content.body = "Your next booster is ready to open!"
+                                                        content.sound = .default
+                                                        
+                                                        // Créer un trigger pour la notification
+                                                        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 6 * 3600, repeats: false)
+                                                        let request = UNNotificationRequest(identifier: "boosterTimer", content: content, trigger: trigger)
+                                                        
+                                                        // Supprimer les notifications existantes
+                                                        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["boosterTimer"])
+                                                        
+                                                        // Ajouter la nouvelle notification
+                                                        UNUserNotificationCenter.current().add(request)
                                                     }
                                                 } else if !isFirstLaunch {
-                                                    boosterAvailableIn = 6 * 3600 // Reset to 6 hours
+                                                    lastBoosterOpenTime = Date().timeIntervalSince1970
+                                                    nextBoosterAvailableTime = lastBoosterOpenTime + (6 * 3600)
+                                                    boosterAvailableIn = 6 * 3600
+                                                    
+                                                    // Programmer la notification pour 6 heures plus tard
+                                                    let content = UNMutableNotificationContent()
+                                                    content.title = "Booster Available!"
+                                                    content.body = "Your next booster is ready to open!"
+                                                    content.sound = .default
+                                                    
+                                                    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 6 * 3600, repeats: false)
+                                                    let request = UNNotificationRequest(identifier: "boosterTimer", content: content, trigger: trigger)
+                                                    
+                                                    // Supprimer les notifications existantes
+                                                    UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["boosterTimer"])
+                                                    
+                                                    // Ajouter la nouvelle notification
+                                                    UNUserNotificationCenter.current().add(request)
                                                 }
                                             }
                                         ) {
@@ -579,6 +651,12 @@ struct ContentView: View {
                 }
             }
             .onAppear {
+                let now = Date().timeIntervalSince1970
+                if now < nextBoosterAvailableTime {
+                    boosterAvailableIn = nextBoosterAvailableTime - now
+                } else {
+                    boosterAvailableIn = 0
+                }
                 withAnimation(
                     .linear(duration: 10)
                     .repeatForever(autoreverses: false)
@@ -599,12 +677,20 @@ struct ContentView: View {
     
     // Timer functionality
     private func startTimer() {
+        // Calculer le temps restant en fonction du timestamp sauvegardé
+        let now = Date().timeIntervalSince1970
+        if now < nextBoosterAvailableTime {
+            boosterAvailableIn = nextBoosterAvailableTime - now
+        } else {
+            boosterAvailableIn = 0
+        }
+        
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             if boosterAvailableIn > 0 {
                 boosterAvailableIn -= 1
                 if boosterAvailableIn == 0 {
-                    // Schedule notification when timer hits 0
+                    // Notification quand le timer atteint 0
                     let content = UNMutableNotificationContent()
                     content.title = "Booster Available!"
                     content.body = "You can now open a booster"
