@@ -369,7 +369,7 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "McLaren P1", rarity: .HolyT, number: 109),
         BoosterCard(name: "Ferrari LaFerrari", rarity: .HolyT, number: 110),
         BoosterCard(name: "Porsche 918 Spyder", rarity: .HolyT, number: 111)
-    }
+    ]
     
     init(collectionManager: CollectionManager, boosterNumber: Int) {
         self._collectionManager = ObservedObject(wrappedValue: collectionManager)
@@ -415,7 +415,6 @@ struct BoosterOpeningView: View {
                 }
             }
         }
-        .interactiveDismissDisabled() // ADD: Désactive le back swipe et le bouton back
     }
     
     @ViewBuilder
