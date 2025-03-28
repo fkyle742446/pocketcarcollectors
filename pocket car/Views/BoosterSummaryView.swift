@@ -15,17 +15,27 @@ struct BoosterSummaryView: View {
             Spacer()
             
             // First row - 3 cards
-            HStack(spacing: 15) { 
+            HStack(spacing: 12) {
                 ForEach(cards.prefix(3), id: \.number) { card in
-                    CardSummaryView(card: card)
+                    HolographicCard(
+                        cardImage: card.name,
+                        rarity: card.rarity,
+                        cardNumber: card.number
+                    )
+                    .frame(width: 40, height: 56)
                 }
             }
             .padding(.horizontal)
             
             // Second row - 2 cards
-            HStack(spacing: 15) { 
+            HStack(spacing: 12) {
                 ForEach(cards.suffix(2), id: \.number) { card in
-                    CardSummaryView(card: card)
+                    HolographicCard(
+                        cardImage: card.name,
+                        rarity: card.rarity,
+                        cardNumber: card.number
+                    )
+                    .frame(width: 40, height: 56)
                 }
             }
             .padding(.horizontal)
@@ -70,7 +80,7 @@ struct CardSummaryView: View {
             rarity: card.rarity,
             cardNumber: card.number
         )
-        .frame(width: 80, height: 112) 
+        .frame(width: 40, height: 40)
     }
 }
 

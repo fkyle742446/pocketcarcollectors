@@ -14,6 +14,22 @@ struct HolographicCard: View {
     @State var translation: CGSize = .zero
     @GestureState private var press = false
     
+    private func cardThemeColor(for rarity: CardRarity) -> Color {
+        switch rarity {
+        case .common:
+            return Color(red: 0.75, green: 0.75, blue: 0.75) // Silver
+        case .rare:
+            return Color(red: 0.0, green: 0.48, blue: 0.97) // Blue
+        case .epic:
+            return Color(red: 0.5, green: 0.0, blue: 0.5) // Purple
+        case .legendary:
+            return Color(red: 1, green: 0.84, blue: 0) // Gold
+            
+        case .HolyT:
+            return Color(red: 0.1, green: 0.1, blue: 0.1) // Noir carbone profond
+        }
+    }
+
     var drag: some Gesture {
         DragGesture()
             .onChanged { value in
@@ -30,19 +46,19 @@ struct HolographicCard: View {
         GeometryReader { geometry in
             let width = geometry.size.width
             let height = geometry.size.height
-            let scale = min(width / 250, height / 350) // Base scale on original dimensions
+            let imageSize = width * 0.88 // 220/250 ratio from original
             
             ZStack {
-                // Card background
-                RoundedRectangle(cornerRadius: 15 * scale)
+                // Card background with rarity color and texture
+                RoundedRectangle(cornerRadius: width * 0.06) // 15/250 ratio
                     .fill(cardThemeColor(for: rarity))
                     .overlay(
                         Group {
                             if rarity == .HolyT {
                                 CarbonPatternView()
-                                    .clipShape(RoundedRectangle(cornerRadius: 15 * scale))
+                                    .clipShape(RoundedRectangle(cornerRadius: width * 0.06))
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 15 * scale)
+                                        RoundedRectangle(cornerRadius: width * 0.06)
                                             .stroke(
                                                 LinearGradient(
                                                     colors: [
@@ -57,7 +73,7 @@ struct HolographicCard: View {
                                             )
                                     )
                             } else {
-                                RoundedRectangle(cornerRadius: 15 * scale)
+                                RoundedRectangle(cornerRadius: width * 0.06)
                                     .stroke(Color.white.opacity(0.5), lineWidth: 1)
                                     .blur(radius: 1)
                             }
@@ -68,10 +84,10 @@ struct HolographicCard: View {
                 Image(cardImage)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: width * 0.88, height: height * 0.88)
-                    .clipShape(RoundedRectangle(cornerRadius: 4 * scale))
+                    .frame(width: imageSize, height: imageSize)
+                    .clipShape(RoundedRectangle(cornerRadius: width * 0.016))
                 
-                // Holographic effect
+                // Enhanced holographic effect
                 LinearGradient(
                     colors: [
                         .clear,
@@ -88,7 +104,7 @@ struct HolographicCard: View {
                         y: 0.8 + translation.height / 250
                     )
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 15 * scale))
+                .clipShape(RoundedRectangle(cornerRadius: width * 0.06))
                 .blendMode(.overlay)
             }
             .rotation3DEffect(
@@ -96,21 +112,6 @@ struct HolographicCard: View {
                 axis: (x: -1, y: translation.width / 100, z: 0)
             )
             .gesture(drag)
-        }
-    }
-    
-    private func cardThemeColor(for rarity: CardRarity) -> Color {
-        switch rarity {
-        case .common:
-            return Color(red: 0.75, green: 0.75, blue: 0.75)
-        case .rare:
-            return Color(red: 0.0, green: 0.48, blue: 0.97)
-        case .epic:
-            return Color(red: 0.5, green: 0.0, blue: 0.5)
-        case .legendary:
-            return Color(red: 1, green: 0.84, blue: 0)
-        case .HolyT:
-            return Color(red: 0.1, green: 0.1, blue: 0.1)
         }
     }
 }
