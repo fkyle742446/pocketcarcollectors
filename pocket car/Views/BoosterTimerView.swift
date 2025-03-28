@@ -3,37 +3,39 @@ import Foundation
 
 struct BoosterTimerView: View {
     @StateObject private var storeManager = StoreManager.shared
-    @State private var timeRemaining: TimeInterval?
-    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @State private var remainingTime: TimeInterval = 0
+    @State private var showingPointsAlert = false
     
     var body: some View {
         VStack {
-            if storeManager.remainingFreeBoosters > 0 {
-                Text("\(storeManager.remainingFreeBoosters) boosters gratuits restants")
-                    .foregroundColor(.green)
-            } else if let timeRemaining = timeRemaining {
-                Text("Prochain booster dans: \(formatTime(timeRemaining))")
-                    .foregroundColor(storeManager.hasDetectedTimeManipulation ? .red : .primary)
-            } else {
-                Text("Booster disponible!")
-                    .foregroundColor(.green)
-            }
-            
-            if storeManager.hasDetectedTimeManipulation {
-                Text("Manipulation du temps détectée !")
-                    .foregroundColor(.red)
-                    .font(.caption)
-            }
+            Text(timeString(from: remainingTime))
+                .onTapGesture {
+                    showingPointsAlert = true
+                }
         }
-        .onReceive(timer) { _ in
-            timeRemaining = storeManager.timeUntilNextBooster()
+        .alert("Use Points", isPresented: $showingPointsAlert) {
+            let hoursNeeded = Int(ceil(remainingTime / 3600))
+            
+            Button("Use \(hoursNeeded) Points") {
+                if storeManager.usePoints(amount: hoursNeeded) {
+                    completeTimer()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            let hoursNeeded = Int(ceil(remainingTime / 3600))
+            Text("You need \(hoursNeeded) points to skip this timer.\nYou have \(storeManager.availablePoints) points available.")
         }
     }
     
-    private func formatTime(_ timeInterval: TimeInterval) -> String {
+    private func timeString(from timeInterval: TimeInterval) -> String {
         let hours = Int(timeInterval) / 3600
         let minutes = Int(timeInterval) / 60 % 60
-        let seconds = Int(timeInterval) % 60
-        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        return String(format: "%02dh%02d", hours, minutes)
+    }
+    
+    private func completeTimer() {
+        // Logic to complete the booster timer
+        remainingTime = 0
     }
 }

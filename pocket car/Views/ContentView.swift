@@ -590,8 +590,6 @@ struct ContentView: View {
                 startTimer()
                 startGiftTimer()
                 playMusic()
-                // Setup StoreManager with CollectionManager
-                StoreManager.shared.setup(with: collectionManager)
             }
             .onDisappear {
                 stopMusic()

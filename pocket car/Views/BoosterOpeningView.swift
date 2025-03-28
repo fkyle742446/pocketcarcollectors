@@ -247,7 +247,6 @@ struct BoosterOpeningView: View {
     @State private var showNewBadge: Bool = false
     @State private var drawnCards: [BoosterCard] = []
     
-    // Cards array
     private let allCards: [BoosterCard] = [
         // Common (70%) - Cards 1-70
         BoosterCard(name: "Renault Clio", rarity: .common, number: 1),
@@ -370,11 +369,11 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "McLaren P1", rarity: .HolyT, number: 109),
         BoosterCard(name: "Ferrari LaFerrari", rarity: .HolyT, number: 110),
         BoosterCard(name: "Porsche 918 Spyder", rarity: .HolyT, number: 111)
-    ]
+    }
     
-    init(collectionManager: CollectionManager, boosterImage: String) {
+    init(collectionManager: CollectionManager, boosterNumber: Int) {
         self._collectionManager = ObservedObject(wrappedValue: collectionManager)
-        self.boosterImage = boosterImage
+        self.boosterImage = "booster_closed_\(boosterNumber)"
     }
     
     var body: some View {
@@ -416,7 +415,7 @@ struct BoosterOpeningView: View {
                 }
             }
         }
-        .interactiveDismissDisabled()
+        .interactiveDismissDisabled() // ADD: Désactive le back swipe et le bouton back
     }
     
     @ViewBuilder
@@ -573,8 +572,14 @@ struct AutoHolographicAnimation: ViewModifier {
     }
 }
 
-struct BoosterOpeningPreview: PreviewProvider {
+struct BoosterOpeningPreview: View {
+    var body: some View {
+        BoosterOpeningView(collectionManager: CollectionManager(), boosterNumber: 1)
+    }
+}
+
+struct BoosterOpeningPreview_Previews: PreviewProvider {
     static var previews: some View {
-        BoosterOpeningView(collectionManager: CollectionManager(), boosterImage: "booster_closed_1")
+        BoosterOpeningPreview()
     }
 }
