@@ -247,6 +247,7 @@ struct BoosterOpeningView: View {
     @State private var showNewBadge: Bool = false
     @State private var drawnCards: [BoosterCard] = []
     
+    // Cards array
     private let allCards: [BoosterCard] = [
         // Common (70%) - Cards 1-70
         BoosterCard(name: "Renault Clio", rarity: .common, number: 1),
@@ -371,9 +372,9 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Porsche 918 Spyder", rarity: .HolyT, number: 111)
     ]
     
-    init(collectionManager: CollectionManager, boosterNumber: Int) {
+    init(collectionManager: CollectionManager, boosterImage: String) {
         self._collectionManager = ObservedObject(wrappedValue: collectionManager)
-        self.boosterImage = "booster_closed_\(boosterNumber)"
+        self.boosterImage = boosterImage
     }
     
     var body: some View {
@@ -415,6 +416,7 @@ struct BoosterOpeningView: View {
                 }
             }
         }
+        .interactiveDismissDisabled()
     }
     
     @ViewBuilder
@@ -571,14 +573,8 @@ struct AutoHolographicAnimation: ViewModifier {
     }
 }
 
-struct BoosterOpeningPreview: View {
-    var body: some View {
-        BoosterOpeningView(collectionManager: CollectionManager(), boosterNumber: 1)
-    }
-}
-
-struct BoosterOpeningPreview_Previews: PreviewProvider {
+struct BoosterOpeningPreview: PreviewProvider {
     static var previews: some View {
-        BoosterOpeningPreview()
+        BoosterOpeningView(collectionManager: CollectionManager(), boosterImage: "booster_closed_1")
     }
 }

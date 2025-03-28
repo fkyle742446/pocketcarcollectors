@@ -26,7 +26,7 @@ struct BoosterSummaryView: View {
             
             Spacer()
             
-            VStack(spacing: -60) {
+            VStack(spacing: -150) {
                 HStack(spacing: -120) {
                     ForEach(cards.prefix(3), id: \.number) { card in
                         CardSummaryView(card: card)
@@ -86,6 +86,7 @@ struct BoosterSummaryView: View {
         }
         .background(Color.white)
         .preferredColorScheme(.light)
+        .interactiveDismissDisabled()
         .overlay(
             Group {
                 if let selectedCard = selectedCard {
