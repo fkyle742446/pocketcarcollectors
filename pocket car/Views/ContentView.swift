@@ -37,7 +37,6 @@ enum ViewSize {
 
 struct ContentView: View {
     @StateObject var collectionManager = CollectionManager()
-    @StateObject var boosterTimer = BoosterTimer.shared
     @State private var floatingOffset: CGFloat = 0
     @State private var shadowRadius: CGFloat = 15
     @State private var boosterAvailableIn: TimeInterval = 6 * 3600 // 6 hours in seconds
@@ -372,7 +371,7 @@ struct ContentView: View {
                                             )
                                             .shadow(color: .gray.opacity(0.2), radius: 10)
                                         }
-                                        .disabled(!boosterTimer.canOpenBooster())
+                                        .disabled(!isFirstLaunch && boosterAvailableIn > 0)
                                         .onAppear {
                                             withAnimation(
                                                 Animation
@@ -419,7 +418,7 @@ struct ContentView: View {
                                             )
                                             .shadow(color: .gray.opacity(0.2), radius: 10)
                                         }
-                                        .disabled(!boosterTimer.canOpenBooster())
+                                        .disabled(!isFirstLaunch && boosterAvailableIn > 0)
                                         .onAppear {
                                             withAnimation(
                                                 Animation
@@ -435,16 +434,22 @@ struct ContentView: View {
                                     
                                     // Timer display or instruction text
                                     HStack {
-                                        if boosterTimer.canOpenBooster() {
-                                            Image(systemName: "hand.tap")
+                                        if isFirstLaunch && remainingFirstBoosters > 0 {
+                                            Image(systemName: "gift.fill")
                                                 .foregroundColor(.gray)
-                                            Text("Click on a booster")
+                                            Text("\(remainingFirstBoosters) free boosters remaining")
                                                 .font(.system(size: 14, weight: .medium))
                                                 .foregroundColor(.gray)
-                                        } else {
+                                        } else if boosterAvailableIn > 0 {
                                             Image(systemName: "clock")
                                                 .foregroundColor(.gray)
                                             Text(timeRemainingString())
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.gray)
+                                        } else {
+                                            Image(systemName: "hand.tap")
+                                                .foregroundColor(.gray)
+                                            Text("Click on a booster")
                                                 .font(.system(size: 14, weight: .medium))
                                                 .foregroundColor(.gray)
                                         }
@@ -563,7 +568,7 @@ struct ContentView: View {
                                 .padding(.horizontal, horizontalPadding)
                                 .padding(.bottom, 20)
                             }
-                            BoosterTimerView()
+
                         }
                     }
                     .padding(.horizontal, viewSize == .compact ? 0 : geometry.size.width * 0.1)
@@ -585,7 +590,6 @@ struct ContentView: View {
                 startTimer()
                 startGiftTimer()
                 playMusic()
-                boosterTimer.updateTimer()
             }
             .onDisappear {
                 stopMusic()
@@ -685,14 +689,6 @@ struct ContentView: View {
                 isFadingOut = false
             }
         }
-    }
-    
-    func tryOpenBooster() -> Bool {
-        if boosterTimer.canOpenBooster() {
-            boosterTimer.useBooster()
-            return true
-        }
-        return false
     }
 }
 
