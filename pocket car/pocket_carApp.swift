@@ -13,7 +13,8 @@ import SwiftUI
 struct pocket_carApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            // Update the path to use the SplashScreenView from the Views folder
+            pocket_car.SplashScreenView()
         }
     }
 }

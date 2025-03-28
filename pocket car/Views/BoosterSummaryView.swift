@@ -2,71 +2,58 @@ import SwiftUI
 
 struct BoosterSummaryView: View {
     let cards: [BoosterCard]
-    @Environment(\.presentationMode) var presentationMode
+    let onNextTapped: () -> Void
     
     var body: some View {
-        ZStack {
-            // Background gradient
-            LinearGradient(gradient: Gradient(colors: [.white, Color(.systemGray6)]),
-                          startPoint: .top,
-                          endPoint: .bottom)
-                .ignoresSafeArea()
+        VStack(spacing: 20) {
+            Text("Opening Summary")
+                .font(.title)
+                .foregroundColor(.gray)
+                .padding(.top, 30)
             
-            VStack(spacing: 20) {
-                // Title with gradient line
-                Text("Résumé ouverture")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .padding(.top, 40)
-                
-                // Gradient line under title
-                Rectangle()
-                    .fill(LinearGradient(
-                        colors: [.purple, .blue, .green],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ))
-                    .frame(height: 2)
-                    .padding(.horizontal)
-                
-                // Cards grid
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 20)], spacing: 20) {
+            ScrollView {
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: 15) {
                     ForEach(cards, id: \.number) { card in
-                        HolographicCard(cardImage: card.name,
-                                       rarity: card.rarity,
-                                       cardNumber: card.number)
-                            .frame(width: 100, height: 150)
-                            .shadow(radius: 5)
+                        VStack {
+                            HolographicCard(
+                                cardImage: card.name,
+                                rarity: card.rarity,
+                                cardNumber: card.number
+                            )
+                            .frame(height: 200)
+                            
+                            Text(card.name)
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
+                        }
                     }
                 }
                 .padding()
-                
-                Spacer()
-                
-                // Next button
-                Button(action: {
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    Text("Suivant")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(width: 200, height: 50)
-                        .background(
-                            Capsule()
-                                .fill(LinearGradient(
-                                    colors: [.green, .blue],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                ))
+            }
+            
+            Button(action: onNextTapped) {
+                Text("Next")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [.blue, .purple]),
+                            startPoint: .leading,
+                            endPoint: .trailing
                         )
-                        .shadow(color: .black.opacity(0.2), radius: 5)
-                }
-                .padding(.bottom, 40)
+                    )
+                    .cornerRadius(25)
+                    .padding(.horizontal, 30)
+                    .padding(.bottom, 20)
             }
         }
+        .background(Color.white)
     }
-}
-
-#Preview {
-    BoosterSummaryView(cards: [])
 }

@@ -8,35 +8,20 @@ struct CollectionView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                LinearGradient(gradient: Gradient(colors: [Color.black, Color.gray.opacity(0.8)]), startPoint: .top, endPoint: .bottom)
-                    .ignoresSafeArea()
+                LinearGradient(
+                    gradient: Gradient(colors: [.white, Color(.systemGray5)]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
 
                 VStack(spacing: 16) {
-                    // Titre et compteur de cartes
+                    // Simplified header with just collection count
                     HStack {
-                        Text("")
-                            .font(.system(size: 28, weight: .bold, design: .default))
-                            .foregroundColor(.white)
-                            .padding(.top, 20)
-
-                        Button(action: {
-                            showingRarityInfo.toggle()
-                        }) {
-                            Image(systemName: "chart.bar.fill")
-                                .foregroundColor(.white)
-                                .font(.system(size: 18))
-                        }
-                        .padding(.top, 20)
-                        .padding(.leading, 8)
-                        .sheet(isPresented: $showingRarityInfo) {
-                            RarityInfoView(collectionManager: collectionManager)
-                        }
-
                         Spacer()
-
                         Text("\(collectionManager.cards.count)/108")
                             .font(.system(size: 16, weight: .medium, design: .default))
-                            .foregroundColor(.white.opacity(0.7))
+                            .foregroundColor(.gray)
                             .padding(.top, 20)
                             .padding(.trailing, 16)
                     }
@@ -48,11 +33,83 @@ struct CollectionView: View {
                     }
                 }
 
+                // Overlay for selected card (keeping dark background)
                 if let selectedCard = selectedCard {
                     ZoomedCardView(selectedCard: $selectedCard)
                 }
             }
         }
+    }
+}
+
+struct EmptyCollectionView: View {
+    var body: some View {
+        Spacer()
+        Text("Nothing to see here")
+            .font(.system(size: 18, design: .rounded))
+            .foregroundColor(.gray)
+            .multilineTextAlignment(.center)
+            .padding()
+        Spacer()
+    }
+}
+
+struct CardView: View {
+    let card: BoosterCard
+    let count: Int
+
+    private func haloColor(for rarity: CardRarity) -> Color {
+        switch rarity {
+        case .common:
+            return Color.white
+        case .rare:
+            return Color.blue
+        case .epic:
+            return Color.purple
+        case .legendary:
+            return Color(red: 1, green: 0.84, blue: 0)
+        case .HolyT:
+            return Color(white: 0.8) 
+        }
+    }
+
+    var body: some View {
+        VStack {
+            ZStack(alignment: .topTrailing) {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(haloColor(for: card.rarity))
+                    .blur(radius: 5)
+                    .frame(maxWidth: 100, maxHeight: 140)
+                    .opacity(0.7)
+                
+                Image(card.name)
+                    .resizable()
+                    .aspectRatio(3 / 4, contentMode: .fit)
+                    .frame(maxWidth: 100, maxHeight: 140)
+                    .cornerRadius(5)
+                    .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 4)
+
+                if count > 1 {
+                    Text("\(count)")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(6)
+                        .background(Circle().fill(Color.red))
+                        .offset(x: -5, y: 5)
+                }
+            }
+
+            Text(card.name)
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundColor(.gray)
+                .lineLimit(1)
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 3)
+        )
     }
 }
 
@@ -79,7 +136,6 @@ struct RarityInfoView: View {
                     .ignoresSafeArea()
                 
                 VStack(spacing: 25) {
-                    // Title with total progress
                     VStack(spacing: 8) {
                         Text("Collection Progress")
                             .font(.system(size: 24, weight: .semibold))
@@ -92,7 +148,6 @@ struct RarityInfoView: View {
                     }
                     .padding(.top, 20)
                     
-                    // Cards by rarity with progress bars
                     VStack(spacing: 16) {
                         ForEach([CardRarity.HolyT, .legendary, .epic, .rare, .common], id: \.self) { rarity in
                             let counts = getCardCounts(for: rarity)
@@ -198,14 +253,11 @@ struct CollectionProgressBar: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Progress bar
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
-                    // Background
                     RoundedRectangle(cornerRadius: 6)
                         .fill(Color.white.opacity(0.1))
                     
-                    // Progress
                     RoundedRectangle(cornerRadius: 6)
                         .fill(
                             LinearGradient(
@@ -226,7 +278,6 @@ struct CollectionProgressBar: View {
             }
             .frame(height: 12)
             
-            // Progress text
             HStack {
                 Text("\(collected)/\(total)")
                     .font(.system(size: 12, weight: .medium))
@@ -239,81 +290,6 @@ struct CollectionProgressBar: View {
                     .foregroundColor(progressColor(for: rarity))
             }
         }
-    }
-}
-
-struct EmptyCollectionView: View {
-    var body: some View {
-        Spacer()
-        Text("Nothing to see here")
-            .font(.system(size: 18, design: .rounded))
-            .foregroundColor(.white.opacity(0.7))
-            .multilineTextAlignment(.center)
-            .padding()
-        Spacer()
-    }
-}
-
-struct CardView: View {
-    let card: BoosterCard
-    let count: Int
-
-    private func haloColor(for rarity: CardRarity) -> Color {
-        switch rarity {
-        case .common:
-            return Color.white
-        case .rare:
-            return Color.blue
-        case .epic:
-            return Color.purple
-        case .legendary:
-            return Color(red: 1, green: 0.84, blue: 0)
-        case .HolyT:
-            return Color(white: 0.8) 
-        }
-    }
-
-    var body: some View {
-        VStack {
-            ZStack(alignment: .topTrailing) {
-                // Halo effect
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(haloColor(for: card.rarity))
-                    .blur(radius: 5)
-                    .frame(maxWidth: 100, maxHeight: 140)
-                    .opacity(0.7)
-                
-                Image(card.name)
-                    .resizable()
-                    .aspectRatio(3 / 4, contentMode: .fit)
-                    .frame(maxWidth: 100, maxHeight: 140)
-                    .cornerRadius(5)
-                    .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 4)
-
-                if count > 1 {
-                    Text("\(count)")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(6)
-                        .background(Circle().fill(Color.red))
-                        .offset(x: -5, y: 5)
-                }
-            }
-
-            Text(card.name)
-                .font(.system(size: 14, weight: .medium, design: .rounded))
-                .foregroundColor(.white)
-                .lineLimit(1)
-        }
-        .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(card.rarity == .legendary ? Color.yellow.opacity(0.2) :
-                        card.rarity == .epic ? Color.purple.opacity(0.2) :
-                        card.rarity == .common ? Color.white.opacity(0.2) :
-                      card.rarity == .rare ? Color.blue.opacity(0.2) : Color.gray.opacity(0.2))
-        )
-        .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 3)
     }
 }
 
@@ -346,7 +322,6 @@ struct ZoomedCardView: View {
             
             VStack(spacing: 20) {
                 ZStack {
-                    // Halo effect
                     RoundedRectangle(cornerRadius: 16)
                         .fill(haloColor(for: selectedCard?.rarity ?? .common))
                         .blur(radius: 20)
