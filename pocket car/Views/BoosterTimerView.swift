@@ -1,41 +1,54 @@
 import SwiftUI
-import Foundation
+import Combine
 
 struct BoosterTimerView: View {
-    @StateObject private var storeManager = StoreManager.shared
-    @State private var remainingTime: TimeInterval = 0
-    @State private var showingPointsAlert = false
+    @ObservedObject private var storeManager: StoreManager
+    @State private var timeRemaining: TimeInterval?
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    
+    init() {
+        self._storeManager = ObservedObject(wrappedValue: StoreManager.shared)
+    }
     
     var body: some View {
-        VStack {
-            Text(timeString(from: remainingTime))
-                .onTapGesture {
-                    showingPointsAlert = true
-                }
-        }
-        .alert("Use Points", isPresented: $showingPointsAlert) {
-            let hoursNeeded = Int(ceil(remainingTime / 3600))
-            
-            Button("Use \(hoursNeeded) Points") {
-                if storeManager.usePoints(amount: hoursNeeded) {
-                    completeTimer()
-                }
+        VStack(spacing: 4) {
+            if let freeBoosters = storeManager.remainingFreeBoosters, freeBoosters > 0 {
+                Text("\(freeBoosters) boosters gratuits restants")
+                    .foregroundColor(.green)
+            } else if let remaining = timeRemaining {
+                Text("Prochain booster dans: \(formatTime(remaining))")
+                    .foregroundColor(storeManager.hasDetectedTimeChange ? .red : .primary)
+            } else {
+                Text("Booster disponible!")
+                    .foregroundColor(.green)
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            let hoursNeeded = Int(ceil(remainingTime / 3600))
-            Text("You need \(hoursNeeded) points to skip this timer.\nYou have \(storeManager.availablePoints) points available.")
+            
+            if storeManager.hasDetectedTimeChange {
+                Text("Timer réinitialisé")
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+        }
+        .onAppear {
+            updateTimeRemaining()
+        }
+        .onReceive(timer) { _ in
+            updateTimeRemaining()
         }
     }
     
-    private func timeString(from timeInterval: TimeInterval) -> String {
+    private func updateTimeRemaining() {
+        if let nextTime = storeManager.timeUntilNextBooster() {
+            self.timeRemaining = nextTime
+        } else {
+            self.timeRemaining = nil
+        }
+    }
+    
+    private func formatTime(_ timeInterval: TimeInterval) -> String {
         let hours = Int(timeInterval) / 3600
         let minutes = Int(timeInterval) / 60 % 60
-        return String(format: "%02dh%02d", hours, minutes)
-    }
-    
-    private func completeTimer() {
-        // Logic to complete the booster timer
-        remainingTime = 0
+        let seconds = Int(timeInterval) % 60
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
     }
 }

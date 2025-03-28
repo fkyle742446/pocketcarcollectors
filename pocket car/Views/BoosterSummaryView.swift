@@ -86,7 +86,6 @@ struct BoosterSummaryView: View {
         }
         .background(Color.white)
         .preferredColorScheme(.light)
-        .interactiveDismissDisabled()
         .overlay(
             Group {
                 if let selectedCard = selectedCard {
