@@ -4,70 +4,117 @@ struct BoosterSummaryView: View {
     let cards: [BoosterCard]
     let onDismiss: () -> Void
     @Environment(\.presentationMode) var presentationMode
+    @State private var selectedCard: BoosterCard? = nil
+    @State private var glowRotationAngle: Double = 0
     
     var body: some View {
         VStack {
             Text("Opening Summary")
-                .font(.system(size: 28, weight: .regular))
-                .foregroundColor(Color(.systemGray))
+                .font(.title2)
+                .fontWeight(.semibold)
+                .foregroundColor(.gray)
                 .padding(.top, 30)
+            
+            Rectangle()
+                .fill(LinearGradient(
+                    colors: [.purple, .blue, .green],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ))
+                .frame(height: 2)
+                .padding(.horizontal)
             
             Spacer()
             
-            // First row - 3 cards
-            HStack(spacing: 12) {
-                ForEach(cards.prefix(3), id: \.number) { card in
-                    HolographicCard(
-                        cardImage: card.name,
-                        rarity: card.rarity,
-                        cardNumber: card.number
-                    )
-                    .frame(width: 40, height: 56)
+            VStack(spacing: -60) {
+                HStack(spacing: -120) {
+                    ForEach(cards.prefix(3), id: \.number) { card in
+                        CardSummaryView(card: card)
+                            .onTapGesture {
+                                selectedCard = card
+                            }
+                    }
                 }
-            }
-            .padding(.horizontal)
-            
-            // Second row - 2 cards
-            HStack(spacing: 12) {
-                ForEach(cards.suffix(2), id: \.number) { card in
-                    HolographicCard(
-                        cardImage: card.name,
-                        rarity: card.rarity,
-                        cardNumber: card.number
-                    )
-                    .frame(width: 40, height: 56)
+                .padding(.horizontal)
+                
+                HStack(spacing: -120) {
+                    ForEach(cards.suffix(2), id: \.number) { card in
+                        CardSummaryView(card: card)
+                            .onTapGesture {
+                                selectedCard = card
+                            }
+                    }
                 }
+                .padding(.horizontal)
             }
-            .padding(.horizontal)
             
             Spacer()
             
             Button(action: {
                 presentationMode.wrappedValue.dismiss()
             }) {
-                Text("Next")
-                    .font(.system(size: 17))
-                    .foregroundColor(.primary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(25)
-                    .overlay(
+                HStack {
+                    Image(systemName: "house.fill")
+                        .font(.system(size: 16))
+                    Text("Home")
+                        .font(.headline)
+                }
+                .foregroundColor(.gray)
+                .frame(width: 120)
+                .frame(height: 50)
+                .background(
+                    ZStack {
                         RoundedRectangle(cornerRadius: 25)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [.blue, .purple],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
+                            .glow(
+                                fill: .angularGradient(
+                                    colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                    center: .center,
+                                    startAngle: .degrees(glowRotationAngle),
+                                    endAngle: .degrees(glowRotationAngle + 360)
                                 ),
-                                lineWidth: 1
+                                lineWidth: 2.0,
+                                blurRadius: 4.0
                             )
-                    )
+                            .opacity(0.4)
+                        
+                        RoundedRectangle(cornerRadius: 25)
+                            .fill(Color.white)
+                    }
+                )
             }
-            .padding(.horizontal, 30)
             .padding(.bottom, 30)
         }
-        .background(Color(.systemBackground))
+        .background(Color.white)
+        .preferredColorScheme(.light)
+        .overlay(
+            Group {
+                if let selectedCard = selectedCard {
+                    ZStack {
+                        Color.black
+                            .opacity(0.9)
+                            .ignoresSafeArea()
+                            .onTapGesture {
+                                self.selectedCard = nil
+                            }
+                        
+                        HolographicCard(
+                            cardImage: selectedCard.name,
+                            rarity: selectedCard.rarity,
+                            cardNumber: selectedCard.number
+                        )
+                        .frame(width: 250, height: 350)
+                    }
+                }
+            }
+        )
+        .onAppear {
+            withAnimation(
+                .linear(duration: 10)
+                .repeatForever(autoreverses: false)
+            ) {
+                glowRotationAngle = 360
+            }
+        }
     }
 }
 
@@ -80,7 +127,7 @@ struct CardSummaryView: View {
             rarity: card.rarity,
             cardNumber: card.number
         )
-        .frame(width: 40, height: 40)
+        .scaleEffect(0.44)
     }
 }
 
@@ -89,7 +136,6 @@ struct PocketCardView: View {
     
     var body: some View {
         VStack(spacing: 2) {
-            // Card Name and Rarity
             Text(card.name)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(card.rarity == .common ? Color(.systemGray) : rarityColor(for: card.rarity))
@@ -97,7 +143,6 @@ struct PocketCardView: View {
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(rarityColor(for: card.rarity))
             
-            // Card Image
             HolographicCard(
                 cardImage: card.name,
                 rarity: card.rarity,
@@ -105,7 +150,6 @@ struct PocketCardView: View {
             )
             .frame(width: 40, height: 40)
             
-            // Card Number
             Text("N° \(card.number)/111")
                 .font(.system(size: 10))
                 .foregroundStyle(Color(.systemGray))
