@@ -1,47 +1,104 @@
 import SwiftUI
 
 struct CollectionProgressView: View {
-    let progress: Double
-    let rarityCount: [CardRarity: Int]
-    let totalCount: Int
+    @ObservedObject var collectionManager: CollectionManager
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    @State private var glowRotationAngle: Double = 0
+    
+    private var viewSize: ViewSize {
+        horizontalSizeClass == .compact ? .compact : .regular
+    }
+    
+    private var horizontalPadding: CGFloat {
+        viewSize == .compact ? 12 : 32
+    }
+    
+    private func countCardsByRarity(_ rarity: CardRarity) -> Int {
+        return collectionManager.cards.filter { card, _ in
+            card.rarity == rarity
+        }.count
+    }
     
     var body: some View {
-        VStack {
+        GeometryReader { geometry in
             ZStack {
-                Circle()
-                    .stroke(lineWidth: 20)
-                    .opacity(0.3)
-                    .foregroundColor(Color.gray)
+                LinearGradient(
+                    gradient: Gradient(colors: [.white, Color(.systemGray5)]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
                 
-                Circle()
-                    .trim(from: 0.0, to: CGFloat(min(self.progress, 1.0)))
-                    .stroke(style: StrokeStyle(lineWidth: 20, lineCap: .round, lineJoin: .round))
-                    .overlay(
-                        AngularGradient(
-                            colors: [.blue, .purple, .red, .orange, .yellow, .blue],
-                            center: .center,
-                            startAngle: .degrees(0),
-                            endAngle: .degrees(360)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 12) { 
+                        ProgressCard(
+                            title: "Total Collection",
+                            subtitle: nil,
+                            count: collectionManager.cards.count,
+                            total: 108,
+                            glowRotationAngle: $glowRotationAngle,
+                            colors: [.yellow, .orange]
                         )
-                        .mask(
-                            Circle()
-                                .trim(from: 0.0, to: CGFloat(min(self.progress, 1.0)))
-                                .stroke(style: StrokeStyle(lineWidth: 20, lineCap: .round, lineJoin: .round))
+                        
+                        ProgressCard(
+                            title: "Holy T Cars",
+                            subtitle: "Drop rate: 0.1%",
+                            count: countCardsByRarity(.HolyT),
+                            total: 4,
+                            glowRotationAngle: $glowRotationAngle,
+                            colors: [.yellow, .white]
                         )
-                    )
-                    .rotationEffect(Angle(degrees: 270.0))
-                    .animation(.linear, value: progress)
-
-                VStack {
-                    Text(String(format: "%.0f%%", min(self.progress, 1.0)*100.0))
-                        .font(.largeTitle)
-                        .bold()
-                    Text("\(totalCount) cards")
-                        .font(.caption)
+                        
+                        ProgressCard(
+                            title: "Legendary Cars",
+                            subtitle: "Drop rate: 1%",
+                            count: countCardsByRarity(.legendary),
+                            total: 8,
+                            glowRotationAngle: $glowRotationAngle,
+                            colors: [.orange, .red]
+                        )
+                        
+                        ProgressCard(
+                            title: "Epic Cars",
+                            subtitle: "Drop rate: 8%",
+                            count: countCardsByRarity(.epic),
+                            total: 20,
+                            glowRotationAngle: $glowRotationAngle,
+                            colors: [.purple, .pink]
+                        )
+                        
+                        ProgressCard(
+                            title: "Rare Cars",
+                            subtitle: "Drop rate: 25%",
+                            count: countCardsByRarity(.rare),
+                            total: 32,
+                            glowRotationAngle: $glowRotationAngle,
+                            colors: [.blue, .cyan]
+                        )
+                        
+                        ProgressCard(
+                            title: "Common Cars",
+                            subtitle: "Drop rate: 65.9%",
+                            count: countCardsByRarity(.common),
+                            total: 44,
+                            glowRotationAngle: $glowRotationAngle,
+                            colors: [.gray, .gray.opacity(0.6)]
+                        )
+                    }
+                    .padding(.horizontal, horizontalPadding)
+                    .padding(.vertical, 12) 
                 }
             }
-            .frame(width: 150, height: 150)
+            .onAppear {
+                withAnimation(
+                    .linear(duration: 10)
+                    .repeatForever(autoreverses: false)
+                ) {
+                    glowRotationAngle = 360
+                }
+            }
         }
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -50,6 +107,7 @@ struct ProgressCard: View {
     let subtitle: String?
     let count: Int
     let total: Int
+    @Binding var glowRotationAngle: Double
     let colors: [Color]
     
     var percentage: Double {
@@ -100,6 +158,19 @@ struct ProgressCard: View {
         .background(
             ZStack {
                 RoundedRectangle(cornerRadius: 16) 
+                    .glow(
+                        fill: .angularGradient(
+                            colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                            center: .center,
+                            startAngle: .degrees(glowRotationAngle),
+                            endAngle: .degrees(glowRotationAngle + 360)
+                        ),
+                        lineWidth: 2.0,
+                        blurRadius: 4.0
+                    )
+                    .opacity(0.4)
+                
+                RoundedRectangle(cornerRadius: 16)
                     .fill(Color.white)
             }
         )
@@ -108,6 +179,6 @@ struct ProgressCard: View {
 
 #Preview {
     NavigationView {
-        CollectionProgressView(progress: 0.5, rarityCount: [:], totalCount: 100)
+        CollectionProgressView(collectionManager: CollectionManager())
     }
 }

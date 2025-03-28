@@ -1,624 +1,697 @@
 import SwiftUI
 import AVFoundation
+import SceneKit
+import SpriteKit
+import UserNotifications
 
-class SoundManager {
-    static let shared = SoundManager()
-    private var audioPlayers: [URL: AVAudioPlayer] = [:]
+// Add the glow extension
+extension View where Self: Shape {
+    func glow(
+        fill: some ShapeStyle,
+        lineWidth: Double,
+        blurRadius: Double = 8.0,
+        lineCap: CGLineCap = .round
+    ) -> some View {
+        self
+            .stroke(style: StrokeStyle(lineWidth: lineWidth / 2, lineCap: lineCap))
+            .fill(fill)
+            .overlay {
+                self
+                    .stroke(style: StrokeStyle(lineWidth: lineWidth, lineCap: lineCap))
+                    .fill(fill)
+                    .blur(radius: blurRadius)
+            }
+            .overlay {
+                self
+                    .stroke(style: StrokeStyle(lineWidth: lineWidth, lineCap: lineCap))
+                    .fill(fill)
+                    .blur(radius: blurRadius / 2)
+            }
+    }
+}
+
+enum ViewSize {
+    case compact
+    case regular
+}
+
+struct ContentView: View {
+    @StateObject var collectionManager = CollectionManager()
+    @State private var floatingOffset: CGFloat = 0
+    @State private var shadowRadius: CGFloat = 15
+    @State private var boosterAvailableIn: TimeInterval = 6 * 3600 // 6 hours in seconds
+    @State private var timer: Timer? = nil
+    @State private var giftAvailableIn: TimeInterval = 1 * 6 // 10 seconds for testing
     
-    func playSound(for rarity: CardRarity) {
-        let soundName: String
-        let volume: Float
-        
-        switch rarity {
-        case .common:
-            soundName = "common_reveal"
-            volume = 0.7
-        case .rare:
-            soundName = "rare_reveal"
-            volume = 0.7
-        case .epic:
-            soundName = "epic_reveal"
-            volume = 0.7
-        case .legendary:
-            soundName = "legendary_reveal"
-            volume = 0.7
-            
-        case .HolyT:
-            soundName = "legendary_reveal"
-            volume = 0.9
-        }
-        
-        guard let path = Bundle.main.path(forResource: soundName, ofType: "mp3") else {
-            print("Failed to find sound file: \(soundName)")
-            return
-        }
-        
-        let url = URL(fileURLWithPath: path)
-        
-        // Fade out existing sound if any
-        if let existingPlayer = audioPlayers[url] {
-            Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-                if existingPlayer.volume > 0 {
-                    existingPlayer.volume -= 0.1
-                } else {
-                    timer.invalidate()
-                    existingPlayer.stop()
-                    self.audioPlayers.removeValue(forKey: url)
+    @State private var audioPlayer: AVAudioPlayer?
+    @State private var isFadingOut: Bool = false
+    @State private var glareOffset: CGFloat = -200
+    @State private var booster1GlareOffset: CGFloat = -200
+    @State private var booster2GlareOffset: CGFloat = -200
+    @State private var rotationAngle: Double = 0
+    @State private var isCollectionPressed: Bool = false
+    
+    @AppStorage("isFirstLaunch") private var isFirstLaunch = true
+    @AppStorage("remainingFirstBoosters") private var remainingFirstBoosters = 4
+    @AppStorage("lastBoosterOpenTime") private var lastBoosterOpenTime: Double = Date().timeIntervalSince1970
+    @AppStorage("nextBoosterAvailableTime") private var nextBoosterAvailableTime: Double = Date().timeIntervalSince1970
+    
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    
+    private var viewSize: ViewSize {
+        horizontalSizeClass == .compact ? .compact : .regular
+    }
+    
+    private var logoHeight: CGFloat {
+        viewSize == .compact ? 60 : 100
+    }
+    
+    private var boosterHeight: CGFloat {
+        viewSize == .compact ? 240 : 300
+    }
+    
+    private var mainSpacing: CGFloat {
+        viewSize == .compact ? -25 : 20
+    }
+    
+    private var horizontalPadding: CGFloat {
+        viewSize == .compact ? 12 : 32
+    }
+    
+    @State private var glowRotationAngle: Double = 0
+    
+    var body: some View {
+        NavigationView {
+            GeometryReader { geometry in
+                ZStack {
+                    // Background gradient
+                    LinearGradient(
+                        gradient: Gradient(colors: [.white, Color(.systemGray5)]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .ignoresSafeArea()
+
+                    VStack {
+                        Spacer()
+                    }
+
+                    VStack(spacing: viewSize == .compact ? 1 : 5) {
+                        // Top logo section - Adjust size for iPad
+                        VStack(spacing: -50) {
+                            // Logo with glare effect
+                            ZStack {
+                                Image("logo")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: logoHeight)
+                                
+                                // Glare effect
+                                Rectangle()
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                .clear,
+                                                .white.opacity(0.5),
+                                                .clear
+                                            ]),
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .frame(width: 50)
+                                    .offset(x: glareOffset)
+                                    .blur(radius: 5)
+                            }
+                            .mask(
+                                Image("logo")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: logoHeight)
+                            )
+                            .onAppear {
+                                withAnimation(Animation.linear(duration: 15.0).repeatForever(autoreverses: false)) {
+                                    glareOffset = 200
+                                }
+                                
+                                // Request notification permission when view appears
+                                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { success, error in
+                                    if let error = error {
+                                        print(error.localizedDescription)
+                                    }
+                                }
+                            }
+                            
+                            // 3D Model View with Legendary Halo
+                            ZStack {
+                                // Base rectangle with depth effect
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(Color("mint").opacity(0.1))
+                                    .frame(height: viewSize == .compact ? 200 : 250)
+                                    .overlay(
+                                        
+                                        RoundedRectangle(cornerRadius: 25)
+                                            .stroke(Color("mint").opacity(0.3), lineWidth: 1)
+                                    )
+                                    .shadow(color: Color("mint").opacity(0.1), radius: 10, x: 0, y: 5)
+                                
+                                // Surface rectangle
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(Color.white.opacity(1))
+                                    .frame(height: 170)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 25)
+                                            .stroke(Color.white, lineWidth: 1)
+                                        
+                                    )
+                                    .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
+                                
+                                    .offset(y: 30) // Added offset to move down
+
+                                
+                                // 3D Model positioned above halo
+                                VStack(spacing: -80) {
+                                    // 3D Model
+                                    SpriteView(scene: { () -> SKScene in
+                                        let scene = SKScene()
+                                        scene.backgroundColor = UIColor.clear
+                                        
+                                        let model = SK3DNode(viewportSize: .init(width: 12, height: 12))
+                                        model.scnScene = {
+                                            let scnScene = SCNScene(named: "car.obj")!
+                                            scnScene.background.contents = UIColor.clear
+                                            
+                                            let node = scnScene.rootNode.childNodes.first!
+                                            
+                                            // Add rotation animation
+                                            let rotation = CABasicAnimation(keyPath: "rotation")
+                                            rotation.fromValue = NSValue(scnVector4: SCNVector4(0, 1, 0, 0))
+                                            rotation.toValue = NSValue(scnVector4: SCNVector4(0, 1, 0, Float.pi * 2))
+                                            rotation.duration = 15
+                                            rotation.repeatCount = .infinity
+                                            node.addAnimation(rotation, forKey: "rotate")
+                                            
+                                            
+                                            // Ajouter les textures au matériau
+                                                    let material = SCNMaterial()
+                                                    material.diffuse.contents = UIImage(named: "texture_diffuse.png") // Texture diffuse
+                                                    material.metalness.contents = UIImage(named: "texture_metallic.png") // Texture métallique
+                                                    material.normal.contents = UIImage(named: "texture_normal.png") // Carte de normales
+                                                    material.roughness.contents = UIImage(named: "texture_roughness.png") // Rugosité
+                                            
+                                            // Ajouter une émission pour rendre l'objet plus lumineux
+                                            material.emission.contents = UIColor.white // Couleur émise
+                                            material.emission.intensity = 0.2 // Intensité de la lumière émise
+                                            
+                                            // Augmenter la réflexion spéculaire
+                                            material.specular.contents = UIColor.white
+                                            material.shininess = 0.7 // Contrôle la brillance
+                                    
+                                            
+                                            
+                                            // Ajouter la texture shaded comme diffuse alternative (si besoin)
+                                                        let shadedMaterial = SCNMaterial()
+                                                        shadedMaterial.diffuse.contents = UIImage(named: "shaded.png") // Shaded texture
+                                            
+                                            // Appliquer le matériau à la géométrie
+                                                   node.geometry?.materials = [material]
+
+                                            
+                                            // Add camera to the scene
+                                            let cameraNode = SCNNode()
+                                            cameraNode.camera = SCNCamera()
+                                            cameraNode.position = SCNVector3(x: -1.6, y: 0, z: 14)
+                                            scnScene.rootNode.addChildNode(cameraNode)
+                                            
+                                            return scnScene
+                                        }()
+                                        
+                                        scene.addChild(model)
+                                        return scene
+                                    }(), options: [.allowsTransparency])
+                                    .frame(height: 150)
+                                    .background(Color.clear)
+                                    .zIndex(2) // Ensure model is above halo
+                                    
+                                    // Legendary halo effect positioned below model
+                                                  ZStack {
+                                                      // Base glow
+                                                      RoundedRectangle(cornerRadius: 25)
+                                                          .fill(
+                                                              RadialGradient(
+                                                                  gradient: Gradient(colors: [
+                                                                    Color.white.opacity(0.1),
+                                                                    Color.white.opacity(0.1),
+                                                                      Color.clear
+                                                                  ]),
+                                                                  center: .center,
+                                                                  startRadius: 80,
+                                                                  endRadius: 150
+                                                              )
+                                                          )
+                                                          .frame(width: 300, height: 200)
+                                                          .blur(radius: 45)
+                                                   
+                                                      // Animated rays
+                                                      ForEach(0..<10) { i in
+                                                          Rectangle()
+                                                              .fill(
+                                                                  LinearGradient(
+                                                                      colors: [
+                                                                          Color.yellow.opacity(0.6),
+                                                                          Color.orange.opacity(0.3),
+                                                                          Color.clear
+                                                                      ],
+                                                                      startPoint: .center,
+                                                                      endPoint: .trailing
+                                                                  )
+                                                              )
+                                                              .frame(width: 200, height: 0.2)
+                                                              .rotationEffect(.degrees(Double(i) * 45))
+                                                              .blur(radius: 5)
+                                                      }
+                                                  }
+                                                  .offset(y: -0)
+                                                  .zIndex(1)
+                                    
+                                    
+                                    
+                                    // Season availability bubble
+                                                  Text("only available this season 1")
+                                                      .font(.system(size: 12, weight: .medium))
+                                                      .foregroundColor(.white)
+                                                      .padding(.horizontal, 12)
+                                                      .padding(.vertical, 6)
+                                                      .background(
+                                                          Capsule()
+                                                            .fill(
+                                                                                                                   LinearGradient(
+                                                                                                                       colors: [Color.yellow, Color.orange],
+                                                                                                                       startPoint: .leading,
+                                                                                                                       endPoint: .trailing
+                                                                                                                   )
+                                                                                                               )
+                                                            .shadow(color: .black.opacity(0.2), radius: 4)
+                                                      )
+                                                      .overlay(
+                                                          Capsule()
+                                                              .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                                                      )
+                                                      .offset(y: -15)
+                                                      .zIndex(3)
+                                }
+                                .padding(0)
+                            }
+                            .padding(.horizontal)
+                        }
+                        .padding(.top, viewSize == .compact ? 10 : 20)
+                        
+                        Spacer()
+
+                        VStack(spacing: viewSize == .compact ? 15 : 25) {
+                            // Boosters section - Adjust for iPad
+                            ZStack {
+                                // Base rectangle with depth effect
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(Color("mint").opacity(0.1))
+                                    .frame(height: viewSize == .compact ? 350 : 450)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 25)
+                                            .stroke(Color("mint").opacity(0.3), lineWidth: 1)
+                                    )
+                                    .shadow(color: Color("mint").opacity(0.1), radius: 10, x: 0, y: 5)
+                                
+                                // Surface rectangle
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(Color.white.opacity(1))
+                                    .frame(height: viewSize == .compact ? 320 : 420)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 25)
+                                            .stroke(Color.white, lineWidth: 1)
+                                    )
+                                    .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
+                                    .offset(y: 0)
+                                
+                                VStack {
+                                    Spacer()
+                                    HStack(spacing: viewSize == .compact ? 30 : 50) {
+                                        // First booster with glare
+                                        NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 1)) {
+                                            ZStack {
+                                                Image("booster_closed_1")
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(height: boosterHeight)
+                                                
+                                                // Single, subtle reflection
+                                                Rectangle()
+                                                    .fill(
+                                                        LinearGradient(
+                                                            gradient: Gradient(colors: [
+                                                                .clear,
+                                                                .white.opacity(0.01),
+                                                                .white.opacity(0.15),
+                                                                .white.opacity(0.01),
+                                                                .clear
+                                                            ]),
+                                                            startPoint: .topLeading,
+                                                            endPoint: .bottomTrailing
+                                                        )
+                                                    )
+                                                    .frame(width: 100)
+                                                    .rotationEffect(.degrees(-65))
+                                                    .offset(x: booster1GlareOffset, y: booster1GlareOffset/3)
+                                                    .blur(radius: 3)
+                                            }
+                                            .mask(
+                                                Image("booster_closed_1")
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(height: boosterHeight)
+                                            )
+                                            .shadow(color: .gray.opacity(0.2), radius: 10)
+                                        }
+                                        .disabled(!isFirstLaunch && boosterAvailableIn > 0)
+                                        .onAppear {
+                                            withAnimation(
+                                                Animation
+                                                    .easeInOut(duration: 4.0)
+                                                    .repeatForever(autoreverses: true)
+                                            ) {
+                                                booster1GlareOffset = 150
+                                            }
+                                        }
+
+                                        // Second booster
+                                        NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 2)) {
+                                            ZStack {
+                                                Image("booster_closed_2")
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(height: boosterHeight)
+                                                
+                                                // Single, subtle reflection
+                                                Rectangle()
+                                                    .fill(
+                                                        LinearGradient(
+                                                            gradient: Gradient(colors: [
+                                                                .clear,
+                                                                .white.opacity(0.01),
+                                                                .white.opacity(0.15),
+                                                                .white.opacity(0.01),
+                                                                .clear
+                                                            ]),
+                                                            startPoint: .topLeading,
+                                                            endPoint: .bottomTrailing
+                                                        )
+                                                    )
+                                                    .frame(width: 100)
+                                                    .rotationEffect(.degrees(-65))
+                                                    .offset(x: booster2GlareOffset, y: booster2GlareOffset/3)
+                                                    .blur(radius: 3)
+                                            }
+                                            .mask(
+                                                Image("booster_closed_2")
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(height: boosterHeight)
+                                            )
+                                            .shadow(color: .gray.opacity(0.2), radius: 10)
+                                        }
+                                        .disabled(!isFirstLaunch && boosterAvailableIn > 0)
+                                        .onAppear {
+                                            withAnimation(
+                                                Animation
+                                                    .easeInOut(duration: 3.5)
+                                                    .repeatForever(autoreverses: true)
+                                                    .delay(2.0)
+                                            ) {
+                                                booster2GlareOffset = 150
+                                            }
+                                        }
+                                    }
+                                    Spacer()
+                                    
+                                    // Timer display or instruction text
+                                    HStack {
+                                        if isFirstLaunch && remainingFirstBoosters > 0 {
+                                            Image(systemName: "gift.fill")
+                                                .foregroundColor(.gray)
+                                            Text("\(remainingFirstBoosters) free boosters remaining")
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.gray)
+                                        } else if boosterAvailableIn > 0 {
+                                            Image(systemName: "clock")
+                                                .foregroundColor(.gray)
+                                            Text(timeRemainingString())
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.gray)
+                                        } else {
+                                            Image(systemName: "hand.tap")
+                                                .foregroundColor(.gray)
+                                            Text("Click on a booster")
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.gray)
+                                        }
+                                    }
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 15)
+                                    .background(
+                                        ZStack {
+                                            Capsule()
+                                                .glow(
+                                                    fill: .angularGradient(
+                                                        colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                                        center: .center,
+                                                        startAngle: .degrees(glowRotationAngle),
+                                                        endAngle: .degrees(glowRotationAngle + 360)
+                                                    ),
+                                                    lineWidth: 2.0,
+                                                    blurRadius: 4.0
+                                                )
+                                                .opacity(0.4)
+                                            
+                                            Capsule()
+                                                .fill(Color.white)
+                                        }
+                                    )
+                                    .padding(.bottom, 0)
+                                }
+                            }
+                            .padding(.horizontal, horizontalPadding)
+                            .padding(.vertical, viewSize == .compact ? 15 : 25)
+
+                            // Collection and Shop buttons
+                            NavigationLink(destination: CollectionView(collectionManager: collectionManager)) {
+                                ZStack {
+                                    // Animated Glowing border
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .glow(
+                                            fill: .angularGradient(
+                                                colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                                center: .center,
+                                                startAngle: .degrees(glowRotationAngle),
+                                                endAngle: .degrees(glowRotationAngle + 360)
+                                            ),
+                                            lineWidth: 3.0,
+                                            blurRadius: 6.0
+                                        )
+                                        .opacity(0.7)
+                                    
+                                    // Button content
+                                    VStack {
+                                        Image(systemName: "rectangle.stack.fill")
+                                            .font(.system(size: viewSize == .compact ? 30 : 40))
+                                        Text("Collection")
+                                            .font(.system(size: viewSize == .compact ? 14 : 18, weight: .medium))
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: viewSize == .compact ? 60 : 100)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .fill(Color.white.opacity(1))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 20)
+                                                    .stroke(Color.white, lineWidth: 1)
+                                            )
+                                            .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
+                                    )
+                                }
+                            }
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, horizontalPadding)
+                            
+                            // Bottom progress bar
+                            NavigationLink(destination: CollectionProgressView(collectionManager: collectionManager)) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack {
+                                        Text("108 cards in collection")
+                                            .font(.system(size: viewSize == .compact ? 12 : 16))
+                                            .foregroundColor(.gray)
+                                        Spacer()
+                                        Text("\(collectionManager.cards.count)/108")
+                                            .font(.system(size: viewSize == .compact ? 12 : 16))
+                                            .foregroundColor(.gray)
+                                    }
+                                    
+                                    ProgressView(value: Double(collectionManager.cards.count), total: 108)
+                                        .frame(height: 6)
+                                        .tint(
+                                            LinearGradient(
+                                                colors: [Color.yellow, Color.orange],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .background(Color.white)
+                                }
+                                .padding(15)
+                                .background(
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .glow(
+                                                fill: .angularGradient(
+                                                    colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                                    center: .center,
+                                                    startAngle: .degrees(glowRotationAngle),
+                                                    endAngle: .degrees(glowRotationAngle + 360)
+                                                ),
+                                                lineWidth: 2.0,
+                                                blurRadius: 4.0
+                                            )
+                                            .opacity(0.4)
+                                        
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .fill(Color.white)
+                                    }
+                                )
+                                .padding(.horizontal, horizontalPadding)
+                                .padding(.bottom, 20)
+                            }
+
+                        }
+                    }
+                    .padding(.horizontal, viewSize == .compact ? 0 : geometry.size.width * 0.1)
                 }
             }
+            .onAppear {
+                let now = Date().timeIntervalSince1970
+                if now < nextBoosterAvailableTime {
+                    boosterAvailableIn = nextBoosterAvailableTime - now
+                } else {
+                    boosterAvailableIn = 0
+                }
+                withAnimation(
+                    .linear(duration: 10)
+                    .repeatForever(autoreverses: false)
+                ) {
+                    glowRotationAngle = 360
+                }
+                startTimer()
+                startGiftTimer()
+                playMusic()
+            }
+            .onDisappear {
+                stopMusic()
+            }
+        }
+        // Improved iPad navigation style
+        .navigationViewStyle(StackNavigationViewStyle())
+    }
+    
+    // Timer functionality
+    private func startTimer() {
+        // Calculer le temps restant en fonction du timestamp sauvegardé
+        let now = Date().timeIntervalSince1970
+        if now < nextBoosterAvailableTime {
+            boosterAvailableIn = nextBoosterAvailableTime - now
+        } else {
+            boosterAvailableIn = 0
         }
         
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+            if boosterAvailableIn > 0 {
+                boosterAvailableIn -= 1
+                if boosterAvailableIn == 0 {
+                    // Notification quand le timer attement 0
+                    let content = UNMutableNotificationContent()
+                    content.title = "Booster Available!"
+                    content.body = "You can now open a booster"
+                    content.sound = .default
+                    
+                    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+                    let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+                    
+                    UNUserNotificationCenter.current().add(request)
+                }
+            }
+            if giftAvailableIn > 0 {
+                giftAvailableIn -= 1
+            }
+        }
+    }
+    
+    private func startGiftTimer() {
+        giftAvailableIn = 10 // Reset gift timer to 10 seconds
+    }
+    
+    private func timeRemainingString() -> String {
+        let hours = Int(boosterAvailableIn) / 3600
+        let minutes = (Int(boosterAvailableIn) % 3600) / 60
+        let seconds = Int(boosterAvailableIn) % 60
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+    }
+    
+    private func giftTimeRemainingString() -> String {
+        let hours = Int(giftAvailableIn) / 3600
+        let minutes = (Int(giftAvailableIn) % 3600) / 60
+        let seconds = Int(giftAvailableIn) % 60
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+    }
+    
+    // Add these functions inside ContentView struct
+    private func playMusic() {
+        guard let path = Bundle.main.path(forResource: "Background", ofType: "mp3") else {
+            print("Could not find Background.mp3")
+            return
+        }
+        let url = URL(fileURLWithPath: path)
         do {
-            let player = try AVAudioPlayer(contentsOf: url)
-            player.volume = 0 // Start at 0 volume
-            player.play()
-            audioPlayers[url] = player
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.numberOfLoops = -1  // Loop indefinitely
+            audioPlayer?.volume = 0.5
+            audioPlayer?.play()
             
             // Fade in
+            audioPlayer?.volume = 0
             Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-                if player.volume < volume {
+                if let player = audioPlayer, player.volume < 0.5 {
                     player.volume += 0.1
                 } else {
                     timer.invalidate()
                 }
             }
-            
-            // Clean up after playing
-            DispatchQueue.main.asyncAfter(deadline: .now() + player.duration + 0.1) {
-                Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-                    if player.volume > 0 {
-                        player.volume -= 0.1
-                    } else {
-                        timer.invalidate()
-                        self.audioPlayers.removeValue(forKey: url)
-                    }
-                }
-            }
         } catch {
-            print("Failed to play sound: \(error.localizedDescription)")
+            print("Error playing music: \(error.localizedDescription)")
         }
     }
-}
 
-struct ParticleSystem: View {
-    let rarity: CardRarity
-    @State private var particles: [(id: Int, position: CGPoint, opacity: Double)] = []
-    
-    var body: some View {
-        GeometryReader { geometry in
-            ForEach(particles.prefix(100), id: \.id) { particle in
-                Circle()
-                    .fill(haloColor(for: rarity))
-                    .frame(width: 3, height: 3)
-                    .position(particle.position)
-                    .opacity(particle.opacity)
-            }
-        }
-        .drawingGroup()
-        .onAppear {
-            createParticles()
-        }
-    }
-    
-    private func createParticles() {
-        particles = []
-        for i in 0..<100 {
-            let angle = Double.random(in: -Double.pi...Double.pi)
-            let speed = Double.random(in: 100...300)
-            let startPosition = CGPoint(x: 120, y: 170)
-            
-            var particle = (id: i, position: startPosition, opacity: 0.6)
-            particles.append(particle)
-            
-            withAnimation(
-                .easeOut(duration: 0.8)
-            ) {
-                let dx = cos(angle) * speed
-                let dy = sin(angle) * speed
-                particle.position.x += CGFloat(dx)
-                particle.position.y += CGFloat(dy)
-                particle.opacity = 0
-                particles[i] = particle
+    private func stopMusic() {
+        // Fade out the music
+        isFadingOut = true
+        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+            if let player = audioPlayer, player.volume > 0 {
+                player.volume -= 0.1
+            } else {
+                timer.invalidate()
+                audioPlayer?.stop()
+                isFadingOut = false
             }
         }
     }
-    
-    private func haloColor(for rarity: CardRarity) -> Color {
-        switch rarity {
-        case .common:
-            return .gray
-        case .rare:
-            return .blue
-        case .epic:
-            return .purple
-        case .legendary:
-            return Color(red: 1, green: 0.84, blue: 0)
-            
-        case .HolyT:
-            return Color(white: 0.8)
-        }
-    }
 }
 
-struct EnhancedRarityButton: View {
-    let rarity: CardRarity
-    
-    private func getGradientColors(for rarity: CardRarity) -> [Color] {
-        switch rarity {
-        case .common:
-            return [Color(red: 0.7, green: 0.7, blue: 0.7), Color(red: 0.85, green: 0.85, blue: 0.85)]
-        case .rare:
-            return [Color(red: 0.0, green: 0.3, blue: 0.8), Color(red: 0.0, green: 0.48, blue: 0.97)]
-        case .epic:
-            return [Color(red: 0.4, green: 0.0, blue: 0.4), Color(red: 0.6, green: 0.0, blue: 0.6)]
-        case .legendary:
-            return [Color(red: 0.8, green: 0.6, blue: 0.0), Color(red: 1.0, green: 0.84, blue: 0.0)]
-        case .HolyT:
-            return [Color(red: 0.1, green: 0.1, blue: 0.1), Color(red: 0.2, green: 0.2, blue: 0.2)]
-        }
-    }
-    
-    var body: some View {
-        ZStack {
-            // Fond avec dégradé
-            RoundedRectangle(cornerRadius: 20)
-                .fill(
-                    LinearGradient(
-                        colors: getGradientColors(for: rarity),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(
-                    // Ajout d'un effet de texture subtil
-                    rarity == .HolyT ? CarbonPatternView().opacity(0.1) : nil
-                )
-                .overlay(
-                    // Bordure brillante
-                    RoundedRectangle(cornerRadius: 20)
-                        .strokeBorder(
-                            LinearGradient(
-                                colors: [.white.opacity(0.6), .white.opacity(0.2)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                )
-                .frame(width: 160, height: 45)
-            
-            // Texte
-            Text(rarity.rawValue.uppercased())
-                .font(.system(size: 15, weight: .black, design:.default))
-                .foregroundColor(.white)
-                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
-        }
-        .shadow(color: getGradientColors(for: rarity).first?.opacity(0.3) ?? .clear, radius: 5, x: 0, y: 2)
-    }
-}
-
-struct NewCardBadge: View {
-    var body: some View {
-        Text("NEW")
-            .font(.system(size: 8, weight: .black))
-            .foregroundColor(.white)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.green, Color.green.opacity(0.8)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
-                    )
-            )
-            .rotationEffect(.degrees(0))
-            .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
-    }
-}
-
-struct BoosterOpeningView: View {
-    @ObservedObject var collectionManager: CollectionManager
-    @Environment(\.presentationMode) var presentationMode
-    let boosterImage: String
-    @State private var navigateToSummary = false
-    @State private var drawnCards: [BoosterCard] = []
-    @State private var isOpening = true
-    @State private var boosterScale: CGFloat = 1.0
-    @State private var boosterOpacity: Double = 1.0
-    @State private var currentCardIndex = 0
-    @State private var cardScale: CGFloat = 1.3
-    @State private var cardOffset: CGFloat = 0
-    @State private var showParticles = false
-    @State private var dragOffset: CGFloat = 0
-    @State private var showArrowIndicator = true
-    @State private var currentCard: BoosterCard? = nil
-    @State private var isTransitioning = false
-    @State private var rotationAngle: Double = 0
-    @State private var cardGlowOpacity: Double = 0
-    @State private var shakeOffset: CGFloat = 0
-    @State private var isNewCard: Bool = false
-    @State private var showNewBadge: Bool = false
-    
-    let allCards: [BoosterCard] = [
-            // Common (70%) - Cards 1-70
-            BoosterCard(name: "Renault Clio", rarity: .common, number: 1),
-            BoosterCard(name: "Peugeot 208", rarity: .common, number: 2),
-            BoosterCard(name: "Volkswagen Polo", rarity: .common, number: 3),
-            BoosterCard(name: "Ford Fiesta", rarity: .common, number: 4),
-            BoosterCard(name: "Toyota Yaris", rarity: .common, number: 5),
-            BoosterCard(name: "Fiat 500", rarity: .common, number: 6),
-            BoosterCard(name: "Mini Cooper", rarity: .common, number: 7),
-            BoosterCard(name: "Hyundai i20", rarity: .common, number: 8),
-            BoosterCard(name: "Opel Corsa", rarity: .common, number: 9),
-            BoosterCard(name: "Kia Picanto", rarity: .common, number: 10),
-            BoosterCard(name: "Citroën C3", rarity: .common, number: 11),
-            BoosterCard(name: "SEAT Ibiza", rarity: .common, number: 12),
-            BoosterCard(name: "Dacia Sandero", rarity: .common, number: 13),
-            BoosterCard(name: "Skoda Fabia", rarity: .common, number: 14),
-            BoosterCard(name: "Nissan Micra", rarity: .common, number: 15),
-            BoosterCard(name: "Volkswagen Golf", rarity: .common, number: 16),
-            BoosterCard(name: "BMW Série 3", rarity: .common, number: 17),
-            BoosterCard(name: "Audi A3", rarity: .common, number: 18),
-            BoosterCard(name: "Mercedes Classe A", rarity: .common, number: 19),
-            BoosterCard(name: "Peugeot 308", rarity: .common, number: 20),
-            BoosterCard(name: "Toyota Corolla", rarity: .common, number: 21),
-            BoosterCard(name: "Renault Mégane", rarity: .common, number: 22),
-            BoosterCard(name: "Skoda Octavia", rarity: .common, number: 23),
-            BoosterCard(name: "Honda Civic", rarity: .common, number: 24),
-            BoosterCard(name: "Mazda 3", rarity: .common, number: 25),
-            BoosterCard(name: "Ford Focus", rarity: .common, number: 26),
-            BoosterCard(name: "Hyundai i30", rarity: .common, number: 27),
-            BoosterCard(name: "Renault Captur", rarity: .common, number: 28),
-            BoosterCard(name: "Peugeot 2008", rarity: .common, number: 29),
-            BoosterCard(name: "Volkswagen T-Roc", rarity: .common, number: 30),
-            BoosterCard(name: "Toyota RAV4", rarity: .common, number: 31),
-            BoosterCard(name: "Hyundai Tucson", rarity: .common, number: 32),
-            BoosterCard(name: "Kia Sportage", rarity: .common, number: 33),
-            BoosterCard(name: "BMW X1", rarity: .common, number: 34),
-            BoosterCard(name: "Audi Q3", rarity: .common, number: 35),
-            BoosterCard(name: "Mercedes GLA", rarity: .common, number: 36),
-            BoosterCard(name: "Nissan Qashqai", rarity: .common, number: 37),
-            BoosterCard(name: "Skoda Kodiaq", rarity: .common, number: 38),
-            BoosterCard(name: "SEAT Ateca", rarity: .common, number: 39),
-            BoosterCard(name: "Volvo XC40", rarity: .common, number: 40),
-            BoosterCard(name: "Land Rover Discovery Sport", rarity: .common, number: 41),
-            BoosterCard(name: "Ford Kuga", rarity: .common, number: 42),
-            BoosterCard(name: "Volvo V60", rarity: .common, number: 43),
-            BoosterCard(name: "Skoda Superb Combi", rarity: .common, number: 44),
-            BoosterCard(name: "Audi A4 Avant", rarity: .common, number: 45),
-            BoosterCard(name: "BMW Série 5 Touring", rarity: .common, number: 46),
-            BoosterCard(name: "Mercedes Classe E Break", rarity: .common, number: 47),
-            BoosterCard(name: "Peugeot 508 SW", rarity: .common, number: 48),
-            BoosterCard(name: "Volkswagen Passat Variant", rarity: .common, number: 49),
-            BoosterCard(name: "Ford Mondeo Estate", rarity: .common, number: 50),
-            BoosterCard(name: "Subaru Outback", rarity: .common, number: 51),
-            BoosterCard(name: "SEAT Leon ST", rarity: .common, number: 52),
-            BoosterCard(name: "Tesla Model 3", rarity: .common, number: 53),
-            BoosterCard(name: "Renault Zoe", rarity: .common, number: 54),
-            BoosterCard(name: "Volkswagen ID.3", rarity: .common, number: 55),
-            BoosterCard(name: "Hyundai Kona Electric", rarity: .common, number: 56),
-            BoosterCard(name: "Kia EV6", rarity: .common, number: 57),
-            BoosterCard(name: "Nissan Leaf", rarity: .common, number: 58),
-            BoosterCard(name: "BMW i3", rarity: .common, number: 59),
-            BoosterCard(name: "Audi e-tron", rarity: .common, number: 60),
-            BoosterCard(name: "Mercedes EQC", rarity: .common, number: 61),
-            BoosterCard(name: "Polestar 2", rarity: .common, number: 62),
-            BoosterCard(name: "Renault Kangoo", rarity: .common, number: 63),
-            BoosterCard(name: "Citroën Berlingo", rarity: .common, number: 64),
-            BoosterCard(name: "Ford Transit Connect", rarity: .common, number: 65),
-            BoosterCard(name: "Volkswagen Caddy", rarity: .common, number: 66),
-            BoosterCard(name: "Peugeot Rifter", rarity: .common, number: 67),
-            BoosterCard(name: "Opel Combo Life", rarity: .common, number: 68),
-            BoosterCard(name: "Skoda Roomster", rarity: .common, number: 69),
-            BoosterCard(name: "Toyota Proace City Verso", rarity: .common, number: 70),
-
-            // Rare (25%) - Cards 71-90
-            BoosterCard(name: "BMW M4 GTS", rarity: .rare, number: 71),
-            BoosterCard(name: "Porsche 911 Carrera S", rarity: .rare, number: 72),
-            BoosterCard(name: "Mercedes-AMG C63 S Coupe", rarity: .rare, number: 73),
-            BoosterCard(name: "Chevrolet Corvette C8", rarity: .rare, number: 74),
-            BoosterCard(name: "Lamborghini Huracan Evo", rarity: .rare, number: 75),
-            BoosterCard(name: "Ferrari 488 GTB", rarity: .rare, number: 76),
-            BoosterCard(name: "McLaren 570S", rarity: .rare, number: 77),
-            BoosterCard(name: "Aston Martin V8 Vantage", rarity: .rare, number: 78),
-            BoosterCard(name: "Nissan GT-R R35", rarity: .rare, number: 79),
-            BoosterCard(name: "Audi R8 V10 Plus", rarity: .rare, number: 80),
-            BoosterCard(name: "Maserati GranTurismo MC", rarity: .rare, number: 81),
-            BoosterCard(name: "Bentley Continental GT", rarity: .rare, number: 82),
-            BoosterCard(name: "Tesla Model S Plaid", rarity: .rare, number: 83),
-            BoosterCard(name: "Jaguar XKR-S", rarity: .rare, number: 84),
-            BoosterCard(name: "Lotus Exige S", rarity: .rare, number: 85),
-            BoosterCard(name: "Shelby GT500", rarity: .rare, number: 86),
-            BoosterCard(name: "Koenigsegg Jesko Absolut", rarity: .rare, number: 87),
-            BoosterCard(name: "Lexus LFA", rarity: .rare, number: 88),
-            BoosterCard(name: "Aston Martin DB11", rarity: .rare, number: 89),
-            BoosterCard(name: "Bugatti EB110", rarity: .rare, number: 90),
-
-            // Epic (5%) - Cards 91-100
-            BoosterCard(name: "Lamborghini Aventador SVJ", rarity: .epic, number: 91),
-            BoosterCard(name: "Ferrari Enzo", rarity: .epic, number: 92),
-            BoosterCard(name: "Pagani Zonda Cinque", rarity: .epic, number: 93),
-            BoosterCard(name: "Koenigsegg Agera RS", rarity: .epic, number: 94),
-            BoosterCard(name: "McLaren P1", rarity: .epic, number: 95),
-            BoosterCard(name: "Porsche 918 Spyder", rarity: .epic, number: 96),
-            BoosterCard(name: "Bugatti Veyron Super Sport", rarity: .epic, number: 97),
-            BoosterCard(name: "Lamborghini Veneno", rarity: .epic, number: 98),
-            BoosterCard(name: "Ferrari LaFerrari", rarity: .epic, number: 99),
-            BoosterCard(name: "Aston Martin Valkyrie", rarity: .epic, number: 100),
-
-            // Legendary (2%) - Cards 101-108
-            BoosterCard(name: "Bugatti Chiron Super Sport 300+", rarity: .legendary, number: 101),
-            BoosterCard(name: "McLaren F1", rarity: .legendary, number: 102),
-            BoosterCard(name: "Ferrari F40", rarity: .legendary, number: 103),
-            BoosterCard(name: "Pagani Zonda R", rarity: .legendary, number: 104),
-            BoosterCard(name: "Lamborghini Sian FKP 37", rarity: .legendary, number: 105),
-            BoosterCard(name: "Koenigsegg Regera", rarity: .legendary, number: 106),
-            BoosterCard(name: "Rimac Nevera", rarity: .legendary, number: 107),
-            BoosterCard(name: "Aston Martin One-77", rarity: .legendary, number: 108),
-            
-            // HolyT (0,1%) - Cards 109-111
-    
-            BoosterCard(name: "McLaren P1", rarity: .HolyT, number: 109),
-            BoosterCard(name: "Ferrari LaFerrari", rarity: .HolyT, number: 110),
-            BoosterCard(name: "Porsche 918 Spyder", rarity: .HolyT, number: 111)
-            
-            
-            
-        ]
-
-    init(collectionManager: CollectionManager, boosterNumber: Int) {
-        self._collectionManager = ObservedObject(wrappedValue: collectionManager)
-        self._presentationMode = Environment(\.presentationMode)
-        self.boosterImage = "booster_closed_\(boosterNumber)"
-    }
-
-    var body: some View {
-        ZStack {
-            // Fond noir
-            Color.black.opacity(0.9)
-                .ignoresSafeArea()
-
-            // Arrow indicator
-            if !isOpening && showArrowIndicator {
-                VStack {
-                    Image(systemName: "chevron.up")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white.opacity(0.6))
-                        .opacity(1.0 - abs(dragOffset/100))
-                        .offset(y: -20)
-                        .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: dragOffset)
-                    Spacer()
-                }
-                .padding(.top, 40)
-            }
-
-            VStack {
-                if isOpening {
-                    // Booster fermé avec nouvelles animations
-                    Image(boosterImage)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 300, height: 400)
-                        .scaleEffect(boosterScale)
-                        .opacity(boosterOpacity)
-                        .rotation3DEffect(
-                            .degrees(rotationAngle),
-                            axis: (x: -1.0, y: 1.0, z: 0.0)
-                        )
-                        .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.5)) {
-                                boosterScale = 1.2
-                                boosterOpacity = 0
-                            }
-
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                isOpening = false
-                                currentCard = randomCard()
-                            }
-                        }
-                } else {
-                    // Révélation des cartes
-                    if currentCardIndex < 5 {
-                        let selectedCard = currentCard ?? randomCard()
-
-                        VStack(spacing: 60) {
-                            ZStack {
-                                // Particles for all cards
-                                ParticleSystem(rarity: selectedCard.rarity)
-                                    .frame(width: 300, height: 400)
-                                    .id(currentCardIndex)
-                                
-                                // Halo effect that follows holographic animation
-                                ZStack(alignment: .topTrailing) {
-                                    HolographicCard(
-                                        cardImage: selectedCard.name,
-                                        rarity: selectedCard.rarity,
-                                        cardNumber: selectedCard.number
-                                    )
-                                    
-                                    if showNewBadge {
-                                        NewCardBadge()
-                                            .offset(x: -20, y: -35)
-                                            .transition(.scale.combined(with: .opacity))
-                                    }
-                                }
-                                .background(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .fill(haloColor(for: selectedCard.rarity))
-                                        .blur(radius: 20)
-                                        .opacity(0.7)
-                                )
-                                .scaleEffect(cardScale)
-                                .offset(y: cardOffset + dragOffset)
-                                .modifier(AutoHolographicAnimation())
-                                .gesture(
-                                    DragGesture()
-                                        .onChanged { gesture in
-                                            if isTransitioning { return }
-                                            let translation = gesture.translation.height
-                                            if translation < 0 {
-                                                dragOffset = translation
-                                                showArrowIndicator = false
-                                            }
-                                        }
-                                        .onEnded { gesture in
-                                            if isTransitioning { return }
-                                            if dragOffset < -50 {
-                                                isTransitioning = true
-                                                withAnimation(.easeInOut(duration: 0.3)) {
-                                                    cardOffset = -UIScreen.main.bounds.height
-                                                }
-                                                if let selectedCard = currentCard {
-                                                    let newCard = collectionManager.addCard(selectedCard)
-                                                    if !drawnCards.contains(where: { $0.name == selectedCard.name }) {
-                                                        drawnCards.append(selectedCard)
-                                                    }
-                                                }
-                                                
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                                    cardOffset = 0
-                                                    currentCardIndex += 1
-                                                    dragOffset = 0
-                                                    showArrowIndicator = true
-                                                    if currentCardIndex < 5 {
-                                                        currentCard = randomCard()
-                                                        SoundManager.shared.playSound(for: currentCard!.rarity)
-                                                    }
-                                                    isTransitioning = false
-                                                }
-                                            } else {
-                                                withAnimation {
-                                                    dragOffset = 0
-                                                    showArrowIndicator = true
-                                                }
-                                            }
-                                        }
-                                )
-                                .onTapGesture {
-                                    if isTransitioning { return }
-                                    isTransitioning = true
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        cardOffset = -UIScreen.main.bounds.height
-                                    }
-                                    if let selectedCard = currentCard {
-                                        let newCard = collectionManager.addCard(selectedCard)
-                                        if !drawnCards.contains(where: { $0.name == selectedCard.name }) {
-                                            drawnCards.append(selectedCard)
-                                        }
-                                    }
-                                    
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                        cardOffset = 0
-                                        currentCardIndex += 1
-                                        dragOffset = 0
-                                        showArrowIndicator = true
-                                        if currentCardIndex < 5 {
-                                            currentCard = randomCard()
-                                            SoundManager.shared.playSound(for: currentCard!.rarity)
-                                        }
-                                        isTransitioning = false
-                                    }
-                                }
-                                .onAppear {
-                                    withAnimation(.easeOut(duration: 0.3)) {
-                                        cardScale = 1.3
-                                    }
-                                    isNewCard = collectionManager.isNewCard(currentCard ?? randomCard())
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                        withAnimation(.spring()) {
-                                            showNewBadge = isNewCard
-                                        }
-                                    }
-                                    SoundManager.shared.playSound(for: selectedCard.rarity)
-                                }
-                            }
-                            
-                            // Rarity bubble below card
-                            EnhancedRarityButton(rarity: selectedCard.rarity)
-                        }
-                    } else {
-                        // Navigate to summary view when all cards are revealed
-                        BoosterSummaryView(cards: drawnCards) {
-                            presentationMode.wrappedValue.dismiss()
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Fonction pour tirer une carte aléatoire
-    func randomCard() -> BoosterCard {
-        let probabilities: [CardRarity: Double] = [
-            .common: 0.7 / 70,
-            .rare: 0.25 / 20,
-            .epic: 0.1 / 10,
-            .legendary: 0.02 / 8,
-            .HolyT: 0.01 / 3
-        ]
-
-        let weightedCards = allCards.flatMap { card -> [BoosterCard] in
-            let weight = probabilities[card.rarity] ?? 0
-            let count = Int(weight * 10000)
-            return Array(repeating: card, count: count)
-        }
-
-        return weightedCards.randomElement() ?? allCards.first!
-    }
-
-    // Add this function to your view struct
-    private func haloColor(for rarity: CardRarity) -> Color {
-        switch rarity {
-        case .common:
-            return Color.white
-        case .rare:
-            return Color.blue
-        case .epic:
-            return Color.purple
-        case .legendary:
-            return Color(red: 1, green: 0.84, blue: 0)
-        case .HolyT:
-            return Color(white: 0.9)
-        }
-    }
-}
-
-struct AutoHolographicAnimation: ViewModifier {
-    @State private var isAnimating = false
-    
-    func body(content: Content) -> some View {
-        content
-            .rotation3DEffect(
-                .degrees(isAnimating ? 4 : -4),
-                axis: (x: -1.0, y: 1.0, z: 0.0)
-            )
-            .onAppear {
-                withAnimation(
-                    Animation
-                        .easeInOut(duration: 1.5)
-                        .repeatForever(autoreverses: true)
-                ) {
-                    isAnimating = true
-                }
-            }
-    }
-}
-
-struct BoosterOpeningPreview: View {
-    var body: some View {
-        BoosterOpeningView(collectionManager: CollectionManager(), boosterNumber: 1)
-    }
-}
-
-struct BoosterOpeningPreview_Previews: PreviewProvider {
-    static var previews: some View {
-        BoosterOpeningPreview()
-    }
+#Preview {
+    ContentView()
 }

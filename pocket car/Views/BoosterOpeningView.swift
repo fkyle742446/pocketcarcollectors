@@ -247,199 +247,6 @@ struct BoosterOpeningView: View {
     @State private var showNewBadge: Bool = false
     @State private var drawnCards: [BoosterCard] = []
     
-    init(collectionManager: CollectionManager, boosterNumber: Int) {
-        self._collectionManager = ObservedObject(wrappedValue: collectionManager)
-        self.boosterImage = "booster_closed_\(boosterNumber)"
-    }
-    
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.9)
-                .ignoresSafeArea()
-            
-            if !isOpening && showArrowIndicator {
-                VStack {
-                    Image(systemName: "chevron.up")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white.opacity(0.6))
-                        .opacity(1.0 - abs(dragOffset/100))
-                        .offset(y: -20)
-                        .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: dragOffset)
-                    Spacer()
-                }
-                .padding(.top, 40)
-            }
-            
-            VStack {
-                if isOpening {
-                    boosterView
-                } else {
-                    if currentCardIndex < 5 {
-                        cardRevealView
-                    } else {
-                        BoosterSummaryView(cards: drawnCards) {
-                            presentationMode.wrappedValue.dismiss()
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    private var boosterView: some View {
-        Image(boosterImage)
-            .resizable()
-            .scaledToFit()
-            .frame(width: 300, height: 400)
-            .scaleEffect(boosterScale)
-            .opacity(boosterOpacity)
-            .rotation3DEffect(
-                .degrees(rotationAngle),
-                axis: (x: -1.0, y: 1.0, z: 0.0)
-            )
-            .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.5)) {
-                    boosterScale = 1.2
-                    boosterOpacity = 0
-                }
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    isOpening = false
-                    currentCard = randomCard()
-                }
-            }
-    }
-    
-    private var cardRevealView: some View {
-        Group {
-            if let selectedCard = currentCard {
-                VStack(spacing: 60) {
-                    ZStack {
-                        ParticleSystem(rarity: selectedCard.rarity)
-                            .frame(width: 300, height: 400)
-                            .id(currentCardIndex)
-                        
-                        ZStack(alignment: .topTrailing) {
-                            HolographicCard(
-                                cardImage: selectedCard.name,
-                                rarity: selectedCard.rarity,
-                                cardNumber: selectedCard.number
-                            )
-                            
-                            if showNewBadge {
-                                NewCardBadge()
-                                    .offset(x: -20, y: -35)
-                                    .transition(.scale.combined(with: .opacity))
-                            }
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(haloColor(for: selectedCard.rarity))
-                                .blur(radius: 20)
-                                .opacity(0.7)
-                        )
-                        .scaleEffect(cardScale)
-                        .offset(y: cardOffset + dragOffset)
-                        .modifier(AutoHolographicAnimation())
-                        .gesture(createDragGesture(for: selectedCard))
-                    }
-                    
-                    EnhancedRarityButton(rarity: selectedCard.rarity)
-                }
-            }
-        }
-    }
-    
-    private func createDragGesture(for selectedCard: BoosterCard) -> some Gesture {
-        DragGesture()
-            .onChanged { gesture in
-                if isTransitioning { return }
-                let translation = gesture.translation.height
-                if translation < 0 {
-                    dragOffset = translation
-                    showArrowIndicator = false
-                }
-            }
-            .onEnded { gesture in
-                if isTransitioning { return }
-                if dragOffset < -50 {
-                    handleCardReveal(selectedCard)
-                } else {
-                    withAnimation {
-                        dragOffset = 0
-                        showArrowIndicator = true
-                    }
-                }
-            }
-    }
-    
-    private func handleCardReveal(_ selectedCard: BoosterCard) {
-        isTransitioning = true
-        withAnimation(.easeInOut(duration: 0.3)) {
-            cardOffset = -UIScreen.main.bounds.height
-        }
-        
-        let newCard = collectionManager.addCard(selectedCard)
-        if !drawnCards.contains(where: { $0.name == selectedCard.name }) {
-            drawnCards.append(selectedCard)
-        }
-        
-        withAnimation {
-            isNewCard = newCard
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            resetCardState()
-        }
-    }
-    
-    private func resetCardState() {
-        cardOffset = 0
-        currentCardIndex += 1
-        dragOffset = 0
-        showArrowIndicator = true
-        isNewCard = false
-        if currentCardIndex < 5 {
-            currentCard = randomCard()
-            SoundManager.shared.playSound(for: currentCard!.rarity)
-        }
-        isTransitioning = false
-    }
-    
-    private func randomCard() -> BoosterCard {
-        let probabilities: [CardRarity: Double] = [
-            .common: 0.7 / 70,
-            .rare: 0.25 / 20,
-            .epic: 0.1 / 10,
-            .legendary: 0.02 / 8,
-            .HolyT: 0.01 / 3
-        ]
-        
-        let weightedCards = allCards.flatMap { card -> [BoosterCard] in
-            let weight = probabilities[card.rarity] ?? 0
-            let count = Int(weight * 10000)
-            return Array(repeating: card, count: count)
-        }
-        
-        return weightedCards.randomElement() ?? allCards.first!
-    }
-    
-    private func haloColor(for rarity: CardRarity) -> Color {
-        switch rarity {
-        case .common:
-            return Color.white
-        case .rare:
-            return Color.blue
-        case .epic:
-            return Color.purple
-        case .legendary:
-            return Color(red: 1, green: 0.84, blue: 0)
-        case .HolyT:
-            return Color(white: 0.9)
-        }
-    }
-    
-    // Card data
     private let allCards: [BoosterCard] = [
         // Common (70%) - Cards 1-70
         BoosterCard(name: "Renault Clio", rarity: .common, number: 1),
@@ -563,6 +370,184 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Ferrari LaFerrari", rarity: .HolyT, number: 110),
         BoosterCard(name: "Porsche 918 Spyder", rarity: .HolyT, number: 111)
     ]
+    
+    init(collectionManager: CollectionManager, boosterNumber: Int) {
+        self._collectionManager = ObservedObject(wrappedValue: collectionManager)
+        self.boosterImage = "booster_closed_\(boosterNumber)"
+    }
+    
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.9)
+                .ignoresSafeArea()
+            
+            VStack {
+                if isOpening {
+                    Image(boosterImage)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 300, height: 400)
+                        .scaleEffect(boosterScale)
+                        .opacity(boosterOpacity)
+                        .rotation3DEffect(
+                            .degrees(rotationAngle),
+                            axis: (x: -1.0, y: 1.0, z: 0.0)
+                        )
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.5)) {
+                                boosterScale = 1.2
+                                boosterOpacity = 0
+                            }
+                            
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                isOpening = false
+                                currentCard = randomCard()
+                            }
+                        }
+                } else if currentCardIndex < 5 {
+                    if let selectedCard = currentCard {
+                        cardRevealView(for: selectedCard)
+                    }
+                } else {
+                    BoosterSummaryView(cards: drawnCards) {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func cardRevealView(for selectedCard: BoosterCard) -> some View {
+        VStack(spacing: 60) {
+            ZStack {
+                ParticleSystem(rarity: selectedCard.rarity)
+                    .frame(width: 300, height: 400)
+                    .id(currentCardIndex)
+                
+                ZStack(alignment: .topTrailing) {
+                    HolographicCard(
+                        cardImage: selectedCard.name,
+                        rarity: selectedCard.rarity,
+                        cardNumber: selectedCard.number
+                    )
+                    
+                    if showNewBadge {
+                        NewCardBadge()
+                            .offset(x: -20, y: -35)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(haloColor(for: selectedCard.rarity))
+                        .blur(radius: 20)
+                        .opacity(0.7)
+                )
+                .scaleEffect(cardScale)
+                .offset(y: cardOffset + dragOffset)
+                .modifier(AutoHolographicAnimation())
+                .gesture(
+                    DragGesture()
+                        .onChanged { gesture in
+                            if isTransitioning { return }
+                            let translation = gesture.translation.height
+                            if translation < 0 {
+                                dragOffset = translation
+                                showArrowIndicator = false
+                            }
+                        }
+                        .onEnded { gesture in
+                            if isTransitioning { return }
+                            if dragOffset < -50 {
+                                handleCardReveal(selectedCard)
+                            } else {
+                                withAnimation {
+                                    dragOffset = 0
+                                    showArrowIndicator = true
+                                }
+                            }
+                        }
+                )
+                .onTapGesture {
+                    handleCardReveal(selectedCard)
+                }
+                .onAppear {
+                    isNewCard = collectionManager.isNewCard(selectedCard)
+                    withAnimation(.spring()) {
+                        showNewBadge = isNewCard
+                    }
+                    SoundManager.shared.playSound(for: selectedCard.rarity)
+                }
+            }
+            
+            EnhancedRarityButton(rarity: selectedCard.rarity)
+        }
+    }
+    
+    private func handleCardReveal(_ selectedCard: BoosterCard) {
+        if isTransitioning { return }
+        isTransitioning = true
+        
+        withAnimation(.easeInOut(duration: 0.3)) {
+            cardOffset = -UIScreen.main.bounds.height
+        }
+        
+        let newCard = collectionManager.addCard(selectedCard)
+        if !drawnCards.contains(where: { $0.name == selectedCard.name }) {
+            drawnCards.append(selectedCard)
+        }
+        
+        withAnimation {
+            isNewCard = newCard
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            cardOffset = 0
+            currentCardIndex += 1
+            dragOffset = 0
+            showArrowIndicator = true
+            isNewCard = false
+            if currentCardIndex < 5 {
+                currentCard = randomCard()
+                SoundManager.shared.playSound(for: currentCard!.rarity)
+            }
+            isTransitioning = false
+        }
+    }
+    
+    private func randomCard() -> BoosterCard {
+        let probabilities: [CardRarity: Double] = [
+            .common: 0.7 / 70,
+            .rare: 0.25 / 20,
+            .epic: 0.1 / 10,
+            .legendary: 0.02 / 8,
+            .HolyT: 0.01 / 3
+        ]
+
+        let weightedCards = allCards.flatMap { card -> [BoosterCard] in
+            let weight = probabilities[card.rarity] ?? 0
+            let count = Int(weight * 10000)
+            return Array(repeating: card, count: count)
+        }
+
+        return weightedCards.randomElement() ?? allCards.first!
+    }
+    
+    private func haloColor(for rarity: CardRarity) -> Color {
+        switch rarity {
+        case .common:
+            return Color.white
+        case .rare:
+            return Color.blue
+        case .epic:
+            return Color.purple
+        case .legendary:
+            return Color(red: 1, green: 0.84, blue: 0)
+        case .HolyT:
+            return Color(white: 0.9)
+        }
+    }
 }
 
 struct AutoHolographicAnimation: ViewModifier {
