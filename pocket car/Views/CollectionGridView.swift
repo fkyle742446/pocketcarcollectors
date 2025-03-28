@@ -7,11 +7,11 @@ struct CollectionGridView: View {
     var body: some View {
         ScrollView {
             LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 100), spacing: -30)], 
-                spacing: -70 
+                columns: [GridItem(.adaptive(minimum: 100), spacing: -30)],
+                spacing: -70
             ) {
                 ForEach(sortedCards, id: \.card.id) { entry in
-                    ZStack(alignment: .topTrailing) {
+                    ZStack {
                         // Carte holographique
                         HolographicCard(
                             cardImage: entry.card.name,
@@ -19,24 +19,27 @@ struct CollectionGridView: View {
                             cardNumber: entry.card.number
                         )
                         .scaleEffect(0.44)
+                        .overlay(
+                            // Badge de compteur si plus d'une carte
+                            Group {
+                                if entry.count > 1 {
+                                    Circle()
+                                        .fill(Color.red)
+                                        .frame(width: 24, height: 24)
+                                        .overlay(
+                                            Text("\(entry.count)")
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(.white)
+                                        )
+                                        .shadow(color: .black.opacity(0.25), radius: 2, x: 0, y: 2)
+                                }
+                            }
+                            .offset(x: 40, y: -50) // Ajusté pour être dans la carte
+                        )
                         .onTapGesture {
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                                 selectedCard = entry.card
                             }
-                        }
-                        
-                        // Badge de compteur si plus d'une carte
-                        if entry.count > 1 {
-                            Text("\(entry.count)")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(6)
-                                .background(
-                                    Circle()
-                                        .fill(Color.red)
-                                        .shadow(color: .black.opacity(0.25), radius: 2, x: 0, y: 2)
-                                )
-                                .offset(x: -10, y: 10) 
                         }
                     }
                 }
