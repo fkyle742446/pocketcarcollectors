@@ -28,7 +28,7 @@ struct ShopView: View {
             )
             .ignoresSafeArea()
             
-            VStack(spacing: 20) {
+            VStack(spacing: 10) {
                 HStack {
                     Spacer()
                     HStack(spacing: 4) {
@@ -48,9 +48,8 @@ struct ShopView: View {
                             .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                     )
                 }
-                .padding()
-
-                Spacer()
+                .padding(.top, 40)
+                .padding(.horizontal)
 
                 // Premier Booster
                 ZStack {
@@ -102,6 +101,7 @@ struct ShopView: View {
                     }
                     .padding()
                 }
+                .padding(.top, 10)
 
                 // Deuxième Booster
                 ZStack {
@@ -153,6 +153,7 @@ struct ShopView: View {
                     }
                     .padding()
                 }
+                .padding(.top, 10)
 
                 Spacer()
 
@@ -180,15 +181,15 @@ struct ShopView: View {
                                     ),
                                     lineWidth: 2.0,
                                     blurRadius: 4.0
-                                    )
-                                    .opacity(0.4)
+                                )
+                                .opacity(0.4)
                             
                             RoundedRectangle(cornerRadius: 25)
                                 .fill(Color.white)
                         }
                     )
                 }
-                .padding(.bottom, 40)
+                .padding(.bottom, 70)
             }
         }
         .alert("Insufficient Coins", isPresented: $showingInsufficientCoinsAlert) {
@@ -214,6 +215,7 @@ struct ShopView: View {
             }
         }
     }
+
 }
 
 #Preview {

@@ -82,14 +82,15 @@ class SoundManager {
 
 struct ParticleSystem: View {
     let rarity: CardRarity
-    @State private var particles: [(id: Int, position: CGPoint, opacity: Double)] = []
+    @State private var particles: [(id: Int, position: CGPoint, opacity: Double, scale: Double, speed: Double)] = []
     
     var body: some View {
         GeometryReader { geometry in
-            ForEach(particles.prefix(100), id: \.id) { particle in
+            ForEach(particles.prefix(150), id: \.id) { particle in 
                 Circle()
                     .fill(haloColor(for: rarity))
-                    .frame(width: 3, height: 3)
+                    .frame(width: 4, height: 4) 
+                    .scaleEffect(particle.scale)
                     .position(particle.position)
                     .opacity(particle.opacity)
             }
@@ -102,23 +103,69 @@ struct ParticleSystem: View {
     
     private func createParticles() {
         particles = []
-        for i in 0..<100 {
+        for i in 0..<150 { 
             let angle = Double.random(in: -Double.pi...Double.pi)
-            let speed = Double.random(in: 100...300)
+            let speed = Double.random(in: 100...400) 
+            let scale = Double.random(in: 0.3...1.2) 
             let startPosition = CGPoint(x: 120, y: 170)
+            let duration = Double.random(in: 0.6...1.2) 
+            let delay = Double.random(in: 0...0.3) 
             
-            var particle = (id: i, position: startPosition, opacity: 0.6)
+            var particle = (
+                id: i,
+                position: startPosition,
+                opacity: Double.random(in: 0.3...0.8), 
+                scale: scale,
+                speed: speed
+            )
             particles.append(particle)
             
             withAnimation(
-                .easeOut(duration: 0.8)
+                Animation
+                    .easeOut(duration: duration)
+                    .delay(delay) 
             ) {
-                let dx = cos(angle) * speed
-                let dy = sin(angle) * speed
+                let distance = speed * duration
+                let dx = cos(angle) * distance
+                let dy = sin(angle) * distance
                 particle.position.x += CGFloat(dx)
                 particle.position.y += CGFloat(dy)
                 particle.opacity = 0
+                particle.scale *= 0.5 
                 particles[i] = particle
+            }
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            for i in 150...200 {
+                let angle = Double.random(in: -Double.pi...Double.pi)
+                let speed = Double.random(in: 50...300)
+                let scale = Double.random(in: 0.2...1.0)
+                let startPosition = CGPoint(x: 120, y: 170)
+                let duration = Double.random(in: 0.4...0.8)
+                
+                var particle = (
+                    id: i,
+                    position: startPosition,
+                    opacity: Double.random(in: 0.2...0.6),
+                    scale: scale,
+                    speed: speed
+                )
+                particles.append(particle)
+                
+                withAnimation(
+                    Animation
+                        .easeOut(duration: duration)
+                ) {
+                    let distance = speed * duration
+                    let dx = cos(angle) * distance
+                    let dy = sin(angle) * distance
+                    particle.position.x += CGFloat(dx)
+                    particle.position.y += CGFloat(dy)
+                    particle.opacity = 0
+                    particle.scale *= 0.3
+                    particles.append(particle)
+                }
             }
         }
     }
@@ -133,7 +180,6 @@ struct ParticleSystem: View {
             return .purple
         case .legendary:
             return Color(red: 1, green: 0.84, blue: 0)
-            
         case .HolyT:
             return Color(white: 0.8)
         }

@@ -51,11 +51,11 @@ class CollectionManager: ObservableObject {
 
     func coinValue(for rarity: CardRarity) -> Int {
         switch rarity {
-        case .common: return 10
-        case .rare: return 25
+        case .common: return 5
+        case .rare: return 20
         case .epic: return 50
-        case .legendary: return 100
-        case .HolyT: return 250
+        case .legendary: return 75
+        case .HolyT: return 200
         }
     }
     

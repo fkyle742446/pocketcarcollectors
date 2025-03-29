@@ -451,7 +451,7 @@ struct ContentView: View {
                                                 .resizable()
                                                 .scaledToFit()
                                                 .frame(width: 30, height: 30)
-                                            Text("\(StoreManager.shared.boosters) free boosters remaining")
+                                            Text("\(StoreManager.shared.boosters) free booster remaining")
                                                 .font(.system(size: 14, weight: .medium))
                                                 .foregroundColor(.gray)
                                         } else if StoreManager.shared.nextFreeBoosterDate != nil {
@@ -527,11 +527,11 @@ struct ContentView: View {
                             NavigationLink(destination: CollectionProgressView(collectionManager: collectionManager)) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     HStack {
-                                        Text("108 cards in collection")
+                                        Text("Completion of collection")
                                             .font(.system(size: viewSize == .compact ? 12 : 16))
                                             .foregroundColor(.gray)
                                         Spacer()
-                                        Text("\(collectionManager.cards.count)/108")
+                                        Text("\(collectionManager.cards.count)/111")
                                             .font(.system(size: viewSize == .compact ? 12 : 16))
                                             .foregroundColor(.gray)
                                     }

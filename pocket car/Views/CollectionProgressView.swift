@@ -39,13 +39,13 @@ struct CollectionProgressView: View {
                             title: "Total Collection",
                             subtitle: nil,
                             count: collectionManager.cards.count,
-                            total: 108,
+                            total: 111,
                             colors: [.yellow, .orange]
                         )
                         .padding(.top, 10)
                         
                         ProgressCard(
-                            title: "Holy T Cars",
+                            title: "Holy Trinity",
                             subtitle: "Drop rate: 0.1%",
                             count: countCardsByRarity(.HolyT),
                             total: 3,
@@ -53,7 +53,7 @@ struct CollectionProgressView: View {
                         )
                         
                         ProgressCard(
-                            title: "Legendary Cars",
+                            title: "Legendary",
                             subtitle: "Drop rate: 1%",
                             count: countCardsByRarity(.legendary),
                             total: 8,
@@ -61,7 +61,7 @@ struct CollectionProgressView: View {
                         )
                         
                         ProgressCard(
-                            title: "Epic Cars",
+                            title: "Epic",
                             subtitle: "Drop rate: 8%",
                             count: countCardsByRarity(.epic),
                             total: 10,
@@ -69,7 +69,7 @@ struct CollectionProgressView: View {
                         )
                         
                         ProgressCard(
-                            title: "Rare Cars",
+                            title: "Rare",
                             subtitle: "Drop rate: 25%",
                             count: countCardsByRarity(.rare),
                             total: 20,
@@ -77,7 +77,7 @@ struct CollectionProgressView: View {
                         )
                         
                         ProgressCard(
-                            title: "Common Cars",
+                            title: "Common",
                             subtitle: "Drop rate: 65.9%",
                             count: countCardsByRarity(.common),
                             total: 70,
