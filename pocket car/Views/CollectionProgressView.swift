@@ -4,6 +4,7 @@ struct CollectionProgressView: View {
     @ObservedObject var collectionManager: CollectionManager
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @Environment(\.dismiss) var dismiss
+    @State private var glowRotationAngle: Double = 0
     
     private var viewSize: ViewSize {
         horizontalSizeClass == .compact ? .compact : .regular
@@ -28,83 +29,111 @@ struct CollectionProgressView: View {
             )
             .edgesIgnoringSafeArea(.all)
             
-            VStack {
+            VStack(spacing: 0) {
                 Spacer()
-                    .frame(height: 30)
+                    .frame(height: 20)
                 
-                VStack(spacing: 18) {
-                    ProgressCard(
-                        title: "Total Collection",
-                        subtitle: nil,
-                        count: collectionManager.cards.count,
-                        total: 108,
-                        colors: [.yellow, .orange]
-                    )
-                    .padding(.top, 20)
-                    
-                    ProgressCard(
-                        title: "Holy T Cars",
-                        subtitle: "Drop rate: 0.1%",
-                        count: countCardsByRarity(.HolyT),
-                        total: 3,
-                        colors: [.yellow, .white]
-                    )
-                    
-                    ProgressCard(
-                        title: "Legendary Cars",
-                        subtitle: "Drop rate: 1%",
-                        count: countCardsByRarity(.legendary),
-                        total: 8,
-                        colors: [.orange, .red]
-                    )
-                    
-                    ProgressCard(
-                        title: "Epic Cars",
-                        subtitle: "Drop rate: 8%",
-                        count: countCardsByRarity(.epic),
-                        total: 10,
-                        colors: [.purple, .pink]
-                    )
-                    
-                    ProgressCard(
-                        title: "Rare Cars",
-                        subtitle: "Drop rate: 25%",
-                        count: countCardsByRarity(.rare),
-                        total: 20,
-                        colors: [.blue, .cyan]
-                    )
-                    
-                    ProgressCard(
-                        title: "Common Cars",
-                        subtitle: "Drop rate: 65.9%",
-                        count: countCardsByRarity(.common),
-                        total: 70,
-                        colors: [.gray, .gray.opacity(0.6)]
-                    )
-                }
-                .padding(.horizontal, horizontalPadding)
-            
-                Spacer()
-                
-                Button(action: {
-                    dismiss()
-                }) {
-                    HStack {
-                        Image(systemName: "house.fill")
-                            .font(.system(size: 16))
-                        Text("Home")
-                            .font(.headline)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 12) {
+                        ProgressCard(
+                            title: "Total Collection",
+                            subtitle: nil,
+                            count: collectionManager.cards.count,
+                            total: 108,
+                            colors: [.yellow, .orange]
+                        )
+                        .padding(.top, 10)
+                        
+                        ProgressCard(
+                            title: "Holy T Cars",
+                            subtitle: "Drop rate: 0.1%",
+                            count: countCardsByRarity(.HolyT),
+                            total: 3,
+                            colors: [.yellow, .white]
+                        )
+                        
+                        ProgressCard(
+                            title: "Legendary Cars",
+                            subtitle: "Drop rate: 1%",
+                            count: countCardsByRarity(.legendary),
+                            total: 8,
+                            colors: [.orange, .red]
+                        )
+                        
+                        ProgressCard(
+                            title: "Epic Cars",
+                            subtitle: "Drop rate: 8%",
+                            count: countCardsByRarity(.epic),
+                            total: 10,
+                            colors: [.purple, .pink]
+                        )
+                        
+                        ProgressCard(
+                            title: "Rare Cars",
+                            subtitle: "Drop rate: 25%",
+                            count: countCardsByRarity(.rare),
+                            total: 20,
+                            colors: [.blue, .cyan]
+                        )
+                        
+                        ProgressCard(
+                            title: "Common Cars",
+                            subtitle: "Drop rate: 65.9%",
+                            count: countCardsByRarity(.common),
+                            total: 70,
+                            colors: [.gray, .gray.opacity(0.6)]
+                        )
+                        
+                        Spacer()
+                            .frame(height: 20)
                     }
-                    .foregroundColor(.gray)
-                    .frame(width: 120)
-                    .frame(height: 50)
-                    .background(
-                        RoundedRectangle(cornerRadius: 25)
-                            .fill(Color.white)
-                            .shadow(color: .gray.opacity(0.2), radius: 4)
-                    )
+                    .padding(.horizontal, horizontalPadding)
                 }
-                .padding(.bottom, 0)
+                
+                VStack {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "house.fill")
+                                .font(.system(size: 16))
+                            Text("Home")
+                                .font(.headline)
+                        }
+                        .foregroundColor(.gray)
+                        .frame(width: 120)
+                        .frame(height: 50)
+                        .background(
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 25)
+                                    .glow(
+                                        fill: .angularGradient(
+                                            colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                            center: .center,
+                                            startAngle: .degrees(glowRotationAngle),
+                                            endAngle: .degrees(glowRotationAngle + 360)
+                                        ),
+                                        lineWidth: 2.0,
+                                        blurRadius: 4.0
+                                    )
+                                    .opacity(0.4)
+                                
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(Color.white)
+                            }
+                        )
+                    }
+                    .padding(.vertical, 20)
+                }
+                .background(Color.clear)
+            }
+        }
+        .onAppear {
+            withAnimation(
+                .linear(duration: 10)
+                .repeatForever(autoreverses: false)
+            ) {
+                glowRotationAngle = 360
             }
         }
         .navigationBarTitleDisplayMode(.inline)

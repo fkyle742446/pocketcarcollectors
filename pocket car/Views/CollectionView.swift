@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 struct CollectionView: View {
     @ObservedObject var collectionManager: CollectionManager
@@ -20,6 +21,7 @@ struct CollectionView: View {
                         Spacer()
                         Text("\(collectionManager.cards.count)/108")
                             .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.red)
                         Text("•")
                             .foregroundColor(.gray)
                         HStack(spacing: 4) {
@@ -62,10 +64,10 @@ struct CardView: View {
     let card: BoosterCard
     let count: Int
 
-    private func haloColor(for rarity: CardRarity) -> Color {
+    private func rarityColor(for rarity: CardRarity) -> Color {
         switch rarity {
         case .common:
-            return Color.white
+            return Color.gray
         case .rare:
             return Color.blue
         case .epic:
@@ -73,19 +75,28 @@ struct CardView: View {
         case .legendary:
             return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
-            return Color(white: 0.8) 
+            return Color(white: 0.8)
+        }
+    }
+    
+    private func rarityOpacity(for rarity: CardRarity) -> Double {
+        switch rarity {
+        case .common:
+            return 0.05
+        case .rare:
+            return 0.5
+        case .epic:
+            return 0.5
+        case .legendary:
+            return 0.5
+        case .HolyT:
+            return 0.5
         }
     }
 
     var body: some View {
         VStack {
             ZStack(alignment: .topTrailing) {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(haloColor(for: card.rarity))
-                    .blur(radius: 10)
-                    .frame(maxWidth: 105, maxHeight: 145)
-                    .opacity(0.7)
-                
                 Image(card.name)
                     .resizable()
                     .aspectRatio(3 / 4, contentMode: .fit)
@@ -110,8 +121,12 @@ struct CardView: View {
         }
         .padding(10)
         .background(
-            RoundedRectangle(cornerRadius: 6)
+            RoundedRectangle(cornerRadius: 12)
                 .fill(Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(rarityColor(for: card.rarity).opacity(rarityOpacity(for: card.rarity)))
+                )
                 .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 3)
         )
     }
@@ -300,7 +315,8 @@ struct CollectionProgressBar: View {
 struct ZoomedCardView: View {
     @Binding var selectedCard: BoosterCard?
     @ObservedObject var collectionManager: CollectionManager
-    
+    @State private var sellSoundPlayer: AVAudioPlayer?
+
     private func haloColor(for rarity: CardRarity) -> Color {
         switch rarity {
         case .common:
@@ -312,7 +328,25 @@ struct ZoomedCardView: View {
         case .legendary:
             return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
-            return Color(white: 0.8) 
+            return Color(white: 0.8)
+        }
+    }
+    
+    private func playSellSound() {
+        print("Attempting to play sell sound")
+        guard let path = Bundle.main.path(forResource: "sell", ofType: "mp3") else {
+            print("Could not find sell.mp3")
+            return
+        }
+        let url = URL(fileURLWithPath: path)
+        do {
+            sellSoundPlayer = try AVAudioPlayer(contentsOf: url)
+            sellSoundPlayer?.volume = 0.5
+            sellSoundPlayer?.prepareToPlay()
+            sellSoundPlayer?.play()
+            print("Sound should be playing")
+        } catch {
+            print("Error playing sell sound: \(error.localizedDescription)")
         }
     }
     
@@ -350,23 +384,42 @@ struct ZoomedCardView: View {
                 
                 if let card = selectedCard {
                     Button(action: {
+                        print("Sell button tapped")
                         HapticManager.shared.impact(style: .heavy)
+                        playSellSound()
                         if collectionManager.sellCard(card) {
                             selectedCard = nil
                         }
                     }) {
                         HStack(spacing: 4) {
                             Text("Sell for")
-                                .foregroundColor(.white)
+                                .foregroundColor(.gray)
                             Text("\(collectionManager.coinValue(for: card.rarity))")
-                                .foregroundColor(.white)
+                                .foregroundColor(.gray)
                                 .fontWeight(.bold)
                             Text("🪙")
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background(Color.blue.opacity(0.8))
-                        .cornerRadius(10)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 15)
+                        .background(
+                            ZStack {
+                                Capsule()
+                                    .glow(
+                                        fill: .angularGradient(
+                                            colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                            center: .center,
+                                            startAngle: .degrees(0),
+                                            endAngle: .degrees(360)
+                                        ),
+                                        lineWidth: 2.0,
+                                        blurRadius: 4.0
+                                    )
+                                    .opacity(0.4)
+                                
+                                Capsule()
+                                    .fill(Color.white)
+                            }
+                        )
                     }
                 }
             }

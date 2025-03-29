@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 struct ShopView: View {
     @ObservedObject var collectionManager: CollectionManager
@@ -7,53 +8,33 @@ struct ShopView: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var showingInsufficientCoinsAlert = false
     @State private var showingPurchaseAlert = false
-    @State private var isAnimating = false
+    @State private var glowRotationAngle: Double = 0
+    
+    private let soundEffect: SystemSoundID = {
+        guard let soundURL = Bundle.main.url(forResource: "purchase_sound", withExtension: "mp3") else {
+            return 0
+        }
+        var soundID: SystemSoundID = 0
+        AudioServicesCreateSystemSoundID(soundURL as CFURL, &soundID)
+        return soundID
+    }()
     
     var body: some View {
         ZStack {
-            Color.black
-                .overlay(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(red: 0.1, green: 0.15, blue: 0.2),
-                            Color(red: 0.05, green: 0.05, blue: 0.1)
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .ignoresSafeArea()
-            
-            GeometryReader { geometry in
-                ForEach(0...Int(geometry.size.height/40), id: \.self) { row in
-                    ForEach(0...Int(geometry.size.width/40), id: \.self) { col in
-                        let x = CGFloat(col) * 40
-                        let y = CGFloat(row) * 40
-                        
-                        Rectangle()
-                            .fill(Color.white.opacity(0.03))
-                            .frame(width: 15, height: 3)
-                            .position(x: x, y: y)
-                        
-                        Rectangle()
-                            .fill(Color.white.opacity(0.03))
-                            .frame(width: 15, height: 3)
-                            .position(x: x, y: y + 5)
-                    }
-                }
-            }
-            .rotationEffect(.degrees(45))
+            LinearGradient(
+                gradient: Gradient(colors: [.white, Color(.systemGray5)]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
             
             VStack(spacing: 20) {
                 HStack {
-                    Text("Shop")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.white)
                     Spacer()
                     HStack(spacing: 4) {
                         Text("\(collectionManager.coins)")
                             .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.gray)
                         Text("🪙")
                             .font(.system(size: 20))
                     }
@@ -61,7 +42,8 @@ struct ShopView: View {
                     .padding(.vertical, 8)
                     .background(
                         RoundedRectangle(cornerRadius: 15)
-                            .fill(Color.white.opacity(0.2))
+                            .fill(Color.white)
+                            .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                     )
                 }
                 .padding()
@@ -70,26 +52,9 @@ struct ShopView: View {
 
                 ZStack {
                     RoundedRectangle(cornerRadius: 25)
-                        .strokeBorder(
-                            LinearGradient(
-                                colors: [
-                                    Color.blue.opacity(0.7),
-                                    Color.purple.opacity(0.7),
-                                    Color.blue.opacity(0.7)
-                                ],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            ),
-                            lineWidth: 3
-                        )
-                        .frame(width: 290, height: 310)
-                        .rotationEffect(.degrees(isAnimating ? 360 : 0))
-                        .animation(Animation.linear(duration: 3).repeatForever(autoreverses: false), value: isAnimating)
-                    
-                    RoundedRectangle(cornerRadius: 25)
-                        .fill(Color.white.opacity(0.9))
+                        .fill(Color.white)
                         .frame(width: 280, height: 300)
-                        .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
+                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                     
                     VStack(spacing: 15) {
                         Image("booster_closed_1")
@@ -147,16 +112,35 @@ struct ShopView: View {
                     .frame(width: 120)
                     .frame(height: 50)
                     .background(
-                        RoundedRectangle(cornerRadius: 25)
-                            .fill(Color.white)
-                            .shadow(color: .gray.opacity(0.2), radius: 4)
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 25)
+                                .glow(
+                                    fill: .angularGradient(
+                                        colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                        center: .center,
+                                        startAngle: .degrees(glowRotationAngle),
+                                        endAngle: .degrees(glowRotationAngle + 360)
+                                    ),
+                                    lineWidth: 2.0,
+                                    blurRadius: 4.0
+                                )
+                                .opacity(0.4)
+                            
+                            RoundedRectangle(cornerRadius: 25)
+                                .fill(Color.white)
+                        }
                     )
                 }
-                .padding(.bottom, 0)
+                .padding(.bottom, 30)
             }
         }
         .onAppear {
-            isAnimating = true
+            withAnimation(
+                .linear(duration: 10)
+                .repeatForever(autoreverses: false)
+            ) {
+                glowRotationAngle = 360
+            }
         }
         .alert("Insufficient Coins", isPresented: $showingInsufficientCoinsAlert) {
             Button("OK", role: .cancel) { }
@@ -166,12 +150,19 @@ struct ShopView: View {
         .alert("Confirm Purchase", isPresented: $showingPurchaseAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Buy") {
+                HapticManager.shared.impact(style: .heavy)
                 collectionManager.coins -= 100
                 storeManager.boosters += 1
-                presentationMode.wrappedValue.dismiss()
+                AudioServicesPlaySystemSound(soundEffect)
+                dismiss()
             }
         } message: {
             Text("Would you like to purchase this booster for 100 coins?")
+        }
+        .onChange(of: showingInsufficientCoinsAlert) { _, newValue in
+            if newValue {
+                HapticManager.shared.impact(style: .rigid)
+            }
         }
     }
 }

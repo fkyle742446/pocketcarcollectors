@@ -26,5 +26,3 @@ struct CollectionGridView: View {
         }
     }
 }
-
-
