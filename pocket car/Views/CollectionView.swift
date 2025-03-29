@@ -22,9 +22,12 @@ struct CollectionView: View {
                             .font(.system(size: 16, weight: .medium))
                         Text("•")
                             .foregroundColor(.gray)
-                        Text("\(collectionManager.coins) 🪙")
-                            .font(.system(size: 16, weight: .medium))
-                            .padding(.trailing, 16)
+                        HStack(spacing: 4) {
+                            Text("\(collectionManager.coins)")
+                                .font(.system(size: 16, weight: .medium))
+                            Text("🪙")
+                        }
+                        .padding(.trailing, 16)
                     }
                     .padding(.top, 20)
 
@@ -297,7 +300,6 @@ struct CollectionProgressBar: View {
 struct ZoomedCardView: View {
     @Binding var selectedCard: BoosterCard?
     @ObservedObject var collectionManager: CollectionManager
-    @State private var showingSellAlert = false
     
     private func haloColor(for rarity: CardRarity) -> Color {
         switch rarity {
@@ -348,28 +350,23 @@ struct ZoomedCardView: View {
                 
                 if let card = selectedCard {
                     Button(action: {
-                        showingSellAlert = true
-                    }) {
-                        HStack {
-                            Image(systemName: "dollarsign.circle.fill")
-                            Text("Sell for \(collectionManager.coinValue(for: card.rarity)) coins")
+                        HapticManager.shared.impact(style: .heavy)
+                        if collectionManager.sellCard(card) {
+                            selectedCard = nil
                         }
-                        .padding()
+                    }) {
+                        HStack(spacing: 4) {
+                            Text("Sell for")
+                                .foregroundColor(.white)
+                            Text("\(collectionManager.coinValue(for: card.rarity))")
+                                .foregroundColor(.white)
+                                .fontWeight(.bold)
+                            Text("🪙")
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
                         .background(Color.blue.opacity(0.8))
-                        .foregroundColor(.white)
                         .cornerRadius(10)
-                    }
-                    .alert(isPresented: $showingSellAlert) {
-                        Alert(
-                            title: Text("Sell Card"),
-                            message: Text("Do you want to sell this card for \(collectionManager.coinValue(for: card.rarity)) coins?"),
-                            primaryButton: .destructive(Text("Sell")) {
-                                if collectionManager.sellCard(card) {
-                                    selectedCard = nil
-                                }
-                            },
-                            secondaryButton: .cancel()
-                        )
                     }
                 }
             }
