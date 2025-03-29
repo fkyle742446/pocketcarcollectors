@@ -1,41 +1,23 @@
 import SwiftUI
-import Foundation
 
 struct BoosterTimerView: View {
-    @StateObject private var storeManager = StoreManager.shared
-    @State private var remainingTime: TimeInterval = 0
-    @State private var showingPointsAlert = false
+    @StateObject private var store = StoreManager.shared
+    @State private var showingAlert = false
     
     var body: some View {
         VStack {
-            Text(timeString(from: remainingTime))
+            Text(store.currentTimeString)
                 .onTapGesture {
-                    showingPointsAlert = true
+                    showingAlert = true
                 }
         }
-        .alert("Use Points", isPresented: $showingPointsAlert) {
-            let hoursNeeded = Int(ceil(remainingTime / 3600))
-            
-            Button("Use \(hoursNeeded) Points") {
-                if storeManager.usePoints(amount: hoursNeeded) {
-                    completeTimer()
-                }
+        .alert("Use Points", isPresented: $showingAlert) {
+            Button("Use \(store.hoursNeeded) Points") {
+                store.skipWaitingTime()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            let hoursNeeded = Int(ceil(remainingTime / 3600))
-            Text("You need \(hoursNeeded) points to skip this timer.\nYou have \(storeManager.availablePoints) points available.")
+            Text("You need \(store.hoursNeeded) points to skip this timer.")
         }
-    }
-    
-    private func timeString(from timeInterval: TimeInterval) -> String {
-        let hours = Int(timeInterval) / 3600
-        let minutes = Int(timeInterval) / 60 % 60
-        return String(format: "%02dh%02d", hours, minutes)
-    }
-    
-    private func completeTimer() {
-        // Logic to complete the booster timer
-        remainingTime = 0
     }
 }
