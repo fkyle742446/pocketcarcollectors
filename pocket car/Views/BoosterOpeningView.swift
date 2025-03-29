@@ -381,7 +381,8 @@ struct BoosterOpeningView: View {
     
     var body: some View {
         ZStack {
-            Color.black.opacity(0.9)
+            // CHANGE: Conditional background color based on isOpening
+            Color(isOpening ? .white : .black).opacity(0.9)
                 .ignoresSafeArea()
             
             if showSummary {

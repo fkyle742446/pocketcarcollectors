@@ -447,8 +447,10 @@ struct ContentView: View {
                                     // Timer display or instruction text
                                     HStack {
                                         if StoreManager.shared.boosters > 0 {
-                                            Image(systemName: "gift.fill")
-                                                .foregroundColor(.gray)
+                                            Image("gift")
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(width: 30, height: 30)
                                             Text("\(StoreManager.shared.boosters) free boosters remaining")
                                                 .font(.system(size: 14, weight: .medium))
                                                 .foregroundColor(.gray)
@@ -501,7 +503,18 @@ struct ContentView: View {
                                 
                                 // Shop Button
                                 NavigationLink(destination: ShopView(collectionManager: collectionManager, storeManager: StoreManager.shared)) {
-                                    buttonView(icon: "cart.fill", text: "\(collectionManager.coins) 🪙", colors: [.gray.opacity(0.3)], textColor: .gray)
+                                    buttonView(icon: "", text: "", colors: [.gray.opacity(0.3)], textColor: .gray)
+                                        .overlay(
+                                            HStack(spacing: 4) {
+                                                Text("\(collectionManager.coins)")
+                                                    .font(.system(size: 16, weight: .medium))
+                                                    .foregroundColor(.gray)
+                                                Image("coin")
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(width: 50, height: 50)
+                                            }
+                                        )
                                 }
                                 .simultaneousGesture(TapGesture().onEnded {
                                     HapticManager.shared.impact(style: .medium)

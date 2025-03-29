@@ -21,13 +21,16 @@ struct CollectionView: View {
                         Spacer()
                         Text("\(collectionManager.cards.count)/108")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.red)
+                            .foregroundColor(.gray)
                         Text("•")
                             .foregroundColor(.gray)
                         HStack(spacing: 4) {
                             Text("\(collectionManager.coins)")
                                 .font(.system(size: 16, weight: .medium))
-                            Text("🪙")
+                            Image("coin")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
                         }
                         .padding(.trailing, 16)
                     }
@@ -79,43 +82,107 @@ struct CardView: View {
         }
     }
     
-    private func rarityOpacity(for rarity: CardRarity) -> Double {
+    private func rarityGradient(for rarity: CardRarity) -> LinearGradient {
         switch rarity {
         case .common:
-            return 0.05
+            return LinearGradient(
+                colors: [Color.gray.opacity(0.3), Color.gray.opacity(0.1)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         case .rare:
-            return 0.5
+            return LinearGradient(
+                colors: [Color.blue.opacity(0.3), Color.blue.opacity(0.1)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         case .epic:
-            return 0.5
+            return LinearGradient(
+                colors: [Color.purple.opacity(0.3), Color.purple.opacity(0.1)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         case .legendary:
-            return 0.5
+            return LinearGradient(
+                colors: [Color(red: 1, green: 0.84, blue: 0).opacity(0.3),
+                        Color(red: 1, green: 0.84, blue: 0).opacity(0.1)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         case .HolyT:
-            return 0.5
+            return LinearGradient(
+                colors: [Color.white.opacity(0.3), Color.white.opacity(0.1)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+    
+    private func rarityBadge(for rarity: CardRarity) -> String {
+        switch rarity {
+        case .common: return "COMMON"
+        case .rare: return "RARE"
+        case .epic: return "EPIC"
+        case .legendary: return "LEGENDARY"
+        case .HolyT: return "HOLY"
         }
     }
 
     var body: some View {
-        VStack {
+        VStack(spacing: 8) {
             ZStack(alignment: .topTrailing) {
+                // Card Image with border
                 Image(card.name)
                     .resizable()
                     .aspectRatio(3 / 4, contentMode: .fit)
                     .frame(maxWidth: 100, maxHeight: 140)
-                    .cornerRadius(5)
-                    .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 4)
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [
+                                        rarityColor(for: card.rarity).opacity(0.8),
+                                        rarityColor(for: card.rarity).opacity(0.4)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 2
+                            )
+                    )
+                    .shadow(color: rarityColor(for: card.rarity).opacity(0.3), radius: 5, x: 0, y: 4)
 
+                // Count badge if more than 1
                 if count > 1 {
                     Text("\(count)")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(.white)
                         .padding(6)
-                        .background(Circle().fill(Color.red))
+                        .background(
+                            Circle()
+                                .fill(Color.red)
+                                .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 2)
+                        )
                         .offset(x: -5, y: 5)
                 }
             }
 
+            // Rarity badge
+            Text(rarityBadge(for: card.rarity))
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(rarityColor(for: card.rarity))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.white)
+                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                )
+
+            // Card name
             Text(card.name)
-                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundColor(.gray)
                 .lineLimit(1)
         }
@@ -125,9 +192,9 @@ struct CardView: View {
                 .fill(Color.white)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(rarityColor(for: card.rarity).opacity(rarityOpacity(for: card.rarity)))
+                        .fill(rarityGradient(for: card.rarity))
                 )
-                .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 3)
+                .shadow(color: rarityColor(for: card.rarity).opacity(0.2), radius: 8, x: 0, y: 4)
         )
     }
 }
@@ -397,7 +464,10 @@ struct ZoomedCardView: View {
                             Text("\(collectionManager.coinValue(for: card.rarity))")
                                 .foregroundColor(.gray)
                                 .fontWeight(.bold)
-                            Text("🪙")
+                            Image("coin")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
                         }
                         .padding(.vertical, 8)
                         .padding(.horizontal, 15)

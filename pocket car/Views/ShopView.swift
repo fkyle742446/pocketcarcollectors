@@ -35,8 +35,10 @@ struct ShopView: View {
                         Text("\(collectionManager.coins)")
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(.gray)
-                        Text("🪙")
-                            .font(.system(size: 20))
+                        Image("coin")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 20, height: 20)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
@@ -50,6 +52,7 @@ struct ShopView: View {
 
                 Spacer()
 
+                // Premier Booster
                 ZStack {
                     RoundedRectangle(cornerRadius: 25)
                         .fill(Color.white)
@@ -78,7 +81,61 @@ struct ShopView: View {
                                 HStack(spacing: 4) {
                                     Text("100")
                                         .fontWeight(.semibold)
-                                    Text("🪙")
+                                    Image("coin")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 16, height: 16)
+                                }
+                            }
+                            .font(.system(size: 16))
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .fill(Color.white)
+                                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                            )
+                        }
+                        .disabled(collectionManager.coins < 100)
+                        .opacity(collectionManager.coins >= 100 ? 1 : 0.5)
+                    }
+                    .padding()
+                }
+
+                // Deuxième Booster
+                ZStack {
+                    RoundedRectangle(cornerRadius: 25)
+                        .fill(Color.white)
+                        .frame(width: 280, height: 300)
+                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                    
+                    VStack(spacing: 15) {
+                        Image("booster_closed_2")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 200)
+                            .shadow(radius: 5)
+                        
+                        Button(action: {
+                            if collectionManager.coins >= 100 {
+                                showingPurchaseAlert = true
+                            } else {
+                                showingInsufficientCoinsAlert = true
+                            }
+                        }) {
+                            HStack(spacing: 8) {
+                                Text("Buy")
+                                    .foregroundColor(.gray)
+                                Text("•")
+                                    .foregroundColor(.gray)
+                                HStack(spacing: 4) {
+                                    Text("100")
+                                        .fontWeight(.semibold)
+                                    Image("coin")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 16, height: 16)
                                 }
                             }
                             .font(.system(size: 16))
@@ -118,28 +175,20 @@ struct ShopView: View {
                                     fill: .angularGradient(
                                         colors: [.blue, .purple, .red, .orange, .yellow, .blue],
                                         center: .center,
-                                        startAngle: .degrees(glowRotationAngle),
-                                        endAngle: .degrees(glowRotationAngle + 360)
+                                        startAngle: .degrees(0),
+                                        endAngle: .degrees(360)
                                     ),
                                     lineWidth: 2.0,
                                     blurRadius: 4.0
-                                )
-                                .opacity(0.4)
+                                    )
+                                    .opacity(0.4)
                             
                             RoundedRectangle(cornerRadius: 25)
                                 .fill(Color.white)
                         }
                     )
                 }
-                .padding(.bottom, 30)
-            }
-        }
-        .onAppear {
-            withAnimation(
-                .linear(duration: 10)
-                .repeatForever(autoreverses: false)
-            ) {
-                glowRotationAngle = 360
+                .padding(.bottom, 40)
             }
         }
         .alert("Insufficient Coins", isPresented: $showingInsufficientCoinsAlert) {
