@@ -82,8 +82,8 @@ struct CardView: View {
             ZStack(alignment: .topTrailing) {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(haloColor(for: card.rarity))
-                    .blur(radius: 5)
-                    .frame(maxWidth: 100, maxHeight: 140)
+                    .blur(radius: 10)
+                    .frame(maxWidth: 105, maxHeight: 145)
                     .opacity(0.7)
                 
                 Image(card.name)
@@ -110,7 +110,7 @@ struct CardView: View {
         }
         .padding(10)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 6)
                 .fill(Color.white)
                 .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 3)
         )

@@ -7,53 +7,97 @@ struct ShopView: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var showingInsufficientCoinsAlert = false
     @State private var showingPurchaseAlert = false
+    @State private var isAnimating = false
     
     var body: some View {
         ZStack {
-            // Background
-            LinearGradient(
-                gradient: Gradient(colors: [.white, Color(.systemGray5)]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            Color.black
+                .overlay(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(red: 0.1, green: 0.15, blue: 0.2),
+                            Color(red: 0.05, green: 0.05, blue: 0.1)
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .ignoresSafeArea()
+            
+            GeometryReader { geometry in
+                ForEach(0...Int(geometry.size.height/40), id: \.self) { row in
+                    ForEach(0...Int(geometry.size.width/40), id: \.self) { col in
+                        let x = CGFloat(col) * 40
+                        let y = CGFloat(row) * 40
+                        
+                        Rectangle()
+                            .fill(Color.white.opacity(0.03))
+                            .frame(width: 15, height: 3)
+                            .position(x: x, y: y)
+                        
+                        Rectangle()
+                            .fill(Color.white.opacity(0.03))
+                            .frame(width: 15, height: 3)
+                            .position(x: x, y: y + 5)
+                    }
+                }
+            }
+            .rotationEffect(.degrees(45))
             
             VStack(spacing: 20) {
-                // Header
                 HStack {
                     Text("Shop")
                         .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.gray)
+                        .foregroundColor(.white)
                     Spacer()
                     HStack(spacing: 4) {
                         Text("\(collectionManager.coins)")
                             .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.gray)
+                            .foregroundColor(.white)
                         Text("🪙")
                             .font(.system(size: 20))
                     }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(Color.white.opacity(0.2))
+                    )
                 }
                 .padding()
-                
+
                 Spacer()
-                
-                // Single Booster Card with reduced size
+
                 ZStack {
-                    // Card Background
                     RoundedRectangle(cornerRadius: 25)
-                        .fill(Color.white)
-                        .frame(width: 280, height: 300) // Reduced size
-                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [
+                                    Color.blue.opacity(0.7),
+                                    Color.purple.opacity(0.7),
+                                    Color.blue.opacity(0.7)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            lineWidth: 3
+                        )
+                        .frame(width: 290, height: 310)
+                        .rotationEffect(.degrees(isAnimating ? 360 : 0))
+                        .animation(Animation.linear(duration: 3).repeatForever(autoreverses: false), value: isAnimating)
                     
-                    VStack(spacing: 15) { // Reduced spacing
-                        // Booster Image
+                    RoundedRectangle(cornerRadius: 25)
+                        .fill(Color.white.opacity(0.9))
+                        .frame(width: 280, height: 300)
+                        .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
+                    
+                    VStack(spacing: 15) {
                         Image("booster_closed_1")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(height: 200) // Reduced height
+                            .frame(height: 200)
                             .shadow(radius: 5)
                         
-                        // Buy Button
                         Button(action: {
                             if collectionManager.coins >= 100 {
                                 showingPurchaseAlert = true
@@ -87,25 +131,32 @@ struct ShopView: View {
                     }
                     .padding()
                 }
-                
+
                 Spacer()
-                
-                // Home Button
+
                 Button(action: {
-                    presentationMode.wrappedValue.dismiss()
+                    dismiss()
                 }) {
-                    Image(systemName: "house.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(.gray)
-                        .frame(width: 50, height: 50)
-                        .background(
-                            Circle()
-                                .fill(Color.white)
-                                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                        )
+                    HStack {
+                        Image(systemName: "house.fill")
+                            .font(.system(size: 16))
+                        Text("Home")
+                            .font(.headline)
+                    }
+                    .foregroundColor(.gray)
+                    .frame(width: 120)
+                    .frame(height: 50)
+                    .background(
+                        RoundedRectangle(cornerRadius: 25)
+                            .fill(Color.white)
+                            .shadow(color: .gray.opacity(0.2), radius: 4)
+                    )
                 }
-                .padding(.bottom, 30)
+                .padding(.bottom, 0)
             }
+        }
+        .onAppear {
+            isAnimating = true
         }
         .alert("Insufficient Coins", isPresented: $showingInsufficientCoinsAlert) {
             Button("OK", role: .cancel) { }
