@@ -16,15 +16,17 @@ struct CollectionView: View {
                 .ignoresSafeArea()
 
                 VStack(spacing: 16) {
-                    // Simplified header with just collection count
                     HStack {
                         Spacer()
                         Text("\(collectionManager.cards.count)/108")
-                            .font(.system(size: 16, weight: .medium, design: .default))
+                            .font(.system(size: 16, weight: .medium))
+                        Text("•")
                             .foregroundColor(.gray)
-                            .padding(.top, 20)
+                        Text("\(collectionManager.coins) 🪙")
+                            .font(.system(size: 16, weight: .medium))
                             .padding(.trailing, 16)
                     }
+                    .padding(.top, 20)
 
                     if collectionManager.cards.isEmpty {
                         EmptyCollectionView()
@@ -33,9 +35,8 @@ struct CollectionView: View {
                     }
                 }
 
-                // Overlay for selected card (keeping dark background)
                 if let selectedCard = selectedCard {
-                    ZoomedCardView(selectedCard: $selectedCard)
+                    ZoomedCardView(selectedCard: $selectedCard, collectionManager: collectionManager)
                 }
             }
         }
@@ -295,6 +296,8 @@ struct CollectionProgressBar: View {
 
 struct ZoomedCardView: View {
     @Binding var selectedCard: BoosterCard?
+    @ObservedObject var collectionManager: CollectionManager
+    @State private var showingSellAlert = false
     
     private func haloColor(for rarity: CardRarity) -> Color {
         switch rarity {
@@ -342,6 +345,33 @@ struct ZoomedCardView: View {
                 Text(selectedCard?.name ?? "")
                     .font(.system(size: 22, weight: .semibold, design: .rounded))
                     .foregroundColor(.white)
+                
+                if let card = selectedCard {
+                    Button(action: {
+                        showingSellAlert = true
+                    }) {
+                        HStack {
+                            Image(systemName: "dollarsign.circle.fill")
+                            Text("Sell for \(collectionManager.coinValue(for: card.rarity)) coins")
+                        }
+                        .padding()
+                        .background(Color.blue.opacity(0.8))
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                    }
+                    .alert(isPresented: $showingSellAlert) {
+                        Alert(
+                            title: Text("Sell Card"),
+                            message: Text("Do you want to sell this card for \(collectionManager.coinValue(for: card.rarity)) coins?"),
+                            primaryButton: .destructive(Text("Sell")) {
+                                if collectionManager.sellCard(card) {
+                                    selectedCard = nil
+                                }
+                            },
+                            secondaryButton: .cancel()
+                        )
+                    }
+                }
             }
         }
         .transition(.opacity)

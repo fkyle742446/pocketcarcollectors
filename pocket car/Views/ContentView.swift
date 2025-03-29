@@ -30,7 +30,6 @@ extension View where Self: Shape {
     }
 }
 
-// Ajouter au début du fichier après les imports
 class HapticManager {
     static let shared = HapticManager()
     
@@ -49,10 +48,9 @@ struct ContentView: View {
     @StateObject var collectionManager = CollectionManager()
     @State private var floatingOffset: CGFloat = 0
     @State private var shadowRadius: CGFloat = 15
-    @State private var boosterAvailableIn: TimeInterval = 6 * 3600 // 6 hours in seconds
+    @State private var boosterAvailableIn: TimeInterval = 6 * 3600
     @State private var timer: Timer? = nil
-    @State private var giftAvailableIn: TimeInterval = 1 * 6 // 10 seconds for testing
-    
+    @State private var giftAvailableIn: TimeInterval = 1 * 6
     @State private var audioPlayer: AVAudioPlayer?
     @State private var isFadingOut: Bool = false
     @State private var glareOffset: CGFloat = -200
@@ -60,6 +58,7 @@ struct ContentView: View {
     @State private var booster2GlareOffset: CGFloat = -200
     @State private var rotationAngle: Double = 0
     @State private var isCollectionPressed: Bool = false
+    @State private var glowRotationAngle: Double = 0
     
     @AppStorage("isFirstLaunch") private var isFirstLaunch = true
     @AppStorage("remainingFirstBoosters") private var remainingFirstBoosters = 4
@@ -81,20 +80,17 @@ struct ContentView: View {
     }
     
     private var mainSpacing: CGFloat {
-        viewSize == .compact ? -25 : 20
+        viewSize == .compact ? -35 : 20
     }
     
     private var horizontalPadding: CGFloat {
         viewSize == .compact ? 12 : 32
     }
     
-    @State private var glowRotationAngle: Double = 0
-    
     var body: some View {
         NavigationView {
             GeometryReader { geometry in
                 ZStack {
-                    // Background gradient
                     LinearGradient(
                         gradient: Gradient(colors: [.white, Color(.systemGray5)]),
                         startPoint: .top,
@@ -102,139 +98,94 @@ struct ContentView: View {
                     )
                     .ignoresSafeArea()
 
-                    VStack {
-                        Spacer()
-                    }
-
                     VStack(spacing: viewSize == .compact ? 1 : 5) {
-                        // Top logo section - Adjust size for iPad
-                        VStack(spacing: -50) {
-                            // Logo with glare effect
-                            ZStack {
-                                Image("logo")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(height: logoHeight)
-                                
-                                // Glare effect
-                                Rectangle()
-                                    .fill(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                .clear,
-                                                .white.opacity(0.5),
-                                                .clear
-                                            ]),
-                                            startPoint: .leading,
-                                            endPoint: .trailing
+                        // Top logo section superimposed with 3D model
+                        ZStack {
+                            // 3D Model View behind
+                            VStack(spacing: -65) {
+                                // 3D Model section
+                                ZStack {
+                                    // Base rectangle with depth effect
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .fill(Color("mint").opacity(0.1))
+                                        .frame(height: viewSize == .compact ? 200 : 250)
+                                        .overlay(
+                                            
+                                            RoundedRectangle(cornerRadius: 25)
+                                                .stroke(Color("mint").opacity(0.3), lineWidth: 1)
                                         )
-                                    )
-                                    .frame(width: 50)
-                                    .offset(x: glareOffset)
-                                    .blur(radius: 5)
-                            }
-                            .mask(
-                                Image("logo")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(height: logoHeight)
-                            )
-                            .onAppear {
-                                withAnimation(Animation.linear(duration: 15.0).repeatForever(autoreverses: false)) {
-                                    glareOffset = 200
-                                }
-                                
-                                // Request notification permission when view appears
-                                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { success, error in
-                                    if let error = error {
-                                        print(error.localizedDescription)
-                                    }
-                                }
-                            }
-                            
-                            // 3D Model View with Legendary Halo
-                            ZStack {
-                                // Base rectangle with depth effect
-                                RoundedRectangle(cornerRadius: 25)
-                                    .fill(Color("mint").opacity(0.1))
-                                    .frame(height: viewSize == .compact ? 200 : 250)
-                                    .overlay(
-                                        
-                                        RoundedRectangle(cornerRadius: 25)
-                                            .stroke(Color("mint").opacity(0.3), lineWidth: 1)
-                                    )
-                                    .shadow(color: Color("mint").opacity(0.1), radius: 10, x: 0, y: 5)
-                                
-                                // Surface rectangle
-                                RoundedRectangle(cornerRadius: 25)
-                                    .fill(Color.white.opacity(1))
-                                    .frame(height: 170)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 25)
-                                            .stroke(Color.white, lineWidth: 1)
-                                        
-                                    )
-                                    .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
-                                
-                                    .offset(y: 30) // Added offset to move down
-
-                                
-                                // 3D Model positioned above halo
-                                VStack(spacing: -80) {
-                                    // 3D Model
-                                    SpriteView(scene: { () -> SKScene in
-                                        let scene = SKScene()
-                                        scene.backgroundColor = UIColor.clear
-                                        
-                                        let model = SK3DNode(viewportSize: .init(width: 12, height: 12))
-                                        model.scnScene = {
-                                            let scnScene = SCNScene(named: "car.obj")!
-                                            scnScene.background.contents = UIColor.clear
-                                            
-                                            let node = scnScene.rootNode.childNodes.first!
-                                            
-                                            // Add rotation animation
-                                            let rotation = CABasicAnimation(keyPath: "rotation")
-                                            rotation.fromValue = NSValue(scnVector4: SCNVector4(0, 1, 0, 0))
-                                            rotation.toValue = NSValue(scnVector4: SCNVector4(0, 1, 0, Float.pi * 2))
-                                            rotation.duration = 15
-                                            rotation.repeatCount = .infinity
-                                            node.addAnimation(rotation, forKey: "rotate")
-                                            
-                                            
-                                            // Ajouter les textures au matériau
-                                                    let material = SCNMaterial()
-                                                    material.diffuse.contents = UIImage(named: "texture_diffuse.png") // Texture diffuse
-                                                    material.metalness.contents = UIImage(named: "texture_metallic.png") // Texture métallique
-                                                    material.normal.contents = UIImage(named: "texture_normal.png") // Carte de normales
-                                                    material.roughness.contents = UIImage(named: "texture_roughness.png") // Rugosité
-                                            
-                                            // Ajouter une émission pour rendre l'objet plus lumineux
-                                            material.emission.contents = UIColor.white // Couleur émise
-                                            material.emission.intensity = 0.2 // Intensité de la lumière émise
-                                            
-                                            // Augmenter la réflexion spéculaire
-                                            material.specular.contents = UIColor.white
-                                            material.shininess = 0.7 // Contrôle la brillance
+                                        .shadow(color: Color("mint").opacity(0.1), radius: 10, x: 0, y: 5)
                                     
-                                            
-                                            
-                                            // Ajouter la texture shaded comme diffuse alternative (si besoin)
-                                                        let shadedMaterial = SCNMaterial()
-                                                        shadedMaterial.diffuse.contents = UIImage(named: "shaded.png") // Shaded texture
-                                            
-                                            // Appliquer le matériau à la géométrie
-                                                   node.geometry?.materials = [material]
+                                    // Surface rectangle
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .fill(Color.white.opacity(1))
+                                        .frame(height: 170)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 25)
+                                                .stroke(Color.white, lineWidth: 1)
+                                        
+                                        )
+                                        .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
+                                    
+                                        .offset(y: 30) // Added offset to move down
 
+                                    
+                                    // 3D Model positioned above halo
+                                    VStack(spacing: -80) {
+                                        // 3D Model
+                                        SpriteView(scene: { () -> SKScene in
+                                            let scene = SKScene()
+                                            scene.backgroundColor = UIColor.clear
                                             
-                                            // Add camera to the scene
-                                            let cameraNode = SCNNode()
-                                            cameraNode.camera = SCNCamera()
-                                            cameraNode.position = SCNVector3(x: -1.6, y: 0, z: 14)
-                                            scnScene.rootNode.addChildNode(cameraNode)
-                                            
-                                            return scnScene
-                                        }()
+                                            let model = SK3DNode(viewportSize: .init(width: 12, height: 12))
+                                            model.scnScene = {
+                                                let scnScene = SCNScene(named: "car.obj")!
+                                                scnScene.background.contents = UIColor.clear
+                                                
+                                                let node = scnScene.rootNode.childNodes.first!
+                                                
+                                                // Add rotation animation
+                                                let rotation = CABasicAnimation(keyPath: "rotation")
+                                                rotation.fromValue = NSValue(scnVector4: SCNVector4(0, 1, 0, 0))
+                                                rotation.toValue = NSValue(scnVector4: SCNVector4(0, 1, 0, Float.pi * 2))
+                                                rotation.duration = 15
+                                                rotation.repeatCount = .infinity
+                                                node.addAnimation(rotation, forKey: "rotate")
+                                                
+                                                
+                                                // Ajouter les textures au matériau
+                                                        let material = SCNMaterial()
+                                                        material.diffuse.contents = UIImage(named: "texture_diffuse.png") // Texture diffuse
+                                                        material.metalness.contents = UIImage(named: "texture_metallic.png") // Texture métallique
+                                                        material.normal.contents = UIImage(named: "texture_normal.png") // Carte de normales
+                                                        material.roughness.contents = UIImage(named: "texture_roughness.png") // Rugosité
+                                                
+                                                // Ajouter une émission pour rendre l'objet plus lumineux
+                                                material.emission.contents = UIColor.white // Couleur émise
+                                                material.emission.intensity = 0.2 // Intensité de la lumière émise
+                                                
+                                                // Augmenter la réflexion spéculaire
+                                                material.specular.contents = UIColor.white
+                                                material.shininess = 0.7 // Contrôle la brillance
+                                                
+                                                
+                                                
+                                                // Ajouter la texture shaded comme diffuse alternative (si besoin)
+                                                            let shadedMaterial = SCNMaterial()
+                                                            shadedMaterial.diffuse.contents = UIImage(named: "shaded.png") // Shaded texture
+                                                
+                                                // Appliquer le matériau à la géométrie
+                                                       node.geometry?.materials = [material]
+
+                                                
+                                                // Add camera to the scene
+                                                let cameraNode = SCNNode()
+                                                cameraNode.camera = SCNCamera()
+                                                cameraNode.position = SCNVector3(x: -1.6, y: 0, z: 14)
+                                                scnScene.rootNode.addChildNode(cameraNode)
+                                                
+                                                return scnScene
+                                            }()
                                         
                                         scene.addChild(model)
                                         return scene
@@ -312,14 +263,47 @@ struct ContentView: View {
                                 }
                                 .padding(0)
                             }
-                            .padding(.horizontal)
+                            .padding(.top, 140) // Push down the 3D model
+                            
+                            // Logo with glare effect on top
+                            VStack {
+                                ZStack {
+                                    Image("logo")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(height: logoHeight)
+                                    
+                                    // Glare effect
+                                    Rectangle()
+                                        .fill(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [
+                                                    .clear,
+                                                    .white.opacity(0.5),
+                                                    .clear
+                                                ]),
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .frame(width: 50)
+                                        .offset(x: glareOffset)
+                                        .blur(radius: 5)
+                                }
+                                .mask(
+                                    Image("logo")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(height: logoHeight)
+                                )
+                            }
+                            .padding(.top, 20) // Adjust logo position
                         }
-                        .padding(.top, viewSize == .compact ? 10 : 20)
                         
                         Spacer()
 
                         VStack(spacing: viewSize == .compact ? 15 : 25) {
-                            // Boosters section - Adjust for iPad
+                            // Boosters section
                             ZStack {
                                 // Base rectangle with depth effect
                                 RoundedRectangle(cornerRadius: 25)
@@ -471,17 +455,8 @@ struct ContentView: View {
                                     .background(
                                         ZStack {
                                             Capsule()
-                                                .glow(
-                                                    fill: .angularGradient(
-                                                        colors: [.blue, .purple, .red, .orange, .yellow, .blue],
-                                                        center: .center,
-                                                        startAngle: .degrees(glowRotationAngle),
-                                                        endAngle: .degrees(glowRotationAngle + 360)
-                                                    ),
-                                                    lineWidth: 2.0,
-                                                    blurRadius: 4.0
-                                                )
-                                                .opacity(0.4)
+                                                .fill(Color.white)
+                                                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                                             
                                             Capsule()
                                                 .fill(Color.white)
@@ -493,49 +468,27 @@ struct ContentView: View {
                             .padding(.horizontal, horizontalPadding)
                             .padding(.vertical, viewSize == .compact ? 15 : 25)
 
-                            // Collection and Shop buttons
-                            NavigationLink(destination: CollectionView(collectionManager: collectionManager)) {
-                                ZStack {
-                                    // Animated Glowing border
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .glow(
-                                            fill: .angularGradient(
-                                                colors: [.blue, .purple, .red, .orange, .yellow, .blue],
-                                                center: .center,
-                                                startAngle: .degrees(glowRotationAngle),
-                                                endAngle: .degrees(glowRotationAngle + 360)
-                                            ),
-                                            lineWidth: 3.0,
-                                            blurRadius: 6.0
-                                        )
-                                        .opacity(0.7)
-                                    
-                                    // Button content
-                                    VStack {
-                                        Image(systemName: "rectangle.stack.fill")
-                                            .font(.system(size: viewSize == .compact ? 30 : 40))
-                                        Text("Collection")
-                                            .font(.system(size: viewSize == .compact ? 14 : 18, weight: .medium))
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: viewSize == .compact ? 60 : 100)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .fill(Color.white.opacity(1))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 20)
-                                                    .stroke(Color.white, lineWidth: 1)
-                                            )
-                                            .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
-                                    )
+                            // Collection and Shop buttons with gray icons
+                            HStack(spacing: 15) {
+                                // Collection Button
+                                NavigationLink(destination: CollectionView(collectionManager: collectionManager)) {
+                                    buttonView(icon: "rectangle.stack.fill", text: "Collection", colors: [.blue, .purple, .red, .orange, .yellow, .blue], iconColor: .gray)
                                 }
+                                .simultaneousGesture(TapGesture().onEnded {
+                                    HapticManager.shared.impact(style: .medium)
+                                })
+                                
+                                // Shop Button
+                                NavigationLink(destination: ShopView(collectionManager: collectionManager, storeManager: StoreManager.shared)) {
+                                    buttonView(icon: "cart.fill", text: "\(collectionManager.coins) 🪙", colors: [.yellow, .orange, .red, .orange, .yellow, .yellow], iconColor: .gray)
+                                }
+                                .simultaneousGesture(TapGesture().onEnded {
+                                    HapticManager.shared.impact(style: .medium)
+                                })
                             }
-                            .simultaneousGesture(TapGesture().onEnded {
-                                HapticManager.shared.impact(style: .medium)
-                            })
-                            .foregroundColor(.gray)
                             .padding(.horizontal, horizontalPadding)
-                            
+                            .padding(.vertical, viewSize == .compact ? 15 : 25)
+
                             // Bottom progress bar
                             NavigationLink(destination: CollectionProgressView(collectionManager: collectionManager)) {
                                 VStack(alignment: .leading, spacing: 4) {
@@ -564,17 +517,8 @@ struct ContentView: View {
                                 .background(
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 20)
-                                            .glow(
-                                                fill: .angularGradient(
-                                                    colors: [.blue, .purple, .red, .orange, .yellow, .blue],
-                                                    center: .center,
-                                                    startAngle: .degrees(glowRotationAngle),
-                                                    endAngle: .degrees(glowRotationAngle + 360)
-                                                ),
-                                                lineWidth: 2.0,
-                                                blurRadius: 4.0
-                                            )
-                                            .opacity(0.4)
+                                            .fill(Color.white)
+                                            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                                         
                                         RoundedRectangle(cornerRadius: 20)
                                             .fill(Color.white)
@@ -585,21 +529,60 @@ struct ContentView: View {
                                 HapticManager.shared.impact(style: .medium)
                             })
                             .padding(.horizontal, horizontalPadding)
-                            .padding(.bottom, 20)
+                            .padding(.bottom, 15)
                         }
                     }
-                    .padding(.horizontal, viewSize == .compact ? 0 : geometry.size.width * 0.1)
                 }
-                // ... reste du code ...
             }
         }
-        // Improved iPad navigation style
         .navigationViewStyle(StackNavigationViewStyle())
+        .onAppear {
+            startTimer()
+            playMusic()
+        }
+        .onDisappear {
+            stopMusic()
+        }
     }
     
-    // Timer functionality
+    private func buttonView(icon: String, text: String, colors: [Color], iconColor: Color) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 20)
+                .glow(
+                    fill: .angularGradient(
+                        colors: colors,
+                        center: .center,
+                        startAngle: .degrees(glowRotationAngle),
+                        endAngle: .degrees(glowRotationAngle + 360)
+                    ),
+                    lineWidth: 3.0,
+                    blurRadius: 6.0
+                )
+                .opacity(0.7)
+            
+            VStack {
+                Image(systemName: icon)
+                    .font(.system(size: viewSize == .compact ? 30 : 40))
+                    .foregroundColor(iconColor) // Use the specified icon color
+                Text(text)
+                    .font(.system(size: viewSize == .compact ? 14 : 18, weight: .medium))
+                    .foregroundColor(iconColor) // Use the specified icon color
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: viewSize == .compact ? 60 : 100)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white.opacity(1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.white, lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
+            )
+        }
+    }
+    
     private func startTimer() {
-        // Calculer le temps restant en fonction du timestamp sauvegardé
         let now = Date().timeIntervalSince1970
         if now < nextBoosterAvailableTime {
             boosterAvailableIn = nextBoosterAvailableTime - now
@@ -611,18 +594,6 @@ struct ContentView: View {
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             if boosterAvailableIn > 0 {
                 boosterAvailableIn -= 1
-                if boosterAvailableIn == 0 {
-                    // Notification quand le timer attement 0
-                    let content = UNMutableNotificationContent()
-                    content.title = "Booster Available!"
-                    content.body = "You can now open a booster"
-                    content.sound = .default
-                    
-                    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-                    let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-                    
-                    UNUserNotificationCenter.current().add(request)
-                }
             }
             if giftAvailableIn > 0 {
                 giftAvailableIn -= 1
@@ -630,25 +601,6 @@ struct ContentView: View {
         }
     }
     
-    private func startGiftTimer() {
-        giftAvailableIn = 10 // Reset gift timer to 10 seconds
-    }
-    
-    private func timeRemainingString() -> String {
-        let hours = Int(boosterAvailableIn) / 3600
-        let minutes = (Int(boosterAvailableIn) % 3600) / 60
-        let seconds = Int(boosterAvailableIn) % 60
-        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
-    }
-    
-    private func giftTimeRemainingString() -> String {
-        let hours = Int(giftAvailableIn) / 3600
-        let minutes = (Int(giftAvailableIn) % 3600) / 60
-        let seconds = Int(giftAvailableIn) % 60
-        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
-    }
-    
-    // Add these functions inside ContentView struct
     private func playMusic() {
         guard let path = Bundle.main.path(forResource: "Background", ofType: "mp3") else {
             print("Could not find Background.mp3")
@@ -657,11 +609,10 @@ struct ContentView: View {
         let url = URL(fileURLWithPath: path)
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.numberOfLoops = -1  // Loop indefinitely
+            audioPlayer?.numberOfLoops = -1
             audioPlayer?.volume = 0.5
             audioPlayer?.play()
             
-            // Fade in
             audioPlayer?.volume = 0
             Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
                 if let player = audioPlayer, player.volume < 0.5 {
@@ -674,9 +625,8 @@ struct ContentView: View {
             print("Error playing music: \(error.localizedDescription)")
         }
     }
-
+    
     private func stopMusic() {
-        // Fade out the music
         isFadingOut = true
         Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
             if let player = audioPlayer, player.volume > 0 {
@@ -690,6 +640,8 @@ struct ContentView: View {
     }
 }
 
-#Preview {
-    ContentView()
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+    }
 }
