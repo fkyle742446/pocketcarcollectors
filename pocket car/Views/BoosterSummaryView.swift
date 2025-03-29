@@ -1,11 +1,11 @@
 import SwiftUI
 
 struct BoosterSummaryView: View {
-    let cards: [BoosterCard]
-    let onDismiss: () -> Void
-    @Environment(\.presentationMode) var presentationMode
+    let drawnCards: [BoosterCard]
+    @Environment(\.dismiss) var dismiss
     @State private var selectedCard: BoosterCard? = nil
     @State private var glowRotationAngle: Double = 0
+    @State private var preloadedContentView: ContentView? = nil
     
     var body: some View {
         VStack {
@@ -28,7 +28,7 @@ struct BoosterSummaryView: View {
             
             VStack(spacing: -150) {
                 HStack(spacing: -120) {
-                    ForEach(cards.prefix(3), id: \.number) { card in
+                    ForEach(drawnCards.prefix(3), id: \.number) { card in
                         CardSummaryView(card: card)
                             .onTapGesture {
                                 selectedCard = card
@@ -38,7 +38,7 @@ struct BoosterSummaryView: View {
                 .padding(.horizontal)
                 
                 HStack(spacing: -120) {
-                    ForEach(cards.suffix(2), id: \.number) { card in
+                    ForEach(drawnCards.suffix(2), id: \.number) { card in
                         CardSummaryView(card: card)
                             .onTapGesture {
                                 selectedCard = card
@@ -51,7 +51,13 @@ struct BoosterSummaryView: View {
             Spacer()
             
             Button(action: {
-                presentationMode.wrappedValue.dismiss()
+                // Utiliser la vue préchargée si disponible
+                if preloadedContentView != nil {
+                    dismiss()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        dismiss()
+                    }
+                }
             }) {
                 HStack {
                     Image(systemName: "house.fill")
@@ -108,6 +114,14 @@ struct BoosterSummaryView: View {
             }
         )
         .onAppear {
+            // Précharger ContentView dès que BoosterSummaryView apparaît
+            DispatchQueue.global(qos: .userInitiated).async {
+                let contentView = ContentView()
+                DispatchQueue.main.async {
+                    self.preloadedContentView = contentView
+                }
+            }
+            
             withAnimation(
                 .linear(duration: 10)
                 .repeatForever(autoreverses: false)
@@ -188,14 +202,13 @@ struct PocketCardView: View {
 struct BoosterSummaryView_Previews: PreviewProvider {
     static var previews: some View {
         BoosterSummaryView(
-            cards: [
+            drawnCards: [
                 BoosterCard(name: "Bugatti EB110", rarity: .rare, number: 90),
                 BoosterCard(name: "Hyundai Kona Electric", rarity: .common, number: 56),
                 BoosterCard(name: "BMW i3", rarity: .common, number: 59),
                 BoosterCard(name: "Mercedes Classe A", rarity: .common, number: 19),
                 BoosterCard(name: "Volkswagen ID.3", rarity: .common, number: 55)
-            ],
-            onDismiss: {}
+            ]
         )
     }
 }

@@ -8,6 +8,7 @@ struct SplashScreenView: View {
     @State private var rotation = 0.0
     @State private var progress = 0.0
     @State private var currentTextIndex = 0
+    @State private var contentView: ContentView? = nil
     
     let loadingTexts = [
         "Checking the turbos...",
@@ -22,7 +23,11 @@ struct SplashScreenView: View {
     var body: some View {
         ZStack {
             if isActive && preloadManager.isLoaded {
-                ContentView()
+                if let loadedContentView = contentView {
+                    loadedContentView
+                } else {
+                    ContentView()
+                }
             } else {
                 VStack {
                     Image("logo")
@@ -32,7 +37,6 @@ struct SplashScreenView: View {
                         .scaleEffect(size)
                         .opacity(opacity)
                     
-                    // Progress circle
                     ZStack {
                         Circle()
                             .stroke(lineWidth: 3)
@@ -65,19 +69,16 @@ struct SplashScreenView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.white)
                 .onAppear {
-                    // Initial animation
                     withAnimation(.easeIn(duration: 1.2)) {
                         self.size = 0.9
                         self.opacity = 1.0
                     }
                     
-                    // Progress and rotation animation
                     withAnimation(.linear(duration: 6).repeatCount(1, autoreverses: false)) {
                         self.progress = 1.0
                         self.rotation = 360
                     }
                     
-                    // Text animation
                     let textInterval = 6.0 / Double(loadingTexts.count)
                     for index in 0..<loadingTexts.count {
                         DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * textInterval) {
@@ -87,12 +88,15 @@ struct SplashScreenView: View {
                         }
                     }
                     
-                    // Start preloading resources
-                    preloadManager.preloadResources {
-                        // Only transition when both timer is done and resources are loaded
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
-                            withAnimation(.easeOut(duration: 0.3)) {
-                                self.isActive = true
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        let preloadedContentView = ContentView()
+                        
+                        preloadManager.preloadResources {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
+                                self.contentView = preloadedContentView
+                                withAnimation(.easeOut(duration: 0.3)) {
+                                    self.isActive = true
+                                }
                             }
                         }
                     }

@@ -225,7 +225,8 @@ struct NewCardBadge: View {
 
 struct BoosterOpeningView: View {
     @ObservedObject var collectionManager: CollectionManager
-    @Environment(\.presentationMode) var presentationMode
+    @ObservedObject var storeManager = StoreManager.shared
+    @Environment(\.dismiss) var dismiss
     let boosterImage: String
     
     // State properties
@@ -246,6 +247,7 @@ struct BoosterOpeningView: View {
     @State private var isNewCard: Bool = false
     @State private var showNewBadge: Bool = false
     @State private var drawnCards: [BoosterCard] = []
+    @State private var showSummary = false
     
     private let allCards: [BoosterCard] = [
         // Common (70%) - Cards 1-70
@@ -373,6 +375,7 @@ struct BoosterOpeningView: View {
     
     init(collectionManager: CollectionManager, boosterNumber: Int) {
         self._collectionManager = ObservedObject(wrappedValue: collectionManager)
+        self._storeManager = ObservedObject(wrappedValue: StoreManager.shared)
         self.boosterImage = "booster_closed_\(boosterNumber)"
     }
     
@@ -381,37 +384,56 @@ struct BoosterOpeningView: View {
             Color.black.opacity(0.9)
                 .ignoresSafeArea()
             
-            VStack {
-                if isOpening {
-                    Image(boosterImage)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 300, height: 400)
-                        .scaleEffect(boosterScale)
-                        .opacity(boosterOpacity)
-                        .rotation3DEffect(
-                            .degrees(rotationAngle),
-                            axis: (x: -1.0, y: 1.0, z: 0.0)
-                        )
-                        .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.5)) {
-                                boosterScale = 1.2
-                                boosterOpacity = 0
+            if showSummary {
+                BoosterSummaryView(drawnCards: drawnCards)
+            } else if storeManager.boosters > 0 || !isOpening {
+                VStack {
+                    if isOpening {
+                        Image(boosterImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 300, height: 400)
+                            .scaleEffect(boosterScale)
+                            .opacity(boosterOpacity)
+                            .rotation3DEffect(
+                                .degrees(rotationAngle),
+                                axis: (x: -1.0, y: 1.0, z: 0.0)
+                            )
+                            .onTapGesture {
+                                withAnimation(.easeInOut(duration: 0.5)) {
+                                    boosterScale = 1.2
+                                    boosterOpacity = 0
+                                }
+                                
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    isOpening = false
+                                    currentCard = randomCard()
+                                    storeManager.useBooster()
+                                }
                             }
-                            
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                isOpening = false
-                                currentCard = randomCard()
-                            }
-                        }
-                } else if currentCardIndex < 5 {
-                    if let selectedCard = currentCard {
+                    } else if let selectedCard = currentCard {
                         cardRevealView(for: selectedCard)
                     }
-                } else {
-                    BoosterSummaryView(cards: drawnCards) {
-                        presentationMode.wrappedValue.dismiss()
+                }
+            } else {
+                VStack {
+                    Text("Pas de booster disponible")
+                        .font(.title)
+                        .foregroundColor(.white)
+                    
+                    Button("Retour") {
+                        dismiss()
                     }
+                    .padding()
+                    .foregroundColor(.white)
+                }
+            }
+        }
+        .navigationBarBackButtonHidden(true)
+        .onAppear {
+            if storeManager.boosters == 0 && isOpening {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    dismiss()
                 }
             }
         }
@@ -511,6 +533,8 @@ struct BoosterOpeningView: View {
             if currentCardIndex < 5 {
                 currentCard = randomCard()
                 SoundManager.shared.playSound(for: currentCard!.rarity)
+            } else {
+                showSummary = true
             }
             isTransitioning = false
         }

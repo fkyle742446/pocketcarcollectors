@@ -1,38 +1,110 @@
 import Foundation
-import StoreKit
 
 class StoreManager: ObservableObject {
     static let shared = StoreManager()
     
-    @Published private(set) var availablePoints: Int = UserDefaults.standard.integer(forKey: "userPoints")
-    @Published private(set) var products: [Product] = []
-    @Published private(set) var purchaseInProgress = false
-    
-    private init() {}
-    
-    func purchasePoints(amount: Int) {
-        availablePoints += amount
-        UserDefaults.standard.set(availablePoints, forKey: "userPoints")
-    }
-    
-    func usePoints(amount: Int) -> Bool {
-        guard availablePoints >= amount else { return false }
-        availablePoints -= amount
-        UserDefaults.standard.set(availablePoints, forKey: "userPoints")
-        return true
-    }
-    
-    func loadProducts() async {
-        do {
-            let productIdentifiers = ["com.yourapp.points.100",
-                                    "com.yourapp.points.500",
-                                    "com.yourapp.points.1000"]
-            let products = try await Product.products(for: productIdentifiers)
-            DispatchQueue.main.async {
-                self.products = products
-            }
-        } catch {
-            print("Failed to load products:", error)
+    @Published var boosters: Int = 0 {
+        didSet {
+            UserDefaults.standard.set(boosters, forKey: "boosters")
         }
     }
-} 
+    
+    @Published var nextFreeBoosterDate: Date? {
+        didSet {
+            if let date = nextFreeBoosterDate {
+                UserDefaults.standard.set(date.timeIntervalSince1970, forKey: "nextBoosterTimestamp")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "nextBoosterTimestamp")
+            }
+        }
+    }
+    
+    private var lastKnownTimestamp: TimeInterval {
+        get {
+            UserDefaults.standard.double(forKey: "lastKnownTimestamp")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "lastKnownTimestamp")
+        }
+    }
+    
+    private init() {
+        if UserDefaults.standard.double(forKey: "lastKnownTimestamp") == 0 {
+            self.lastKnownTimestamp = Date().timeIntervalSince1970
+        }
+        
+        self.boosters = UserDefaults.standard.integer(forKey: "boosters")
+        
+        if !UserDefaults.standard.bool(forKey: "initialBoostersGiven") {
+            self.boosters = 4
+            UserDefaults.standard.set(true, forKey: "initialBoostersGiven")
+            UserDefaults.standard.set(self.boosters, forKey: "boosters")
+        }
+        
+        if let savedTimestamp = UserDefaults.standard.object(forKey: "nextBoosterTimestamp") as? TimeInterval {
+            let currentTime = Date().timeIntervalSince1970
+            
+            if currentTime < self.lastKnownTimestamp {
+                self.boosters = 0
+                self.nextFreeBoosterDate = Date().addingTimeInterval(6 * 3600)
+                self.lastKnownTimestamp = currentTime
+                return
+            }
+            
+            let savedDate = Date(timeIntervalSince1970: savedTimestamp)
+            self.nextFreeBoosterDate = savedDate
+            
+            if currentTime >= savedTimestamp {
+                let timeDifference = currentTime - self.lastKnownTimestamp
+                let expectedBoosters = Int(timeDifference / (6 * 3600))
+                
+                let maxAccumulatedBoosters = 1
+                self.boosters += min(expectedBoosters, maxAccumulatedBoosters)
+                
+                if self.boosters > 0 {
+                    self.nextFreeBoosterDate = nil
+                }
+            }
+        }
+        
+        self.lastKnownTimestamp = Date().timeIntervalSince1970
+    }
+    
+    func useBooster() {
+        if boosters > 0 {
+            boosters -= 1
+            let currentTime = Date().timeIntervalSince1970
+            let nextTimestamp = currentTime + (6 * 3600)
+            nextFreeBoosterDate = Date(timeIntervalSince1970: nextTimestamp)
+            lastKnownTimestamp = currentTime
+            print("Booster used. Remaining: \(boosters)")
+        }
+    }
+    
+    func checkForFreeBooster() {
+        guard let nextDate = nextFreeBoosterDate else { return }
+        let currentTime = Date().timeIntervalSince1970
+        let nextTimestamp = nextDate.timeIntervalSince1970
+        
+        if currentTime < lastKnownTimestamp {
+            boosters = 0
+            nextFreeBoosterDate = Date().addingTimeInterval(6 * 3600)
+            lastKnownTimestamp = currentTime
+            return
+        }
+        
+        if currentTime >= nextTimestamp {
+            let timeDifference = currentTime - lastKnownTimestamp
+            if timeDifference <= (6 * 3600) {
+                boosters += 1
+                nextFreeBoosterDate = nil
+                lastKnownTimestamp = currentTime
+                print("Free booster added. Now have: \(boosters)")
+            } else {
+                boosters = 0
+                nextFreeBoosterDate = Date().addingTimeInterval(6 * 3600)
+                lastKnownTimestamp = currentTime
+            }
+        }
+    }
+}

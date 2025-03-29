@@ -30,6 +30,16 @@ extension View where Self: Shape {
     }
 }
 
+// Ajouter au début du fichier après les imports
+class HapticManager {
+    static let shared = HapticManager()
+    
+    func impact(style: UIImpactFeedbackGenerator.FeedbackStyle) {
+        let generator = UIImpactFeedbackGenerator(style: style)
+        generator.impactOccurred()
+    }
+}
+
 enum ViewSize {
     case compact
     case regular
@@ -343,7 +353,6 @@ struct ContentView: View {
                                                     .scaledToFit()
                                                     .frame(height: boosterHeight)
                                                 
-                                                // Single, subtle reflection
                                                 Rectangle()
                                                     .fill(
                                                         LinearGradient(
@@ -371,7 +380,11 @@ struct ContentView: View {
                                             )
                                             .shadow(color: .gray.opacity(0.2), radius: 10)
                                         }
-                                        .disabled(!isFirstLaunch && boosterAvailableIn > 0)
+                                        .simultaneousGesture(TapGesture().onEnded {
+                                            HapticManager.shared.impact(style: .medium)
+                                        })
+                                        .disabled(StoreManager.shared.boosters == 0)
+                                        .opacity(StoreManager.shared.boosters == 0 ? 0.5 : 1)
                                         .onAppear {
                                             withAnimation(
                                                 Animation
@@ -390,7 +403,6 @@ struct ContentView: View {
                                                     .scaledToFit()
                                                     .frame(height: boosterHeight)
                                                 
-                                                // Single, subtle reflection
                                                 Rectangle()
                                                     .fill(
                                                         LinearGradient(
@@ -418,7 +430,11 @@ struct ContentView: View {
                                             )
                                             .shadow(color: .gray.opacity(0.2), radius: 10)
                                         }
-                                        .disabled(!isFirstLaunch && boosterAvailableIn > 0)
+                                        .simultaneousGesture(TapGesture().onEnded {
+                                            HapticManager.shared.impact(style: .medium)
+                                        })
+                                        .disabled(StoreManager.shared.boosters == 0)
+                                        .opacity(StoreManager.shared.boosters == 0 ? 0.5 : 1)
                                         .onAppear {
                                             withAnimation(
                                                 Animation
@@ -434,18 +450,14 @@ struct ContentView: View {
                                     
                                     // Timer display or instruction text
                                     HStack {
-                                        if isFirstLaunch && remainingFirstBoosters > 0 {
+                                        if StoreManager.shared.boosters > 0 {
                                             Image(systemName: "gift.fill")
                                                 .foregroundColor(.gray)
-                                            Text("\(remainingFirstBoosters) free boosters remaining")
+                                            Text("\(StoreManager.shared.boosters) free boosters remaining")
                                                 .font(.system(size: 14, weight: .medium))
                                                 .foregroundColor(.gray)
-                                        } else if boosterAvailableIn > 0 {
-                                            Image(systemName: "clock")
-                                                .foregroundColor(.gray)
-                                            Text(timeRemainingString())
-                                                .font(.system(size: 14, weight: .medium))
-                                                .foregroundColor(.gray)
+                                        } else if StoreManager.shared.nextFreeBoosterDate != nil {
+                                            BoosterTimerView(storeManager: StoreManager.shared)
                                         } else {
                                             Image(systemName: "hand.tap")
                                                 .foregroundColor(.gray)
@@ -518,6 +530,9 @@ struct ContentView: View {
                                     )
                                 }
                             }
+                            .simultaneousGesture(TapGesture().onEnded {
+                                HapticManager.shared.impact(style: .medium)
+                            })
                             .foregroundColor(.gray)
                             .padding(.horizontal, horizontalPadding)
                             
@@ -565,34 +580,17 @@ struct ContentView: View {
                                             .fill(Color.white)
                                     }
                                 )
-                                .padding(.horizontal, horizontalPadding)
-                                .padding(.bottom, 20)
                             }
-
+                            .simultaneousGesture(TapGesture().onEnded {
+                                HapticManager.shared.impact(style: .medium)
+                            })
+                            .padding(.horizontal, horizontalPadding)
+                            .padding(.bottom, 20)
                         }
                     }
                     .padding(.horizontal, viewSize == .compact ? 0 : geometry.size.width * 0.1)
                 }
-            }
-            .onAppear {
-                let now = Date().timeIntervalSince1970
-                if now < nextBoosterAvailableTime {
-                    boosterAvailableIn = nextBoosterAvailableTime - now
-                } else {
-                    boosterAvailableIn = 0
-                }
-                withAnimation(
-                    .linear(duration: 10)
-                    .repeatForever(autoreverses: false)
-                ) {
-                    glowRotationAngle = 360
-                }
-                startTimer()
-                startGiftTimer()
-                playMusic()
-            }
-            .onDisappear {
-                stopMusic()
+                // ... reste du code ...
             }
         }
         // Improved iPad navigation style
