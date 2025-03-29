@@ -16,8 +16,8 @@ struct SplashScreenView: View {
         "Polishing the bodywork...",
         "Adjusting suspension...",
         "Filling up the tank...",
-        "Testing the nitro...",
-        "Ready to race!"
+        "Starting the V12...",
+        "Ready to collect!"
     ]
     
     var body: some View {

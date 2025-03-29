@@ -46,7 +46,7 @@ struct CollectionProgressView: View {
                         title: "Holy T Cars",
                         subtitle: "Drop rate: 0.1%",
                         count: countCardsByRarity(.HolyT),
-                        total: 4,
+                        total: 3,
                         colors: [.yellow, .white]
                     )
                     
@@ -62,7 +62,7 @@ struct CollectionProgressView: View {
                         title: "Epic Cars",
                         subtitle: "Drop rate: 8%",
                         count: countCardsByRarity(.epic),
-                        total: 20,
+                        total: 10,
                         colors: [.purple, .pink]
                     )
                     
@@ -70,7 +70,7 @@ struct CollectionProgressView: View {
                         title: "Rare Cars",
                         subtitle: "Drop rate: 25%",
                         count: countCardsByRarity(.rare),
-                        total: 32,
+                        total: 20,
                         colors: [.blue, .cyan]
                     )
                     
@@ -78,7 +78,7 @@ struct CollectionProgressView: View {
                         title: "Common Cars",
                         subtitle: "Drop rate: 65.9%",
                         count: countCardsByRarity(.common),
-                        total: 44,
+                        total: 70,
                         colors: [.gray, .gray.opacity(0.6)]
                     )
                 }
