@@ -44,13 +44,24 @@ enum ViewSize {
     case regular
 }
 
+// CHANGE: Update ShakeEffect for faster animation
+struct ShakeEffect: GeometryEffect {
+    var animatableData: CGFloat
+    
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        let angle = sin(animatableData * 15) * 2 // Increased frequency, reduced amplitude
+        let translation = CGAffineTransform(translationX: cos(animatableData * 15) * 2, y: 0)
+        return ProjectionTransform(translation)
+    }
+}
+
 struct ContentView: View {
     @StateObject var collectionManager = CollectionManager()
     @State private var floatingOffset: CGFloat = 0
     @State private var shadowRadius: CGFloat = 15
     @State private var boosterAvailableIn: TimeInterval = 6 * 3600
     @State private var timer: Timer? = nil
-    @State private var giftAvailableIn: TimeInterval = 1 * 6
+    @State private var 0.10.1: TimeInterval = 1 * 6
     @State private var audioPlayer: AVAudioPlayer?
     @State private var isFadingOut: Bool = false
     @State private var glareOffset: CGFloat = -200
@@ -451,6 +462,8 @@ struct ContentView: View {
                                                 .resizable()
                                                 .scaledToFit()
                                                 .frame(width: 30, height: 30)
+                                                .modifier(ShakeEffect(animatableData: CGFloat(Date().timeIntervalSince1970)))
+                                                .animation(.linear(duration: 0.1).repeatForever(autoreverses: false), value: Date().timeIntervalSince1970)
                                             Text("\(StoreManager.shared.boosters) free booster remaining")
                                                 .font(.system(size: 14, weight: .medium))
                                                 .foregroundColor(.gray)
