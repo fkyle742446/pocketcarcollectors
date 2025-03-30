@@ -3,6 +3,7 @@ import AVFoundation
 import SceneKit
 import SpriteKit
 import UserNotifications
+import StoreKit
 
 // Add the glow extension
 extension View where Self: Shape {
@@ -44,14 +45,13 @@ enum ViewSize {
     case regular
 }
 
-// CHANGE: Update ShakeEffect for faster animation
 struct ShakeEffect: GeometryEffect {
     var animatableData: CGFloat
     
     func effectValue(size: CGSize) -> ProjectionTransform {
-        let angle = sin(animatableData * 15) * 2 // Increased frequency, reduced amplitude
-        let translation = CGAffineTransform(translationX: cos(animatableData * 15) * 2, y: 0)
-        return ProjectionTransform(translation)
+        let angle = sin(animatableData * 4) * 3 // Adjust frequency and amplitude
+        let rotation = CGAffineTransform(rotationAngle: angle * .pi / 180)
+        return ProjectionTransform(rotation)
     }
 }
 
@@ -61,7 +61,7 @@ struct ContentView: View {
     @State private var shadowRadius: CGFloat = 15
     @State private var boosterAvailableIn: TimeInterval = 6 * 3600
     @State private var timer: Timer? = nil
-    @State private var 0.10.1: TimeInterval = 1 * 6
+    @State private var giftAvailableIn: TimeInterval = 1 * 6
     @State private var audioPlayer: AVAudioPlayer?
     @State private var isFadingOut: Bool = false
     @State private var glareOffset: CGFloat = -200
@@ -70,6 +70,17 @@ struct ContentView: View {
     @State private var rotationAngle: Double = 0
     @State private var isCollectionPressed: Bool = false
     @State private var glowRotationAngle: Double = 0
+    @State private var shakeOffset: CGFloat = 0
+    @State private var shakeAngle: Double = 0
+    @State private var shakeTimer: Timer?
+    @State private var coinAngle: Double = 0
+    @State private var coinScale: CGFloat = 1.0
+    @State private var progressValue: Double = 0
+    @State private var booster1Rotation: Double = -5
+    @State private var booster2Rotation: Double = 5
+    @State private var showExclusiveCarInfo = false
+    @State private var showLockedBoosterInfo = false
+    @State private var showUpdateAlert = false
     
     @AppStorage("isFirstLaunch") private var isFirstLaunch = true
     @AppStorage("remainingFirstBoosters") private var remainingFirstBoosters = 4
@@ -98,6 +109,8 @@ struct ContentView: View {
         viewSize == .compact ? 12 : 32
     }
     
+    @StateObject private var reviewManager = ReviewManager.shared
+    
     var body: some View {
         NavigationView {
             GeometryReader { geometry in
@@ -116,49 +129,6 @@ struct ContentView: View {
                     VStack(spacing: viewSize == .compact ? 1 : 5) {
                         // Top logo section - Adjust size for iPad
                         VStack(spacing: -50) {
-                            // Logo with glare effect
-                            ZStack {
-                                Image("logo")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(height: logoHeight)
-                                
-                                // Glare effect
-                                Rectangle()
-                                    .fill(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                .clear,
-                                                .white.opacity(0.5),
-                                                .clear
-                                            ]),
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                                    .frame(width: 50)
-                                    .offset(x: glareOffset)
-                                    .blur(radius: 5)
-                            }
-                            .mask(
-                                Image("logo")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(height: logoHeight)
-                            )
-                            .onAppear {
-                                withAnimation(Animation.linear(duration: 15.0).repeatForever(autoreverses: false)) {
-                                    glareOffset = 200
-                                }
-                                
-                                // Request notification permission when view appears
-                                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { success, error in
-                                    if let error = error {
-                                        print(error.localizedDescription)
-                                    }
-                                }
-                            }
-                            
                             // 3D Model View with Legendary Halo
                             ZStack {
                                 // Base rectangle with depth effect
@@ -179,147 +149,125 @@ struct ContentView: View {
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 25)
                                             .stroke(Color.white, lineWidth: 1)
-                                        
                                     )
-                                    .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
-                                
-                                    .offset(y: 30) // Added offset to move down
+                                    .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 2)
+                                    .offset(y: 30)
 
-                                
-                                // 3D Model positioned above halo
-                                VStack(spacing: -80) {
-                                    // 3D Model
-                                    SpriteView(scene: { () -> SKScene in
-                                        let scene = SKScene()
-                                        scene.backgroundColor = UIColor.clear
-                                        
-                                        let model = SK3DNode(viewportSize: .init(width: 12, height: 12))
-                                        model.scnScene = {
-                                            let scnScene = SCNScene(named: "car.obj")!
-                                            scnScene.background.contents = UIColor.clear
-                                            
-                                            let node = scnScene.rootNode.childNodes.first!
-                                            
-                                            // Add rotation animation
-                                            let rotation = CABasicAnimation(keyPath: "rotation")
-                                            rotation.fromValue = NSValue(scnVector4: SCNVector4(0, 1, 0, 0))
-                                            rotation.toValue = NSValue(scnVector4: SCNVector4(0, 1, 0, Float.pi * 2))
-                                            rotation.duration = 15
-                                            rotation.repeatCount = .infinity
-                                            node.addAnimation(rotation, forKey: "rotate")
-                                            
-                                            
-                                            // Ajouter les textures au matériau
-                                                    let material = SCNMaterial()
-                                                    material.diffuse.contents = UIImage(named: "texture_diffuse.png") // Texture diffuse
-                                                    material.metalness.contents = UIImage(named: "texture_metallic.png") // Texture métallique
-                                                    material.normal.contents = UIImage(named: "texture_normal.png") // Carte de normales
-                                                    material.roughness.contents = UIImage(named: "texture_roughness.png") // Rugosité
-                                            
-                                            // Ajouter une émission pour rendre l'objet plus lumineux
-                                            material.emission.contents = UIColor.white // Couleur émise
-                                            material.emission.intensity = 0.2 // Intensité de la lumière émise
-                                            
-                                            // Augmenter la réflexion spéculaire
-                                            material.specular.contents = UIColor.white
-                                            material.shininess = 0.7 // Contrôle la brillance
-                                    
-                                            
-                                            
-                                            // Ajouter la texture shaded comme diffuse alternative (si besoin)
-                                                        let shadedMaterial = SCNMaterial()
-                                                        shadedMaterial.diffuse.contents = UIImage(named: "shaded.png") // Shaded texture
-                                            
-                                            // Appliquer le matériau à la géométrie
-                                                   node.geometry?.materials = [material]
+                                // ADD: Few days left text positioned on top of the rectangle
+                                VStack {
+                                    HStack {
+                                        Spacer()
+                                        Text("Few days left")
+                                            .font(.system(size: 10, weight: .semibold))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 4)
+                                            .background(
+                                                Capsule()
+                                                    .fill(
+                                                        LinearGradient(
+                                                            colors: [Color.yellow, Color.orange],
+                                                            startPoint: .leading,
+                                                            endPoint: .trailing
+                                                        )
+                                                    )
+                                                    .shadow(color: .black.opacity(0.2), radius: 4)
+                                            )
+                                            .overlay(
+                                                Capsule()
+                                                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                                            )
+                                            .offset(y: 80)
+                                            .padding(.trailing, 20)
+                                    }
+                                    Spacer()
+                                }
+                                .zIndex(2)
 
+                                Button(action: {
+                                    showExclusiveCarInfo = true
+                                    HapticManager.shared.impact(style: .medium)
+                                }) {
+                                    ZStack {
+                                        // 3D Model View
+                                        SpriteView(scene: { () -> SKScene in
+                                            let scene = SKScene()
+                                            scene.backgroundColor = UIColor.clear
                                             
-                                            // Add camera to the scene
-                                            let cameraNode = SCNNode()
-                                            cameraNode.camera = SCNCamera()
-                                            cameraNode.position = SCNVector3(x: -1.6, y: 0, z: 14)
-                                            scnScene.rootNode.addChildNode(cameraNode)
-                                            
-                                            return scnScene
-                                        }()
+                                            let model = SK3DNode(viewportSize: .init(width: 12, height: 12))
+                                            model.scnScene = {
+                                                let scnScene = SCNScene(named: "car.obj")!
+                                                scnScene.background.contents = UIColor.clear
+                                                
+                                                let node = scnScene.rootNode.childNodes.first!
+                                                
+                                                // Add rotation animation
+                                                let rotation = CABasicAnimation(keyPath: "rotation")
+                                                rotation.fromValue = NSValue(scnVector4: SCNVector4(0, 1, 0, 0))
+                                                rotation.toValue = NSValue(scnVector4: SCNVector4(0, 1, 0, Float.pi * 2))
+                                                rotation.duration = 15
+                                                rotation.repeatCount = .infinity
+                                                node.addAnimation(rotation, forKey: "rotate")
+                                                
+                                                let material = SCNMaterial()
+                                                material.diffuse.contents = UIImage(named: "texture_diffuse.png")
+                                                material.metalness.contents = UIImage(named: "texture_metallic.png")
+                                                material.normal.contents = UIImage(named: "texture_normal.png")
+                                                material.roughness.contents = UIImage(named: "texture_roughness.png")
+                                                material.emission.contents = UIColor.white
+                                                material.emission.intensity = 0.2
+                                                material.specular.contents = UIColor.white
+                                                material.shininess = 0.7
+                                                
+                                                node.geometry?.materials = [material]
+                                                
+                                                let cameraNode = SCNNode()
+                                                cameraNode.camera = SCNCamera()
+                                                cameraNode.position = SCNVector3(x: -1.6, y: 0, z: 14)
+                                                scnScene.rootNode.addChildNode(cameraNode)
+                                                
+                                                return scnScene
+                                            }()
                                         
                                         scene.addChild(model)
                                         return scene
                                     }(), options: [.allowsTransparency])
                                     .frame(height: 150)
                                     .background(Color.clear)
-                                    .zIndex(2) // Ensure model is above halo
+                                    .offset(y: -20)
                                     
-                                    // Legendary halo effect positioned below model
-                                                  ZStack {
-                                                      // Base glow
-                                                      RoundedRectangle(cornerRadius: 25)
-                                                          .fill(
-                                                              RadialGradient(
-                                                                  gradient: Gradient(colors: [
-                                                                    Color.white.opacity(0.1),
-                                                                    Color.white.opacity(0.1),
-                                                                      Color.clear
-                                                                  ]),
-                                                                  center: .center,
-                                                                  startRadius: 80,
-                                                                  endRadius: 150
-                                                              )
-                                                          )
-                                                          .frame(width: 300, height: 200)
-                                                          .blur(radius: 45)
-                                                   
-                                                      // Animated rays
-                                                      ForEach(0..<10) { i in
-                                                          Rectangle()
-                                                              .fill(
-                                                                  LinearGradient(
-                                                                      colors: [
-                                                                          Color.yellow.opacity(0.6),
-                                                                          Color.orange.opacity(0.3),
-                                                                          Color.clear
-                                                                      ],
-                                                                      startPoint: .center,
-                                                                      endPoint: .trailing
-                                                                  )
-                                                              )
-                                                              .frame(width: 200, height: 0.2)
-                                                              .rotationEffect(.degrees(Double(i) * 45))
-                                                              .blur(radius: 5)
-                                                      }
-                                                  }
-                                                  .offset(y: -0)
-                                                  .zIndex(1)
-                                    
-                                    
-                                    
-                                    // Season availability bubble
-                                                  Text("only available this season 1")
-                                                      .font(.system(size: 12, weight: .medium))
-                                                      .foregroundColor(.white)
-                                                      .padding(.horizontal, 12)
-                                                      .padding(.vertical, 6)
-                                                      .background(
-                                                          Capsule()
-                                                            .fill(
-                                                                                                                   LinearGradient(
-                                                                                                                       colors: [Color.yellow, Color.orange],
-                                                                                                                       startPoint: .leading,
-                                                                                                                       endPoint: .trailing
-                                                                                                                   )
-                                                                                                               )
-                                                            .shadow(color: .black.opacity(0.2), radius: 4)
-                                                      )
-                                                      .overlay(
-                                                          Capsule()
-                                                              .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                                                      )
-                                                      .offset(y: -15)
-                                                      .zIndex(3)
+                                    VStack {
+                                        Spacer()
+                                        
+                                        // Season availability text at the bottom
+                                        Text("only available this season 1")
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 6)
+                                            .background(
+                                                Capsule()
+                                                    .fill(
+                                                        LinearGradient(
+                                                            colors: [Color.yellow, Color.orange],
+                                                            startPoint: .leading,
+                                                            endPoint: .trailing
+                                                        )
+                                                    )
+                                                    .shadow(color: .black.opacity(0.2), radius: 4)
+                                            )
+                                            .overlay(
+                                                Capsule()
+                                                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                                            )
+                                            .padding(.bottom, 10)
+                                    }
+                                    .zIndex(3)
+                                    }
                                 }
-                                .padding(0)
                             }
                             .padding(.horizontal)
+
                         }
                         .padding(.top, viewSize == .compact ? 10 : 20)
                         
@@ -352,106 +300,105 @@ struct ContentView: View {
                                 VStack {
                                     Spacer()
                                     HStack(spacing: viewSize == .compact ? 30 : 50) {
-                                        // First booster with glare
-                                        NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 1)) {
-                                            ZStack {
-                                                Image("booster_closed_1")
-                                                    .resizable()
-                                                    .scaledToFit()
-                                                    .frame(height: boosterHeight)
-                                                
-                                                Rectangle()
-                                                    .fill(
-                                                        LinearGradient(
-                                                            gradient: Gradient(colors: [
-                                                                .clear,
-                                                                .white.opacity(0.01),
-                                                                .white.opacity(0.15),
-                                                                .white.opacity(0.01),
-                                                                .clear
-                                                            ]),
-                                                            startPoint: .topLeading,
-                                                            endPoint: .bottomTrailing
+                                        // First booster with glare and 3D rotation
+                                        Button(action: {
+                                            if StoreManager.shared.boosters == 0 {
+                                                showLockedBoosterInfo = true
+                                                HapticManager.shared.impact(style: .medium)
+                                            }
+                                        }) {
+                                            NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 1)) {
+                                                ZStack {
+                                                    Image("booster_closed_1")
+                                                        .resizable()
+                                                        .scaledToFit()
+                                                        .frame(height: boosterHeight)
+                                                        // ADD: 3D rotation effect
+                                                        .rotation3DEffect(
+                                                            .degrees(booster1Rotation),
+                                                            axis: (x: 0.0, y: 1.0, z: 0.0)
                                                         )
-                                                    )
-                                                    .frame(width: 100)
-                                                    .rotationEffect(.degrees(-65))
-                                                    .offset(x: booster1GlareOffset, y: booster1GlareOffset/3)
-                                                    .blur(radius: 3)
+                                                        .shadow(color: .black.opacity(0.3), radius: 5, x: -3, y: 3)
+                                                    
+                                                    Rectangle()
+                                                        .fill(
+                                                            LinearGradient(
+                                                                gradient: Gradient(colors: [
+                                                                    .clear,
+                                                                    .white.opacity(0.01),
+                                                                    .white.opacity(0.15),
+                                                                    .white.opacity(0.01),
+                                                                    .clear
+                                                                ]),
+                                                                startPoint: .topLeading,
+                                                                endPoint: .bottomTrailing
+                                                            )
+                                                        )
+                                                        .frame(width: 100)
+                                                        .rotationEffect(.degrees(-65))
+                                                        .offset(x: booster1GlareOffset, y: booster1GlareOffset/3)
+                                                        .blur(radius: 3)
+                                                }
+                                                .mask(
+                                                    Image("booster_closed_1")
+                                                        .resizable()
+                                                        .scaledToFit()
+                                                        .frame(height: boosterHeight)
+                                                )
                                             }
-                                            .mask(
-                                                Image("booster_closed_1")
-                                                    .resizable()
-                                                    .scaledToFit()
-                                                    .frame(height: boosterHeight)
-                                            )
-                                            .shadow(color: .gray.opacity(0.2), radius: 10)
+                                            .allowsHitTesting(StoreManager.shared.boosters > 0)
                                         }
-                                        .simultaneousGesture(TapGesture().onEnded {
-                                            HapticManager.shared.impact(style: .medium)
-                                        })
-                                        .disabled(StoreManager.shared.boosters == 0)
                                         .opacity(StoreManager.shared.boosters == 0 ? 0.5 : 1)
-                                        .onAppear {
-                                            withAnimation(
-                                                Animation
-                                                    .easeInOut(duration: 4.0)
-                                                    .repeatForever(autoreverses: true)
-                                            ) {
-                                                booster1GlareOffset = 150
-                                            }
-                                        }
 
-                                        // Second booster
-                                        NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 2)) {
-                                            ZStack {
-                                                Image("booster_closed_2")
-                                                    .resizable()
-                                                    .scaledToFit()
-                                                    .frame(height: boosterHeight)
-                                                
-                                                Rectangle()
-                                                    .fill(
-                                                        LinearGradient(
-                                                            gradient: Gradient(colors: [
-                                                                .clear,
-                                                                .white.opacity(0.01),
-                                                                .white.opacity(0.15),
-                                                                .white.opacity(0.01),
-                                                                .clear
-                                                            ]),
-                                                            startPoint: .topLeading,
-                                                            endPoint: .bottomTrailing
+                                        // Second booster with 3D rotation
+                                        Button(action: {
+                                            if StoreManager.shared.boosters == 0 {
+                                                showLockedBoosterInfo = true
+                                                HapticManager.shared.impact(style: .medium)
+                                            }
+                                        }) {
+                                            NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 2)) {
+                                                ZStack {
+                                                    Image("booster_closed_2")
+                                                        .resizable()
+                                                        .scaledToFit()
+                                                        .frame(height: boosterHeight)
+                                                        // ADD: 3D rotation effect
+                                                        .rotation3DEffect(
+                                                            .degrees(booster2Rotation),
+                                                            axis: (x: 0.0, y: 1.0, z: 0.0)
                                                         )
-                                                    )
-                                                    .frame(width: 100)
-                                                    .rotationEffect(.degrees(-65))
-                                                    .offset(x: booster2GlareOffset, y: booster2GlareOffset/3)
-                                                    .blur(radius: 3)
+                                                        .shadow(color: .black.opacity(0.3), radius: 5, x: 3, y: 3)
+                                                    
+                                                    Rectangle()
+                                                        .fill(
+                                                            LinearGradient(
+                                                                gradient: Gradient(colors: [
+                                                                    .clear,
+                                                                    .white.opacity(0.01),
+                                                                    .white.opacity(0.15),
+                                                                    .white.opacity(0.01),
+                                                                    .clear
+                                                                ]),
+                                                                startPoint: .topLeading,
+                                                                endPoint: .bottomTrailing
+                                                            )
+                                                        )
+                                                        .frame(width: 100)
+                                                        .rotationEffect(.degrees(-65))
+                                                        .offset(x: booster2GlareOffset, y: booster2GlareOffset/3)
+                                                        .blur(radius: 3)
+                                                }
+                                                .mask(
+                                                    Image("booster_closed_2")
+                                                        .resizable()
+                                                        .scaledToFit()
+                                                        .frame(height: boosterHeight)
+                                                )
                                             }
-                                            .mask(
-                                                Image("booster_closed_2")
-                                                    .resizable()
-                                                    .scaledToFit()
-                                                    .frame(height: boosterHeight)
-                                            )
-                                            .shadow(color: .gray.opacity(0.2), radius: 10)
+                                            .allowsHitTesting(StoreManager.shared.boosters > 0)
                                         }
-                                        .simultaneousGesture(TapGesture().onEnded {
-                                            HapticManager.shared.impact(style: .medium)
-                                        })
-                                        .disabled(StoreManager.shared.boosters == 0)
                                         .opacity(StoreManager.shared.boosters == 0 ? 0.5 : 1)
-                                        .onAppear {
-                                            withAnimation(
-                                                Animation
-                                                    .easeInOut(duration: 3.5)
-                                                    .repeatForever(autoreverses: true)
-                                                    .delay(2.0)
-                                            ) {
-                                                booster2GlareOffset = 150
-                                            }
-                                        }
                                     }
                                     Spacer()
                                     
@@ -462,11 +409,22 @@ struct ContentView: View {
                                                 .resizable()
                                                 .scaledToFit()
                                                 .frame(width: 30, height: 30)
-                                                .modifier(ShakeEffect(animatableData: CGFloat(Date().timeIntervalSince1970)))
-                                                .animation(.linear(duration: 0.1).repeatForever(autoreverses: false), value: Date().timeIntervalSince1970)
-                                            Text("\(StoreManager.shared.boosters) free booster remaining")
-                                                .font(.system(size: 14, weight: .medium))
-                                                .foregroundColor(.gray)
+                                                .rotationEffect(.degrees(shakeAngle))
+                                                .onAppear {
+                                                    withAnimation(
+                                                        .easeInOut(duration: 0.8)
+                                                        .repeatForever(autoreverses: true)
+                                                    ) {
+                                                        shakeAngle = 8
+                                                    }
+                                                }
+                                            HStack(spacing: 4) {
+                                                Text("\(StoreManager.shared.boosters)")
+                                                    .foregroundColor(.gray)
+                                                Text("free booster remaining")
+                                            }
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(.gray)
                                         } else if StoreManager.shared.nextFreeBoosterDate != nil {
                                             BoosterTimerView(storeManager: StoreManager.shared)
                                         } else {
@@ -509,6 +467,15 @@ struct ContentView: View {
                                 // Collection Button
                                 NavigationLink(destination: CollectionView(collectionManager: collectionManager)) {
                                     buttonView(icon: "rectangle.stack.fill", text: "Collection", colors: [.gray.opacity(0.3)], textColor: .gray)
+                                        .onAppear {
+                                            withAnimation(
+                                                Animation
+                                                    .easeInOut(duration: 2.0)
+                                                    .repeatForever(autoreverses: true)
+                                            ) {
+                                                glowRotationAngle = 360
+                                            }
+                                        }
                                 }
                                 .simultaneousGesture(TapGesture().onEnded {
                                     HapticManager.shared.impact(style: .medium)
@@ -526,6 +493,16 @@ struct ContentView: View {
                                                     .resizable()
                                                     .scaledToFit()
                                                     .frame(width: 50, height: 50)
+                                                    .scaleEffect(coinScale)
+                                                    .rotationEffect(.degrees(coinAngle))
+                                                    .onAppear {
+                                                        withAnimation(
+                                                            .easeInOut(duration: 1.0)
+                                                            .repeatForever(autoreverses: true)
+                                                        ) {
+                                                            coinScale = 1.1
+                                                        }
+                                                    }
                                             }
                                         )
                                 }
@@ -549,7 +526,7 @@ struct ContentView: View {
                                             .foregroundColor(.gray)
                                     }
                                     
-                                    ProgressView(value: Double(collectionManager.cards.count), total: 108)
+                                    ProgressView(value: progressValue, total: 108)
                                         .frame(height: 6)
                                         .tint(
                                             LinearGradient(
@@ -559,6 +536,15 @@ struct ContentView: View {
                                             )
                                         )
                                         .background(Color.white)
+                                        .onAppear {
+                                            progressValue = 0
+                                            withAnimation(.easeOut(duration: 3.0)) {
+                                                progressValue = Double(collectionManager.cards.count)
+                                            }
+                                        }
+                                        .onDisappear {
+                                            progressValue = 0
+                                        }
                                 }
                                 .padding(15)
                                 .background(
@@ -593,6 +579,149 @@ struct ContentView: View {
             }
             // Improved iPad navigation style
             .navigationViewStyle(StackNavigationViewStyle())
+        }
+        .onChange(of: collectionManager.cards.count) { _, _ in
+            let progress = Double(collectionManager.cards.count) / 111.0
+            ReviewManager.shared.checkMilestone(collectionProgress: progress)
+        }
+        .alert("Collection Milestone! 🎉", isPresented: $reviewManager.showMilestoneAlert) {
+            Button("Rate Us") {
+                reviewManager.requestReview()
+            }
+            Button("Continue", role: .cancel) { }
+        } message: {
+            Text("Congratulations! You've collected \(reviewManager.currentMilestone)% of all cars! Would you like to rate your experience?")
+        }
+        .task {
+            if await AppUpdateChecker.shared.checkForUpdate() {
+                showUpdateAlert = true
+            }
+            let progress = Double(collectionManager.cards.count) / 111.0
+            ReviewManager.shared.checkAndRequestReview(collectionProgress: progress)
+        }
+        .alert("Update Available", isPresented: $showUpdateAlert) {
+            Button("Update") {
+                AppUpdateChecker.shared.openAppStore()
+            }
+            Button("Later", role: .cancel) { }
+        } message: {
+            Text("A new version of Pocket Car is available on the App Store.")
+        }
+        .sheet(isPresented: $showExclusiveCarInfo) {
+            ZStack {
+                // Background gradient
+                LinearGradient(
+                    gradient: Gradient(colors: [.white, Color(.systemGray5)]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+                
+                // Content
+                VStack(spacing: 25) {                    
+                    VStack(spacing: 15) {
+                        Text("Legendary Model")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.gray)
+                        
+                        Text("This exclusive car has a mysterious drop rate and isn't part of the regular collection. Get it now - only available this season!")
+                            .multilineTextAlignment(.center)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.gray)
+                            .padding(.horizontal)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    
+                    Button(action: {
+                        showExclusiveCarInfo = false
+                        HapticManager.shared.impact(style: .medium)
+                    }) {
+                        Text("Got it!")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.gray)
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 30)
+                            .background(
+                                ZStack {
+                                    Capsule()
+                                        .fill(.white)
+                                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                                    
+                                    Capsule()
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: [.yellow.opacity(0.5), .orange.opacity(0.5)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            ),
+                                            lineWidth: 1
+                                        )
+                                }
+                            )
+                    }
+                }
+                .padding(30)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.white.opacity(0.95))
+            }
+            .presentationDetents([.height(250)])
+            .presentationBackground(.clear)
+        }
+        .sheet(isPresented: $showLockedBoosterInfo) {
+            ZStack {
+                LinearGradient(
+                    gradient: Gradient(colors: [.white, Color(.systemGray5)]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+                
+                VStack(spacing: 15) {
+                    Text("Oops! Empty Pockets?")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.gray)
+                    
+                    Text("Looks like your garage needs a refill! Come back later for a free booster, or hit the shop to grab some coins and keep the collection growing! 🚗✨")
+                        .multilineTextAlignment(.center)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.gray)
+                        .padding(.horizontal)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    Button(action: {
+                        showLockedBoosterInfo = false
+                        HapticManager.shared.impact(style: .medium)
+                    }) {
+                        Text("I'll be back!")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.gray)
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 30)
+                            .background(
+                                ZStack {
+                                    Capsule()
+                                        .fill(.white)
+                                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                                    
+                                    Capsule()
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: [.yellow.opacity(0.5), .orange.opacity(0.5)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            ),
+                                            lineWidth: 1
+                                        )
+                                }
+                            )
+                    }
+                }
+                .padding(30)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.white.opacity(0.95))
+            }
+            .presentationDetents([.height(250)])
+            .presentationBackground(.clear)
         }
         .onAppear {
             startTimer()

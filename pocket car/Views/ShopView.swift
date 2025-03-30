@@ -58,20 +58,20 @@ struct ShopView: View {
                         .frame(width: 280, height: 300)
                         .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                     
-                    VStack(spacing: 15) {
-                        Image("booster_closed_1")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(height: 200)
-                            .shadow(radius: 5)
-                        
-                        Button(action: {
-                            if collectionManager.coins >= 100 {
-                                showingPurchaseAlert = true
-                            } else {
-                                showingInsufficientCoinsAlert = true
-                            }
-                        }) {
+                    Button(action: {
+                        if collectionManager.coins >= 100 {
+                            showingPurchaseAlert = true
+                        } else {
+                            showingInsufficientCoinsAlert = true
+                        }
+                    }) {
+                        VStack(spacing: 15) {
+                            Image("booster_closed_1")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(height: 200)
+                                .shadow(radius: 5)
+                            
                             HStack(spacing: 8) {
                                 Text("Buy")
                                     .foregroundColor(.gray)
@@ -96,11 +96,11 @@ struct ShopView: View {
                                     .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                             )
                         }
-                        .disabled(collectionManager.coins < 100)
-                        .opacity(collectionManager.coins >= 100 ? 1 : 0.5)
                     }
-                    .padding()
+                    .disabled(collectionManager.coins < 100)
+                    .opacity(collectionManager.coins >= 100 ? 1 : 0.5)
                 }
+                .padding()
                 .padding(.top, 10)
 
                 // Deuxième Booster
@@ -110,20 +110,20 @@ struct ShopView: View {
                         .frame(width: 280, height: 300)
                         .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                     
-                    VStack(spacing: 15) {
-                        Image("booster_closed_2")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(height: 200)
-                            .shadow(radius: 5)
-                        
-                        Button(action: {
-                            if collectionManager.coins >= 100 {
-                                showingPurchaseAlert = true
-                            } else {
-                                showingInsufficientCoinsAlert = true
-                            }
-                        }) {
+                    Button(action: {
+                        if collectionManager.coins >= 100 {
+                            showingPurchaseAlert = true
+                        } else {
+                            showingInsufficientCoinsAlert = true
+                        }
+                    }) {
+                        VStack(spacing: 15) {
+                            Image("booster_closed_2")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(height: 200)
+                                .shadow(radius: 5)
+                            
                             HStack(spacing: 8) {
                                 Text("Buy")
                                     .foregroundColor(.gray)
@@ -148,11 +148,11 @@ struct ShopView: View {
                                     .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                             )
                         }
-                        .disabled(collectionManager.coins < 100)
-                        .opacity(collectionManager.coins >= 100 ? 1 : 0.5)
                     }
-                    .padding()
+                    .disabled(collectionManager.coins < 100)
+                    .opacity(collectionManager.coins >= 100 ? 1 : 0.5)
                 }
+                .padding()
                 .padding(.top, 10)
 
                 Spacer()

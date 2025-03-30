@@ -1,11 +1,11 @@
 import SwiftUI
 
 struct BoosterTimerView: View {
-    @ObservedObject var storeManager = StoreManager.shared
-    @State private var timeRemaining: String = ""
+    @ObservedObject var storeManager: StoreManager
+    @State private var timeString: String = ""
     
     var body: some View {
-        HStack {
+        HStack(spacing: 8) {
             if storeManager.boosters > 0 {
                 Image(systemName: "gift.fill")
                     .foregroundColor(.gray)
@@ -13,32 +13,36 @@ struct BoosterTimerView: View {
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.gray)
             } else if let _ = storeManager.nextFreeBoosterDate {
-                Image(systemName: "clock.fill")
-                    .foregroundColor(.gray)
-                Text("Next booster in \(timeRemaining)")
+                Image("clock")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 20, height: 20)
+                Text("Next booster in \(timeString)")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.gray)
             }
         }
         .onAppear {
-            updateTimer()
-        }
-        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
-            updateTimer()
+            updateTimeString()
+            Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                updateTimeString()
+            }
         }
     }
     
-    private func updateTimer() {
+    private func updateTimeString() {
         guard let nextDate = storeManager.nextFreeBoosterDate else { return }
         
-        let remaining = Int(nextDate.timeIntervalSince1970 - Date().timeIntervalSince1970)
+        let remaining = nextDate.timeIntervalSinceNow
         if remaining > 0 {
-            let hours = remaining / 3600
-            let minutes = (remaining % 3600) / 60
-            let seconds = remaining % 60
-            timeRemaining = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+            let hours = Int(remaining) / 3600
+            let minutes = Int(remaining) / 60 % 60
+            let seconds = Int(remaining) % 60
+            
+            timeString = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
         } else {
             storeManager.checkForFreeBooster()
+            timeString = "00:00:00"
         }
     }
 }
@@ -49,7 +53,7 @@ struct BoosterTimerView_Previews: PreviewProvider {
         ZStack {
             Color.gray.opacity(0.1)
                 .ignoresSafeArea()
-            BoosterTimerView()
+            BoosterTimerView(storeManager: StoreManager.shared)
                 .padding()
         }
     }

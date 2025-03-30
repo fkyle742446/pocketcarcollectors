@@ -86,10 +86,10 @@ struct ParticleSystem: View {
     
     var body: some View {
         GeometryReader { geometry in
-            ForEach(particles.prefix(150), id: \.id) { particle in 
+            ForEach(particles.prefix(150), id: \.id) { particle in
                 Circle()
                     .fill(haloColor(for: rarity))
-                    .frame(width: 4, height: 4) 
+                    .frame(width: 4, height: 4)
                     .scaleEffect(particle.scale)
                     .position(particle.position)
                     .opacity(particle.opacity)
@@ -103,18 +103,18 @@ struct ParticleSystem: View {
     
     private func createParticles() {
         particles = []
-        for i in 0..<150 { 
+        for i in 0..<150 {
             let angle = Double.random(in: -Double.pi...Double.pi)
-            let speed = Double.random(in: 100...400) 
-            let scale = Double.random(in: 0.3...1.2) 
+            let speed = Double.random(in: 100...400)
+            let scale = Double.random(in: 0.3...1.2)
             let startPosition = CGPoint(x: 120, y: 170)
-            let duration = Double.random(in: 0.6...1.2) 
-            let delay = Double.random(in: 0...0.3) 
+            let duration = Double.random(in: 0.6...1.2)
+            let delay = Double.random(in: 0...0.3)
             
             var particle = (
                 id: i,
                 position: startPosition,
-                opacity: Double.random(in: 0.3...0.8), 
+                opacity: Double.random(in: 0.3...0.8),
                 scale: scale,
                 speed: speed
             )
@@ -123,7 +123,7 @@ struct ParticleSystem: View {
             withAnimation(
                 Animation
                     .easeOut(duration: duration)
-                    .delay(delay) 
+                    .delay(delay)
             ) {
                 let distance = speed * duration
                 let dx = cos(angle) * distance
@@ -131,7 +131,7 @@ struct ParticleSystem: View {
                 particle.position.x += CGFloat(dx)
                 particle.position.y += CGFloat(dy)
                 particle.opacity = 0
-                particle.scale *= 0.5 
+                particle.scale *= 0.5
                 particles[i] = particle
             }
         }
