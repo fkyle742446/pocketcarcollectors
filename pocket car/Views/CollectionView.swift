@@ -39,11 +39,7 @@ struct CollectionView: View {
                     if collectionManager.cards.isEmpty {
                         EmptyCollectionView()
                     } else {
-                        CollectionGridView(
-                            cards: collectionManager.cards,
-                            selectedCard: $selectedCard,
-                            collectionManager: collectionManager
-                        )
+                        CollectionGridView(cards: collectionManager.cards, selectedCard: $selectedCard)
                     }
                 }
 
@@ -499,11 +495,5 @@ struct ZoomedCardView: View {
             }
         }
         .transition(.opacity)
-    }
-}
-
-struct CollectionView_Previews: PreviewProvider {
-    static var previews: some View {
-        CollectionView(collectionManager: CollectionManager())
     }
 }
