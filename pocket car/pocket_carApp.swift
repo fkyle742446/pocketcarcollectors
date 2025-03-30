@@ -6,9 +6,12 @@
 //
 
 import SwiftUI
+import StoreKit
 
 @main
 struct pocket_carApp: App {
+    @StateObject private var iapManager = IAPManager.shared
+    
     init() {
         // Force le mode clair pour toute l'application
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
@@ -31,7 +34,12 @@ struct pocket_carApp: App {
     var body: some Scene {
         WindowGroup {
             pocket_car.SplashScreenView()
-                .preferredColorScheme(.light) // Ajoute une couche supplémentaire de sécurité
+                .preferredColorScheme(.light)
+                .task {
+                    // Load products when app starts
+                    await iapManager.loadProducts()
+                }
+                .environmentObject(iapManager)
         }
     }
 }

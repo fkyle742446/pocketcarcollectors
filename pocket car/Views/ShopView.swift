@@ -1,14 +1,17 @@
 import SwiftUI
 import AVFoundation
+import StoreKit
 
 struct ShopView: View {
     @ObservedObject var collectionManager: CollectionManager
     @ObservedObject var storeManager: StoreManager
+    @StateObject private var iapManager = IAPManager.shared
     @Environment(\.dismiss) private var dismiss
     @Environment(\.presentationMode) var presentationMode
     @State private var showingInsufficientCoinsAlert = false
     @State private var showingPurchaseAlert = false
     @State private var showingBundlePurchaseAlert = false
+    @State private var showingPurchaseErrorAlert = false
     @State private var glowRotationAngle: Double = 0
     @State private var selectedBoosterType: BoosterType = .single
     
@@ -49,7 +52,7 @@ struct ShopView: View {
             )
             .ignoresSafeArea()
             
-            VStack {
+            VStack(spacing: 10) {
                 // Top coins display
                 HStack {
                     Spacer()
@@ -72,12 +75,9 @@ struct ShopView: View {
                 }
                 .padding(.top, 40)
                 .padding(.horizontal)
-
-                Spacer()
-
-                // Centered boosters container
-                VStack(spacing: 30) {
-                    // Single Booster
+                
+                // Boosters section
+                VStack(spacing: 10) {
                     boosterCard(
                         image: "booster_closed_1",
                         title: "Single x1 Booster",
@@ -86,7 +86,6 @@ struct ShopView: View {
                         type: .single
                     )
                     
-                    // Bundle of 5 Boosters
                     boosterCard(
                         image: "booster_closed_2",
                         title: "Bundle Pack x5 Boosters",
@@ -97,10 +96,15 @@ struct ShopView: View {
                     )
                 }
                 .padding(.horizontal)
-
-                Spacer()
-
-                // Bottom home button
+                
+                // IAP Section
+                VStack(spacing: 8) {
+                    ForEach(iapManager.products) { product in
+                        coinPurchaseCard(for: product)
+                    }
+                }
+                
+                // Home button
                 Button(action: {
                     dismiss()
                 }) {
@@ -112,7 +116,7 @@ struct ShopView: View {
                     }
                     .foregroundColor(.gray)
                     .frame(width: 120)
-                    .frame(height: 50)
+                    .frame(height: 45)
                     .background(
                         ZStack {
                             RoundedRectangle(cornerRadius: 25)
@@ -133,8 +137,17 @@ struct ShopView: View {
                         }
                     )
                 }
-                .padding(.bottom, 40)
+                .padding(.top, 5)
+                .padding(.bottom, 8)
             }
+        }
+        .task {
+            await iapManager.loadProducts()
+        }
+        .alert("Erreur d'achat", isPresented: $showingPurchaseErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("L'achat n'a pas pu être effectué. Veuillez réessayer.")
         }
         .alert("Insufficient Coins", isPresented: $showingInsufficientCoinsAlert) {
             Button("OK", role: .cancel) { }
@@ -157,11 +170,90 @@ struct ShopView: View {
     }
     
     @ViewBuilder
+    private func coinPurchaseCard(for product: Product) -> some View {
+        Button {
+            Task {
+                do {
+                    print("🎮 Attempting to purchase: \(product.id)")
+                    if try await iapManager.purchase(product) {
+                        // Haptic feedback for success
+                        HapticManager.shared.impact(style: .heavy)
+                        
+                        // Play purchase sound
+                        AudioServicesPlaySystemSound(soundEffect)
+                        
+                        if product.id == "com.pocketcarcollectors.100coins" {
+                            collectionManager.coins += 100
+                            print("💰 Added 100 coins")
+                        } else {
+                            collectionManager.coins += 500
+                            print("💰 Added 500 coins")
+                        }
+                        collectionManager.saveCollection()
+                    }
+                } catch let error as IAPManager.PurchaseError {
+                    print("❌ Purchase failed with error: \(error.localizedDescription)")
+                    // Haptic feedback for error
+                    HapticManager.shared.impact(style: .rigid)
+                    showingPurchaseErrorAlert = true
+                } catch {
+                    print("❌ Unexpected error: \(error)")
+                    // Haptic feedback for error
+                    HapticManager.shared.impact(style: .rigid)
+                    showingPurchaseErrorAlert = true
+                }
+            }
+        } label: {
+            ZStack {
+                RoundedRectangle(cornerRadius: 25)
+                    .fill(Color.white)
+                    .frame(height: 80)
+                    .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                
+                HStack(spacing: 20) {
+                    // Coin stack visualization
+                    ZStack {
+                        ForEach(0..<(product.id.contains("500") ? 3 : 1), id: \.self) { index in
+                            Image("coin")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 40, height: 40)
+                                .offset(x: CGFloat(index * 4), y: CGFloat(-index * 4))
+                        }
+                    }
+                    .frame(width: 60)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(product.displayName)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.gray)
+                        
+                        Text(product.displayPrice)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.blue.opacity(0.1))
+                            )
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+            }
+            .padding(.horizontal)
+        }
+        .disabled(iapManager.purchaseInProgress)
+    }
+    
+    @ViewBuilder
     private func boosterCard(image: String, title: String, price: Int, count: Int, type: BoosterType, isBundle: Bool = false) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 25)
                 .fill(Color.white)
-                .frame(height: 280)
+                .frame(height: 200)
                 .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
             
             Button(action: {
@@ -172,18 +264,17 @@ struct ShopView: View {
                     showingInsufficientCoinsAlert = true
                 }
             }) {
-                VStack(spacing: 15) {
+                VStack(spacing: 12) {
                     if isBundle {
                         // Bundle of 5 boosters
                         ZStack {
-                            // Back to front rendering
                             ForEach(0..<5) { index in
                                 Image(index % 2 == 0 ? "booster_closed_1" : "booster_closed_2")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
-                                    .frame(height: 180)
+                                    .frame(height: 130)
                                     .offset(x: CGFloat(index - 2) * 20)
-                                    .zIndex(Double(-index)) // Reverse z-index for proper stacking
+                                    .zIndex(Double(-index))
                             }
                         }
                         .shadow(radius: 5)
@@ -191,7 +282,7 @@ struct ShopView: View {
                         Image(image)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(height: 180)
+                            .frame(height: 130)
                             .shadow(radius: 5)
                     }
                     
@@ -209,10 +300,10 @@ struct ShopView: View {
                                 .frame(width: 16, height: 16)
                         }
                     }
-                    .font(.system(size: 16))
+                    .font(.system(size: 15))
                     .foregroundColor(.gray)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
                     .background(
                         RoundedRectangle(cornerRadius: 15)
                             .fill(Color.white)
@@ -220,10 +311,18 @@ struct ShopView: View {
                     )
                 }
             }
-            .disabled(collectionManager.coins < price)
+            .buttonStyle(ScaleButtonStyle())
         }
     }
-    
+
+    struct ScaleButtonStyle: ButtonStyle {
+        func makeBody(configuration: Configuration) -> some View {
+            configuration.label
+                .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+                .animation(.easeInOut(duration: 0.2), value: configuration.isPressed)
+        }
+    }
+
     private func purchaseBooster(type: BoosterType) {
         HapticManager.shared.impact(style: .heavy)
         collectionManager.coins -= type.price

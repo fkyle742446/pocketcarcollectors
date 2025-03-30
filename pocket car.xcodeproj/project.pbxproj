@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		17A4B3FF2D99986800E20C0D /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 17A4B3FE2D99986800E20C0D /* StoreKit.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		176C374C2D05FE2E0018198C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +31,7 @@
 		176C373A2D05FE2D0018198C /* pocket car.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "pocket car.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		176C374B2D05FE2E0018198C /* pocket carTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pocket carTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		176C37552D05FE2E0018198C /* pocket carUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pocket carUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		17A4B3FE2D99986800E20C0D /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -53,14 +58,14 @@
 		17A4B3D92D98398700E20C0D /* Exceptions for "pocket car" folder in "pocket carTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Sounds/sell.mp3,
+				Sounds/sell_sound.mp3,
 			);
 			target = 176C374A2D05FE2E0018198C /* pocket carTests */;
 		};
 		17A4B3DA2D98398700E20C0D /* Exceptions for "pocket car" folder in "pocket carUITests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Sounds/sell.mp3,
+				Sounds/sell_sound.mp3,
 			);
 			target = 176C37542D05FE2E0018198C /* pocket carUITests */;
 		};
@@ -97,6 +102,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				17A4B3FF2D99986800E20C0D /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -123,6 +129,7 @@
 				176C373C2D05FE2D0018198C /* pocket car */,
 				176C374E2D05FE2E0018198C /* pocket carTests */,
 				176C37582D05FE2E0018198C /* pocket carUITests */,
+				17A4B3FD2D99986800E20C0D /* Frameworks */,
 				176C373B2D05FE2D0018198C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -135,6 +142,14 @@
 				176C37552D05FE2E0018198C /* pocket carUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		17A4B3FD2D99986800E20C0D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				17A4B3FE2D99986800E20C0D /* StoreKit.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

@@ -19,7 +19,8 @@ class CollectionManager: ObservableObject {
         coins = UserDefaults.standard.integer(forKey: "userCoins")
     }
     
-    private func saveCollection() {
+    // CHANGE: Make saveCollection public instead of private
+    func saveCollection() {
         let cardData = cards.map { (card, count) in
             [
                 "name": card.name,
