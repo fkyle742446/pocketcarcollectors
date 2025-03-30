@@ -3,7 +3,6 @@ import AVFoundation
 import SceneKit
 import SpriteKit
 import UserNotifications
-import StoreKit
 
 // Add the glow extension
 extension View where Self: Shape {
@@ -108,8 +107,6 @@ struct ContentView: View {
     private var horizontalPadding: CGFloat {
         viewSize == .compact ? 12 : 32
     }
-    
-    @StateObject private var reviewManager = ReviewManager.shared
     
     var body: some View {
         NavigationView {
@@ -409,13 +406,13 @@ struct ContentView: View {
                                                 .resizable()
                                                 .scaledToFit()
                                                 .frame(width: 30, height: 30)
-                                                .rotationEffect(.degrees(shakeAngle))
+                                                .modifier(ShakeEffect(animatableData: Double(shakeOffset)))
                                                 .onAppear {
                                                     withAnimation(
-                                                        .easeInOut(duration: 0.8)
-                                                        .repeatForever(autoreverses: true)
+                                                        .easeInOut(duration: 0.6)
+                                                        .repeatForever()
                                                     ) {
-                                                        shakeAngle = 8
+                                                        shakeOffset = 1
                                                     }
                                                 }
                                             HStack(spacing: 4) {
@@ -466,7 +463,13 @@ struct ContentView: View {
                             HStack(spacing: 15) {
                                 // Collection Button
                                 NavigationLink(destination: CollectionView(collectionManager: collectionManager)) {
-                                    buttonView(icon: "rectangle.stack.fill", text: "Collection", colors: [.gray.opacity(0.3)], textColor: .gray)
+                                    buttonView(icon: "", text: "", colors: [.gray.opacity(0.3)], textColor: .gray)
+                                        .overlay(
+                                            Image("collection")
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(width: 50, height: 50)
+                                        )
                                         .onAppear {
                                             withAnimation(
                                                 Animation
@@ -494,7 +497,6 @@ struct ContentView: View {
                                                     .scaledToFit()
                                                     .frame(width: 50, height: 50)
                                                     .scaleEffect(coinScale)
-                                                    .rotationEffect(.degrees(coinAngle))
                                                     .onAppear {
                                                         withAnimation(
                                                             .easeInOut(duration: 1.0)
@@ -517,7 +519,7 @@ struct ContentView: View {
                             NavigationLink(destination: CollectionProgressView(collectionManager: collectionManager)) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     HStack {
-                                        Text("Completion of collection")
+                                        Text("Collection progress")
                                             .font(.system(size: viewSize == .compact ? 12 : 16))
                                             .foregroundColor(.gray)
                                         Spacer()
@@ -580,24 +582,10 @@ struct ContentView: View {
             // Improved iPad navigation style
             .navigationViewStyle(StackNavigationViewStyle())
         }
-        .onChange(of: collectionManager.cards.count) { _, _ in
-            let progress = Double(collectionManager.cards.count) / 111.0
-            ReviewManager.shared.checkMilestone(collectionProgress: progress)
-        }
-        .alert("Collection Milestone! 🎉", isPresented: $reviewManager.showMilestoneAlert) {
-            Button("Rate Us") {
-                reviewManager.requestReview()
-            }
-            Button("Continue", role: .cancel) { }
-        } message: {
-            Text("Congratulations! You've collected \(reviewManager.currentMilestone)% of all cars! Would you like to rate your experience?")
-        }
         .task {
             if await AppUpdateChecker.shared.checkForUpdate() {
                 showUpdateAlert = true
             }
-            let progress = Double(collectionManager.cards.count) / 111.0
-            ReviewManager.shared.checkAndRequestReview(collectionProgress: progress)
         }
         .alert("Update Available", isPresented: $showUpdateAlert) {
             Button("Update") {
@@ -618,7 +606,7 @@ struct ContentView: View {
                 .ignoresSafeArea()
                 
                 // Content
-                VStack(spacing: 25) {                    
+                VStack(spacing: 25) {
                     VStack(spacing: 15) {
                         Text("Legendary Model")
                             .font(.system(size: 24, weight: .bold))

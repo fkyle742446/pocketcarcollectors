@@ -8,7 +8,28 @@ struct ShopView: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var showingInsufficientCoinsAlert = false
     @State private var showingPurchaseAlert = false
+    @State private var showingBundlePurchaseAlert = false
     @State private var glowRotationAngle: Double = 0
+    @State private var selectedBoosterType: BoosterType = .single
+    
+    enum BoosterType {
+        case single
+        case bundle
+        
+        var price: Int {
+            switch self {
+            case .single: return 100
+            case .bundle: return 500
+            }
+        }
+        
+        var count: Int {
+            switch self {
+            case .single: return 1
+            case .bundle: return 5
+            }
+        }
+    }
     
     private let soundEffect: SystemSoundID = {
         guard let soundURL = Bundle.main.url(forResource: "purchase_sound", withExtension: "mp3") else {
@@ -28,7 +49,8 @@ struct ShopView: View {
             )
             .ignoresSafeArea()
             
-            VStack(spacing: 10) {
+            VStack {
+                // Top coins display
                 HStack {
                     Spacer()
                     HStack(spacing: 4) {
@@ -51,112 +73,34 @@ struct ShopView: View {
                 .padding(.top, 40)
                 .padding(.horizontal)
 
-                // Premier Booster
-                ZStack {
-                    RoundedRectangle(cornerRadius: 25)
-                        .fill(Color.white)
-                        .frame(width: 280, height: 300)
-                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
-                    
-                    Button(action: {
-                        if collectionManager.coins >= 100 {
-                            showingPurchaseAlert = true
-                        } else {
-                            showingInsufficientCoinsAlert = true
-                        }
-                    }) {
-                        VStack(spacing: 15) {
-                            Image("booster_closed_1")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(height: 200)
-                                .shadow(radius: 5)
-                            
-                            HStack(spacing: 8) {
-                                Text("Buy")
-                                    .foregroundColor(.gray)
-                                Text("•")
-                                    .foregroundColor(.gray)
-                                HStack(spacing: 4) {
-                                    Text("100")
-                                        .fontWeight(.semibold)
-                                    Image("coin")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 16, height: 16)
-                                }
-                            }
-                            .font(.system(size: 16))
-                            .foregroundColor(.gray)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 15)
-                                    .fill(Color.white)
-                                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                            )
-                        }
-                    }
-                    .disabled(collectionManager.coins < 100)
-                    .opacity(collectionManager.coins >= 100 ? 1 : 0.5)
-                }
-                .padding()
-                .padding(.top, 10)
+                Spacer()
 
-                // Deuxième Booster
-                ZStack {
-                    RoundedRectangle(cornerRadius: 25)
-                        .fill(Color.white)
-                        .frame(width: 280, height: 300)
-                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                // Centered boosters container
+                VStack(spacing: 30) {
+                    // Single Booster
+                    boosterCard(
+                        image: "booster_closed_1",
+                        title: "Single x1 Booster",
+                        price: 100,
+                        count: 1,
+                        type: .single
+                    )
                     
-                    Button(action: {
-                        if collectionManager.coins >= 100 {
-                            showingPurchaseAlert = true
-                        } else {
-                            showingInsufficientCoinsAlert = true
-                        }
-                    }) {
-                        VStack(spacing: 15) {
-                            Image("booster_closed_2")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(height: 200)
-                                .shadow(radius: 5)
-                            
-                            HStack(spacing: 8) {
-                                Text("Buy")
-                                    .foregroundColor(.gray)
-                                Text("•")
-                                    .foregroundColor(.gray)
-                                HStack(spacing: 4) {
-                                    Text("100")
-                                        .fontWeight(.semibold)
-                                    Image("coin")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 16, height: 16)
-                                }
-                            }
-                            .font(.system(size: 16))
-                            .foregroundColor(.gray)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 15)
-                                    .fill(Color.white)
-                                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                            )
-                        }
-                    }
-                    .disabled(collectionManager.coins < 100)
-                    .opacity(collectionManager.coins >= 100 ? 1 : 0.5)
+                    // Bundle of 5 Boosters
+                    boosterCard(
+                        image: "booster_closed_2",
+                        title: "Bundle Pack x5 Boosters",
+                        price: 500,
+                        count: 5,
+                        type: .bundle,
+                        isBundle: true
+                    )
                 }
-                .padding()
-                .padding(.top, 10)
+                .padding(.horizontal)
 
                 Spacer()
 
+                // Bottom home button
                 Button(action: {
                     dismiss()
                 }) {
@@ -176,8 +120,8 @@ struct ShopView: View {
                                     fill: .angularGradient(
                                         colors: [.blue, .purple, .red, .orange, .yellow, .blue],
                                         center: .center,
-                                        startAngle: .degrees(0),
-                                        endAngle: .degrees(360)
+                                        startAngle: .degrees(glowRotationAngle),
+                                        endAngle: .degrees(glowRotationAngle + 360)
                                     ),
                                     lineWidth: 2.0,
                                     blurRadius: 4.0
@@ -189,25 +133,21 @@ struct ShopView: View {
                         }
                     )
                 }
-                .padding(.bottom, 70)
+                .padding(.bottom, 40)
             }
         }
         .alert("Insufficient Coins", isPresented: $showingInsufficientCoinsAlert) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("You need 100 coins to purchase this booster. Sell some cards to earn more coins!")
+            Text("You need \(selectedBoosterType.price) coins to purchase this \(selectedBoosterType == .bundle ? "bundle" : "booster"). Sell some cards to earn more coins!")
         }
         .alert("Confirm Purchase", isPresented: $showingPurchaseAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Buy") {
-                HapticManager.shared.impact(style: .heavy)
-                collectionManager.coins -= 100
-                storeManager.boosters += 1
-                AudioServicesPlaySystemSound(soundEffect)
-                dismiss()
+                purchaseBooster(type: selectedBoosterType)
             }
         } message: {
-            Text("Would you like to purchase this booster for 100 coins?")
+            Text("Would you like to purchase \(selectedBoosterType == .bundle ? "5 boosters" : "this booster") for \(selectedBoosterType.price) coins?")
         }
         .onChange(of: showingInsufficientCoinsAlert) { _, newValue in
             if newValue {
@@ -215,7 +155,82 @@ struct ShopView: View {
             }
         }
     }
-
+    
+    @ViewBuilder
+    private func boosterCard(image: String, title: String, price: Int, count: Int, type: BoosterType, isBundle: Bool = false) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 25)
+                .fill(Color.white)
+                .frame(height: 280)
+                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+            
+            Button(action: {
+                selectedBoosterType = type
+                if collectionManager.coins >= type.price {
+                    showingPurchaseAlert = true
+                } else {
+                    showingInsufficientCoinsAlert = true
+                }
+            }) {
+                VStack(spacing: 15) {
+                    if isBundle {
+                        // Bundle of 5 boosters
+                        ZStack {
+                            // Back to front rendering
+                            ForEach(0..<5) { index in
+                                Image(index % 2 == 0 ? "booster_closed_1" : "booster_closed_2")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(height: 180)
+                                    .offset(x: CGFloat(index - 2) * 20)
+                                    .zIndex(Double(-index)) // Reverse z-index for proper stacking
+                            }
+                        }
+                        .shadow(radius: 5)
+                    } else {
+                        Image(image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 180)
+                            .shadow(radius: 5)
+                    }
+                    
+                    HStack(spacing: 8) {
+                        Text(title)
+                            .foregroundColor(.gray)
+                        Text("•")
+                            .foregroundColor(.gray)
+                        HStack(spacing: 4) {
+                            Text("\(price)")
+                                .fontWeight(.semibold)
+                            Image("coin")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
+                        }
+                    }
+                    .font(.system(size: 16))
+                    .foregroundColor(.gray)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(Color.white)
+                            .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                    )
+                }
+            }
+            .disabled(collectionManager.coins < price)
+        }
+    }
+    
+    private func purchaseBooster(type: BoosterType) {
+        HapticManager.shared.impact(style: .heavy)
+        collectionManager.coins -= type.price
+        storeManager.boosters += type.count
+        AudioServicesPlaySystemSound(soundEffect)
+        dismiss()
+    }
 }
 
 #Preview {
