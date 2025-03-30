@@ -52,7 +52,7 @@ struct ShopView: View {
             )
             .ignoresSafeArea()
             
-            VStack(spacing: 10) {
+            VStack(spacing: 15) {
                 // Top coins display
                 HStack {
                     Spacer()
@@ -77,7 +77,7 @@ struct ShopView: View {
                 .padding(.horizontal)
                 
                 // Boosters section
-                VStack(spacing: 10) {
+                VStack(spacing: 12) {
                     boosterCard(
                         image: "booster_closed_1",
                         title: "Single x1 Booster",
@@ -98,7 +98,7 @@ struct ShopView: View {
                 .padding(.horizontal)
                 
                 // IAP Section
-                VStack(spacing: 8) {
+                VStack(spacing: 10) {
                     ForEach(iapManager.products) { product in
                         coinPurchaseCard(for: product)
                     }
@@ -138,7 +138,7 @@ struct ShopView: View {
                     )
                 }
                 .padding(.top, 5)
-                .padding(.bottom, 8)
+                .padding(.bottom, 10)
             }
         }
         .task {
@@ -253,7 +253,7 @@ struct ShopView: View {
         ZStack {
             RoundedRectangle(cornerRadius: 25)
                 .fill(Color.white)
-                .frame(height: 200)
+                .frame(height: 220)
                 .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
             
             Button(action: {
@@ -272,7 +272,7 @@ struct ShopView: View {
                                 Image(index % 2 == 0 ? "booster_closed_1" : "booster_closed_2")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
-                                    .frame(height: 130)
+                                    .frame(height: 140)
                                     .offset(x: CGFloat(index - 2) * 20)
                                     .zIndex(Double(-index))
                             }
@@ -282,7 +282,7 @@ struct ShopView: View {
                         Image(image)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(height: 130)
+                            .frame(height: 140)
                             .shadow(radius: 5)
                     }
                     
@@ -311,18 +311,10 @@ struct ShopView: View {
                     )
                 }
             }
-            .buttonStyle(ScaleButtonStyle())
+            .disabled(collectionManager.coins < price)
         }
     }
-
-    struct ScaleButtonStyle: ButtonStyle {
-        func makeBody(configuration: Configuration) -> some View {
-            configuration.label
-                .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-                .animation(.easeInOut(duration: 0.2), value: configuration.isPressed)
-        }
-    }
-
+    
     private func purchaseBooster(type: BoosterType) {
         HapticManager.shared.impact(style: .heavy)
         collectionManager.coins -= type.price
