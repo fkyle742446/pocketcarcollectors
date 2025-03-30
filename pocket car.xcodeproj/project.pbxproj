@@ -58,14 +58,14 @@
 		17A4B3D92D98398700E20C0D /* Exceptions for "pocket car" folder in "pocket carTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Sounds/sell.mp3,
+				Sounds/sell_sound.mp3,
 			);
 			target = 176C374A2D05FE2E0018198C /* pocket carTests */;
 		};
 		17A4B3DA2D98398700E20C0D /* Exceptions for "pocket car" folder in "pocket carUITests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Sounds/sell.mp3,
+				Sounds/sell_sound.mp3,
 			);
 			target = 176C37542D05FE2E0018198C /* pocket carUITests */;
 		};
@@ -455,6 +455,7 @@
 				DEVELOPMENT_TEAM = SMXR52F652;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.card-games";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -493,6 +494,7 @@
 				DEVELOPMENT_TEAM = SMXR52F652;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.card-games";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
