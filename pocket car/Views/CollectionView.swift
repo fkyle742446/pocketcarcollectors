@@ -382,8 +382,7 @@ struct CollectionProgressBar: View {
 struct ZoomedCardView: View {
     @Binding var selectedCard: BoosterCard?
     @ObservedObject var collectionManager: CollectionManager
-    @State private var sellSoundPlayer: AVAudioPlayer?
-
+    
     private func haloColor(for rarity: CardRarity) -> Color {
         switch rarity {
         case .common:
@@ -396,24 +395,6 @@ struct ZoomedCardView: View {
             return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
             return Color(white: 0.8)
-        }
-    }
-    
-    private func playSellSound() {
-        print("Attempting to play sell sound")
-        guard let path = Bundle.main.path(forResource: "sell", ofType: "mp3") else {
-            print("Could not find sell.mp3")
-            return
-        }
-        let url = URL(fileURLWithPath: path)
-        do {
-            sellSoundPlayer = try AVAudioPlayer(contentsOf: url)
-            sellSoundPlayer?.volume = 0.5
-            sellSoundPlayer?.prepareToPlay()
-            sellSoundPlayer?.play()
-            print("Sound should be playing")
-        } catch {
-            print("Error playing sell sound: \(error.localizedDescription)")
         }
     }
     
@@ -453,42 +434,53 @@ struct ZoomedCardView: View {
                     Button(action: {
                         print("Sell button tapped")
                         HapticManager.shared.impact(style: .heavy)
-                        playSellSound()
                         if collectionManager.sellCard(card) {
+                            AudioManager.shared.playSellSound() 
                             selectedCard = nil
                         }
                     }) {
-                        HStack(spacing: 4) {
+                        HStack(spacing: 8) {
                             Text("Sell for")
+                                .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.gray)
                             Text("\(collectionManager.coinValue(for: card.rarity))")
+                                .font(.system(size: 16, weight: .bold))
                                 .foregroundColor(.gray)
-                                .fontWeight(.bold)
                             Image("coin")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 20, height: 20)
                         }
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 15)
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 20)
                         .background(
                             ZStack {
-                                Capsule()
-                                    .glow(
-                                        fill: .angularGradient(
-                                            colors: [.blue, .purple, .red, .orange, .yellow, .blue],
-                                            center: .center,
-                                            startAngle: .degrees(0),
-                                            endAngle: .degrees(360)
-                                        ),
-                                        lineWidth: 2.0,
-                                        blurRadius: 4.0
-                                    )
-                                    .opacity(0.4)
-                                
-                                Capsule()
+                                RoundedRectangle(cornerRadius: 15)
                                     .fill(Color.white)
+                                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 2)
+                                
+                                RoundedRectangle(cornerRadius: 15)
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [.yellow.opacity(0.5), .orange.opacity(0.5)],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        ),
+                                        lineWidth: 1
+                                    )
                             }
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 15)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [.yellow.opacity(0.3), .orange.opacity(0.3)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    ),
+                                    lineWidth: 1
+                                )
+                                .blur(radius: 2)
                         )
                     }
                 }

@@ -7,14 +7,22 @@ class AudioManager {
     private init() {}
     
     func playPurchaseSound() {
-        // You'll need to add a sound file to your assets
-        guard let soundURL = Bundle.main.url(forResource: "purchase_sound", withExtension: "mp3") else {
-            print("Sound file not found")
+        playSound(named: "purchase_sound")
+    }
+    
+    func playSellSound() {
+        playSound(named: "sell")
+    }
+    
+    private func playSound(named: String) {
+        guard let path = Bundle.main.url(forResource: named, withExtension: "mp3") else {
+            print("Sound file not found: \(named)")
             return
         }
         
         do {
-            audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
+            audioPlayer = try AVAudioPlayer(contentsOf: path)
+            audioPlayer?.volume = 0.7
             audioPlayer?.prepareToPlay()
             audioPlayer?.play()
         } catch {

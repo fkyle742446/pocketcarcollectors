@@ -80,6 +80,7 @@ struct ContentView: View {
     @State private var showExclusiveCarInfo = false
     @State private var showLockedBoosterInfo = false
     @State private var showUpdateAlert = false
+    @State private var selectedMilestone: MilestoneIdentifier? = nil
     
     @AppStorage("isFirstLaunch") private var isFirstLaunch = true
     @AppStorage("remainingFirstBoosters") private var remainingFirstBoosters = 4
@@ -118,7 +119,8 @@ struct ContentView: View {
     @State private var milestones: [Milestone] = [
         Milestone(progress: 0.25, reward: 200, icon: "coin", isReached: false),
         Milestone(progress: 0.50, reward: 300, icon: "questionmark.circle.fill", isReached: false),
-        Milestone(progress: 0.75, reward: 400, icon: "coin", isReached: false)
+        Milestone(progress: 0.75, reward: 400, icon: "coin", isReached: false),
+        Milestone(progress: 1.0, reward: 500, icon: "car_mystery", isReached: false)
     ]
 
     var body: some View {
@@ -431,7 +433,7 @@ struct ContentView: View {
                                             HStack(spacing: 4) {
                                                 Text("\(StoreManager.shared.boosters)")
                                                     .foregroundColor(.gray)
-                                                Text("free booster remaining")
+                                                Text("booster remaining")
                                             }
                                             .font(.system(size: 14, weight: .medium))
                                             .foregroundColor(.gray)
@@ -478,10 +480,15 @@ struct ContentView: View {
                                 NavigationLink(destination: CollectionView(collectionManager: collectionManager)) {
                                     buttonView(icon: "", text: "", colors: [.gray.opacity(0.3)], textColor: .gray)
                                         .overlay(
-                                            Image("collection")
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(width: 50, height: 50)
+                                            VStack(spacing: 4) {
+                                                Image("collection")
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(width: 35, height: 35)
+                                                Text("Collection")
+                                                    .font(.system(size: 12, weight: .medium))
+                                                    .foregroundColor(.gray)
+                                            }
                                         )
                                         .onAppear {
                                             withAnimation(
@@ -668,6 +675,67 @@ struct ContentView: View {
             .presentationDetents([.height(250)])
             .presentationBackground(.clear)
         }
+        .sheet(item: $selectedMilestone) { identifier in
+            let milestone = milestones[identifier.index]
+            ZStack {
+                LinearGradient(
+                    gradient: Gradient(colors: [.white, Color(.systemGray5)]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+                
+                VStack(spacing: 20) {
+                    Image(milestone.icon)
+                        .resizable()
+                        .frame(width: 50, height: 50)
+                        .scaleEffect(1.2)
+                        .padding(.top, 20)
+                    
+                    Text("Milestone Reached!")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.gray)
+                    
+                    Text("You've unlocked a reward of \(milestone.reward) coins!")
+                        .multilineTextAlignment(.center)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.gray)
+                    
+                    Button(action: {
+                        selectedMilestone = nil
+                        HapticManager.shared.impact(style: .medium)
+                    }) {
+                        Text("Great!")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.gray)
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 30)
+                            .background(
+                                ZStack {
+                                    Capsule()
+                                        .fill(.white)
+                                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                                    
+                                    Capsule()
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: [Color.yellow.opacity(0.5), Color.orange.opacity(0.5)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            ),
+                                            lineWidth: 1
+                                        )
+                                }
+                            )
+                    }
+                }
+                .padding(30)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.white.opacity(0.95))
+            }
+            .presentationDetents([.height(250)])
+            .presentationBackground(.clear)
+        }
         .onAppear {
             startTimer()
             playMusic()
@@ -691,41 +759,79 @@ struct ContentView: View {
                 }
                 
                 ZStack(alignment: .leading) {
-                    ProgressView(value: progressValue, total: 108)
-                        .frame(height: 6)
-                        .tint(
+                    // Background track
+                    Capsule()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 8)
+                    
+                    // Progress bar
+                    Capsule()
+                        .fill(
                             LinearGradient(
                                 colors: [Color.yellow, Color.orange],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
                         )
-                        .background(Color.white)
-                        .onAppear {
-                            progressValue = 0
-                            withAnimation(.easeOut(duration: 3.0)) {
-                                progressValue = Double(collectionManager.cards.count)
-                            }
-                        }
-                        .onDisappear {
-                            progressValue = 0
-                        }
+                        .frame(width: calculateProgressWidth(), height: 8)
+                        .animation(.spring(), value: progressValue)
                     
+                    // Milestones
                     ForEach(milestones.indices, id: \.self) { index in
                         let milestone = milestones[index]
-                        Image(milestone.icon)
-                            .resizable()
-                            .frame(width: 25, height: 25)
-                            .opacity(milestone.isReached ? 0.5 : 1.0)
-                            .position(x: UIScreen.main.bounds.width * 0.7 * milestone.progress, y: 20)
-                            .onChange(of: collectionManager.cards.count) { _, newCount in
-                                let progress = Double(newCount) / 111.0
-                                if !milestone.isReached && progress >= milestone.progress {
-                                    milestones[index].isReached = true
-                                    collectionManager.coins += milestone.reward
-                                    HapticManager.shared.impact(style: .medium)
-                                }
+                        Button(action: {
+                            if milestone.isReached {
+                                selectedMilestone = MilestoneIdentifier(index)
+                                HapticManager.shared.impact(style: .medium)
                             }
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.white)
+                                    .frame(width: 24, height: 24)
+                                    .shadow(color: .black.opacity(0.1), radius: 2)
+                                
+                                Image(milestone.icon)
+                                    .resizable()
+                                    .frame(width: 14, height: 14)
+                                    .opacity(milestone.isReached ? 1.0 : 0.5)
+                            }
+                            .overlay(
+                                Circle()
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [Color.yellow, Color.orange],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        ),
+                                        lineWidth: 1.5
+                                    )
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [Color.yellow, Color.orange],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        ),
+                                        lineWidth: milestone.isReached ? 2 : 0
+                                    )
+                                    .blur(radius: 2)
+                                    .opacity(milestone.isReached ? 0.7 : 0)
+                            )
+                            .scaleEffect(milestone.isReached ? 1.1 : 1.0)
+                            .animation(.spring(response: 0.3), value: milestone.isReached)
+                        }
+                        .position(x: UIScreen.main.bounds.width * 0.7 * milestone.progress, y: 12)
+                        .onChange(of: collectionManager.cards.count) { _, newCount in
+                            let progress = Double(newCount) / 111.0
+                            if !milestone.isReached && progress >= milestone.progress {
+                                milestones[index].isReached = true
+                                collectionManager.coins += milestone.reward
+                                HapticManager.shared.impact(style: .medium)
+                            }
+                        }
                     }
                 }
                 .frame(height: 35)
@@ -866,6 +972,15 @@ struct ContentView: View {
                 isFadingOut = false
             }
         }
+    }
+}
+
+private struct MilestoneIdentifier: Identifiable {
+    let id = UUID()
+    let index: Int
+    
+    init(_ index: Int) {
+        self.index = index
     }
 }
 
