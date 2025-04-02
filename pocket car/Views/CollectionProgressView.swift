@@ -46,7 +46,7 @@ struct CollectionProgressView: View {
                             title: "Total Collection",
                             subtitle: nil,
                             count: collectionManager.cards.count,
-                            total: 111,
+                            total: 250,
                             colors: [.yellow, .orange],
                             progress: totalProgress
                         )
@@ -65,7 +65,7 @@ struct CollectionProgressView: View {
                             title: "Legendary",
                             subtitle: "Drop rate: 1%",
                             count: countCardsByRarity(.legendary),
-                            total: 8,
+                            total: 25,
                             colors: [.orange, .red],
                             progress: legendaryProgress
                         )
@@ -74,7 +74,7 @@ struct CollectionProgressView: View {
                             title: "Epic",
                             subtitle: "Drop rate: 8%",
                             count: countCardsByRarity(.epic),
-                            total: 10,
+                            total: 50,
                             colors: [.purple, .pink],
                             progress: epicProgress
                         )
@@ -83,16 +83,16 @@ struct CollectionProgressView: View {
                             title: "Rare",
                             subtitle: "Drop rate: 25%",
                             count: countCardsByRarity(.rare),
-                            total: 20,
+                            total: 75,
                             colors: [.blue, .cyan],
                             progress: rareProgress
                         )
                         
                         ProgressCard(
                             title: "Common",
-                            subtitle: "Drop rate: 65.9%",
+                            subtitle: "Drop rate: 75%",
                             count: countCardsByRarity(.common),
-                            total: 70,
+                            total: 100,
                             colors: [.gray, .gray.opacity(0.6)],
                             progress: commonProgress
                         )
@@ -175,6 +175,25 @@ struct CollectionProgressView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+    }
+}
+
+struct CollectionProgressStats {
+    let collected: Int
+    let total: Int = 250
+    let common: Int
+    let rare: Int
+    let epic: Int
+    let legendary: Int
+    let holyT: Int
+    
+    var commonTotal: Int { 100 }    // 100 cartes communes
+    var rareTotal: Int { 75 }       // 75 cartes rares
+    var epicTotal: Int { 50 }       // 50 cartes épiques
+    var legendaryTotal: Int { 25 }  // 25 cartes légendaires
+    
+    var progressPercentage: Double {
+        return Double(collected) / Double(total) * 100
     }
 }
 

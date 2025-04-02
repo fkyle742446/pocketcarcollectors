@@ -19,7 +19,7 @@ struct CollectionView: View {
                 VStack(spacing: 16) {
                     HStack {
                         Spacer()
-                        Text("\(collectionManager.cards.count)/108")
+                        Text("\(collectionManager.cards.count)/250")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.gray)
                         Text("•")
@@ -206,10 +206,10 @@ struct RarityInfoView: View {
         let collectedCards = collectionManager.cards.filter { $0.card.rarity == rarity }.count
         let totalCards: Int
         switch rarity {
-        case .common: totalCards = 70
-        case .rare: totalCards = 20
-        case .epic: totalCards = 10
-        case .legendary: totalCards = 8
+        case .common: totalCards = 100
+        case .rare: totalCards = 75
+        case .epic: totalCards = 50
+        case .legendary: totalCards = 25
         case .HolyT: totalCards = 3
         }
         return (collectedCards, totalCards)
@@ -435,7 +435,7 @@ struct ZoomedCardView: View {
                         print("Sell button tapped")
                         HapticManager.shared.impact(style: .heavy)
                         if collectionManager.sellCard(card) {
-                            AudioManager.shared.playSellSound() 
+                            AudioManager.shared.playSellSound()
                             selectedCard = nil
                         }
                     }) {

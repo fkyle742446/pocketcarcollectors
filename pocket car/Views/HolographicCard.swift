@@ -133,7 +133,7 @@ struct HolographicCard: View {
                         
                         Spacer()
                         
-                        Text("№ \(cardNumber)/108")
+                        Text("№ \(cardNumber)/250")
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(.white)
                             .padding(.horizontal, 10)

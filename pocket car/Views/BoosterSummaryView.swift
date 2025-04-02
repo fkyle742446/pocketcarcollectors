@@ -175,7 +175,7 @@ struct PocketCardView: View {
             )
             .frame(width: 40, height: 40)
             
-            Text("N° \(card.number)/111")
+            Text("N° \(card.number)/250")
                 .font(.system(size: 10))
                 .foregroundStyle(Color(.systemGray))
         }

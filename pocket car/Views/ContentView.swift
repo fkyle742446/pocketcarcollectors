@@ -120,10 +120,10 @@ struct ContentView: View {
     }
     
     @State private var milestones: [Milestone] = [
-        Milestone(progress: 0.25, reward: 200, icon: "coin", isReached: false),
-        Milestone(progress: 0.50, reward: 300, icon: "questionmark.circle.fill", isReached: false),
-        Milestone(progress: 0.75, reward: 400, icon: "coin", isReached: false),
-        Milestone(progress: 1.0, reward: 500, icon: "car_mystery", isReached: false)
+        Milestone(progress: 0.25, reward: 200, icon: "coin", isReached: false),    // 62 cartes
+        Milestone(progress: 0.50, reward: 300, icon: "questionmark.circle.fill", isReached: false),    // 125 cartes
+        Milestone(progress: 0.75, reward: 400, icon: "coin", isReached: false),    // 187 cartes
+        Milestone(progress: 1.0, reward: 500, icon: "car_mystery", isReached: false)    // 250 cartes
     ]
 
     var body: some View {
@@ -774,7 +774,7 @@ struct ContentView: View {
                         .font(.system(size: viewSize == .compact ? 12 : 16))
                         .foregroundColor(.gray)
                     Spacer()
-                    Text("\(collectionManager.cards.count)/111")
+                    Text("\(collectionManager.cards.count)/250")
                         .font(.system(size: viewSize == .compact ? 12 : 16))
                         .foregroundColor(.gray)
                 }
@@ -846,7 +846,7 @@ struct ContentView: View {
                         }
                         .position(x: UIScreen.main.bounds.width * 0.7 * milestone.progress, y: 12)
                         .onChange(of: collectionManager.cards.count) { _, newCount in
-                            let progress = Double(newCount) / 111.0
+                            let progress = Double(newCount) / 250.0
                             if !milestone.isReached && progress >= milestone.progress {
                                 milestones[index].isReached = true
                                 collectionManager.coins += milestone.reward
@@ -888,7 +888,7 @@ struct ContentView: View {
     // MODIFY: Calculate progress width function
     private func calculateProgressWidth() -> CGFloat {
         let maxWidth = UIScreen.main.bounds.width * 0.7
-        let progress = Double(collectionManager.cards.count) / 111.0
+        let progress = Double(collectionManager.cards.count) / 250.0
         return maxWidth * progress
     }
 
