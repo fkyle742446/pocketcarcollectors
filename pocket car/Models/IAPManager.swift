@@ -29,6 +29,16 @@ class IAPManager: ObservableObject {
         }
     }
     
+    private var appOpenCount: Int {
+        get { UserDefaults.standard.integer(forKey: "appOpenCount") }
+        set { UserDefaults.standard.set(newValue, forKey: "appOpenCount") }
+    }
+    
+    private var hasRequestedReview: Bool {
+        get { UserDefaults.standard.bool(forKey: "hasRequestedReview") }
+        set { UserDefaults.standard.set(newValue, forKey: "hasRequestedReview") }
+    }
+    
     @Published private var cheatAttempts: Int = 0 {
         didSet {
             UserDefaults.standard.set(cheatAttempts, forKey: "cheatAttempts")
@@ -59,16 +69,13 @@ class IAPManager: ObservableObject {
     }
     
     private init() {
-        // Charger les valeurs sauvegardées
         self.boosters = UserDefaults.standard.integer(forKey: "boosters")
         self.cheatAttempts = UserDefaults.standard.integer(forKey: "cheatAttempts")
         
-        // Initialiser le timestamp si nécessaire
         if userDefaults.double(forKey: lastTimestampKey) == 0 {
             lastKnownTimestamp = Date().timeIntervalSince1970
         }
         
-        // Charger le prochain booster
         if let savedTimestamp = UserDefaults.standard.object(forKey: "nextBoosterTimestamp") as? TimeInterval {
             self.nextFreeBoosterDate = Date(timeIntervalSince1970: savedTimestamp)
         }
@@ -77,13 +84,12 @@ class IAPManager: ObservableObject {
     private func validateTimeAndApplyPenalty(_ currentTime: TimeInterval) -> Bool {
         let timeDifference = currentTime - lastKnownTimestamp
         
-        // Détection de modification d'heure
-        if timeDifference < 0 { // L'heure a reculé
+        if timeDifference < 0 {
             applyCheatPenalty()
             return false
         }
         
-        if timeDifference > maxTimeJump { // Saut en avant trop important
+        if timeDifference > maxTimeJump {
             applyCheatPenalty()
             return false
         }
@@ -94,11 +100,9 @@ class IAPManager: ObservableObject {
     private func applyCheatPenalty() {
         cheatAttempts += 1
         
-        // Pénalités croissantes selon le nombre de tentatives
-        let penaltyHours = Double(min(24 * cheatAttempts, 168)) // Max 7 jours
+        let penaltyHours = Double(min(24 * cheatAttempts, 168))
         nextFreeBoosterDate = Date(timeIntervalSinceNow: penaltyHours * 3600)
         
-        // Notification pour informer l'utilisateur
         NotificationCenter.default.post(
             name: Notification.Name("CheatDetected"),
             object: nil,
@@ -106,24 +110,33 @@ class IAPManager: ObservableObject {
         )
     }
     
+    func checkForReviewRequest() {
+        appOpenCount += 1
+        
+        if appOpenCount >= 5 && !hasRequestedReview {
+            NotificationManager.shared.scheduleReviewNotification()
+            hasRequestedReview = true
+        }
+    }
+    
     func checkForFreeBooster() {
         let currentTime = Date().timeIntervalSince1970
         
-        // Validation du temps
         guard validateTimeAndApplyPenalty(currentTime) else {
             lastKnownTimestamp = currentTime
             return
         }
         
-        // Logique normale pour les boosters
         if let nextDate = nextFreeBoosterDate {
             if Date() >= nextDate {
                 boosters += 1
-                nextFreeBoosterDate = Date(timeIntervalSinceNow: 6 * 3600) // 6h pour le prochain
-                cheatAttempts = max(0, cheatAttempts - 1) // Réduction progressive des pénalités
+                nextFreeBoosterDate = Date(timeIntervalSinceNow: 6 * 3600)
+                cheatAttempts = max(0, cheatAttempts - 1)
+                NotificationManager.shared.scheduleBoosterNotification(for: nextFreeBoosterDate!)
             }
         } else {
             nextFreeBoosterDate = Date(timeIntervalSinceNow: 6 * 3600)
+            NotificationManager.shared.scheduleBoosterNotification(for: nextFreeBoosterDate!)
         }
         
         lastKnownTimestamp = currentTime

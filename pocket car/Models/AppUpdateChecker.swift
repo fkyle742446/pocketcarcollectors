@@ -1,77 +1,43 @@
 import Foundation
 import SwiftUI
+import StoreKit
 
-class AppUpdateChecker {
+class AppUpdateChecker: ObservableObject {
     static let shared = AppUpdateChecker()
     private let lastCheckKey = "lastUpdateCheck"
     private let checkInterval: TimeInterval = 24 * 60 * 60 // Check once per day
     
-    func checkForUpdate() async -> Bool {
-        // Check if we already checked recently
-        if let lastCheck = UserDefaults.standard.object(forKey: lastCheckKey) as? Date {
-            let elapsed = Date().timeIntervalSince(lastCheck)
-            if elapsed < checkInterval {
-                return false
-            }
-        }
-        
-        // Update last check time
-        UserDefaults.standard.set(Date(), forKey: lastCheckKey)
-        
-        // Your app's bundle ID
-        guard let bundleId = Bundle.main.bundleIdentifier else { return false }
-        
-        // Current installed version
-        guard let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String else {
-            return false
-        }
-        
-        // Fetch App Store version
-        guard let url = URL(string: "https://itunes.apple.com/lookup?bundleId=\(bundleId)") else {
-            return false
-        }
-        
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let results = json["results"] as? [[String: Any]],
-                  let appStoreVersion = results.first?["version"] as? String else {
-                return false
-            }
-            
-            // Compare versions
-            return compareVersions(appStore: appStoreVersion, current: currentVersion)
-        } catch {
-            print("Error checking for updates: \(error)")
-            return false
-        }
-    }
+    private init() {}
     
-    private func compareVersions(appStore: String, current: String) -> Bool {
-        let appStoreComponents = appStore.split(separator: ".").map { Int($0) ?? 0 }
-        let currentComponents = current.split(separator: ".").map { Int($0) ?? 0 }
-        
-        for i in 0..<max(appStoreComponents.count, currentComponents.count) {
-            let appStore = i < appStoreComponents.count ? appStoreComponents[i] : 0
-            let current = i < currentComponents.count ? currentComponents[i] : 0
-            
-            if appStore > current {
-                return true
-            } else if appStore < current {
-                return false
-            }
+    func checkForUpdate() async -> Bool {
+        // Simulation en mode DEBUG
+        #if DEBUG
+        return true
+        #else
+        do {
+            let items = try await Task.detached(priority: .utility) {
+                try await Bundle.main.appStoreReceiptURL.map { url in
+                    let data = try Data(contentsOf: url)
+                    return data.count > 0
+                } ?? false
+            }.value
+            return items
+        } catch {
+            print("Failed to check for updates: \(error)")
+            return false
         }
-        return false
+        #endif
     }
     
     func openAppStore() {
-        guard let bundleId = Bundle.main.bundleIdentifier,
-              let url = URL(string: "https://apps.apple.com/app/id\(bundleId)") else {
-            return
+        guard let url = URL(string: "itms-apps://itunes.apple.com/app/id6743163346") else { return }
+        if UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url)
         }
-        
-        Task { @MainActor in
-            await UIApplication.shared.open(url)
-        }
+    }
+    
+    func requestReview() {
+        guard let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else { return }
+        SKStoreReviewController.requestReview(in: scene)
     }
 }

@@ -13,35 +13,35 @@ struct HolographicCard: View {
     
     @State var translation: CGSize = .zero
     @GestureState private var press = false
+    @State private var isAnimating = false
     
     private func cardThemeColor(for rarity: CardRarity) -> Color {
         switch rarity {
         case .common:
-            return Color(red: 0.75, green: 0.75, blue: 0.75) // Silver
+            return Color(red: 0.75, green: 0.75, blue: 0.75)
         case .rare:
-            return Color(red: 0.0, green: 0.48, blue: 0.97) // Blue
+            return Color(red: 0.0, green: 0.48, blue: 0.97)
         case .epic:
-            return Color(red: 0.5, green: 0.0, blue: 0.5) // Purple
+            return Color(red: 0.5, green: 0.0, blue: 0.5)
         case .legendary:
-            return Color(red: 1, green: 0.84, blue: 0) // Gold
-            
+            return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
-            return Color(red: 0.1, green: 0.1, blue: 0.1) // Noir carbone profond
+            return Color(red: 0.1, green: 0.1, blue: 0.1)
         }
     }
-
+    
     var drag: some Gesture {
         DragGesture()
             .onChanged { value in
                 translation = value.translation
             }
             .onEnded { _ in
-                withAnimation {
+                withAnimation(.spring()) {
                     translation = .zero
                 }
             }
     }
-
+    
     var body: some View {
         ZStack {
             // Card background with rarity color and texture
@@ -123,7 +123,6 @@ struct HolographicCard: View {
                 
                 // Stats and info section
                 VStack(spacing: 12) {
-                    // Card number with decorative elements
                     HStack {
                         Text("POCKET CAR ILLUSTRATION ")
                             .font(.system(size: 8, weight: .bold))
@@ -148,28 +147,53 @@ struct HolographicCard: View {
                 }
             }
             
-            // Enhanced holographic effect
-            LinearGradient(
-                colors: [
-                    .clear,
-                    .white.opacity(0.4),
-                    .white.opacity(0.2),
-                    .clear
-                ],
-                startPoint: UnitPoint(
-                    x: 0.2 + translation.width / 500,
-                    y: 0.2 + translation.height / 500
-                ),
-                endPoint: UnitPoint(
-                    x: 0.8 + translation.width / 250,
-                    y: 0.8 + translation.height / 250
+            // Improved holographic effects
+            Group {
+                // Moving shine effect
+                LinearGradient(
+                    colors: [
+                        .clear,
+                        .white.opacity(0.5),
+                        .white.opacity(0.3),
+                        .clear
+                    ],
+                    startPoint: UnitPoint(
+                        x: isAnimating ? 0 : 1,
+                        y: isAnimating ? 0 : 1
+                    ),
+                    endPoint: UnitPoint(
+                        x: isAnimating ? 1 : 0,
+                        y: isAnimating ? 1 : 0
+                    )
                 )
-            )
-            .frame(width: 250, height: 350)
-            .clipShape(RoundedRectangle(cornerRadius: 15))
-            .blendMode(.overlay)
+                .frame(width: 250, height: 350)
+                .clipShape(RoundedRectangle(cornerRadius: 15))
+                .blendMode(.overlay)
+                .opacity(0.5)
+                
+                // Interactive shine effect
+                LinearGradient(
+                    colors: [
+                        .clear,
+                        .white.opacity(0.4),
+                        .white.opacity(0.2),
+                        .clear
+                    ],
+                    startPoint: UnitPoint(
+                        x: 0.2 + translation.width / 500,
+                        y: 0.2 + translation.height / 500
+                    ),
+                    endPoint: UnitPoint(
+                        x: 0.8 + translation.width / 250,
+                        y: 0.8 + translation.height / 250
+                    )
+                )
+                .frame(width: 250, height: 350)
+                .clipShape(RoundedRectangle(cornerRadius: 15))
+                .blendMode(.overlay)
+            }
             
-            // Premium border effect
+            // Enhanced border effect
             RoundedRectangle(cornerRadius: 15)
                 .strokeBorder(
                     LinearGradient(
@@ -179,11 +203,17 @@ struct HolographicCard: View {
                             Color(white: 0.9)
                         ] : [
                             cardThemeColor(for: rarity).opacity(0.8),
-                            .white.opacity(0.5),
+                            .white.opacity(0.7),
                             cardThemeColor(for: rarity).opacity(0.8)
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: UnitPoint(
+                            x: isAnimating ? 0 : 1,
+                            y: isAnimating ? 0 : 1
+                        ),
+                        endPoint: UnitPoint(
+                            x: isAnimating ? 1 : 0,
+                            y: isAnimating ? 1 : 0
+                        )
                     ),
                     lineWidth: 4
                 )
@@ -195,6 +225,14 @@ struct HolographicCard: View {
             axis: (x: -1, y: translation.width / 100, z: 0)
         )
         .gesture(drag)
+        .onAppear {
+            withAnimation(
+                .linear(duration: 2)
+                .repeatForever(autoreverses: true)
+            ) {
+                isAnimating = true
+            }
+        }
     }
 }
 

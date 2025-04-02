@@ -80,6 +80,7 @@ struct ContentView: View {
     @State private var showExclusiveCarInfo = false
     @State private var showLockedBoosterInfo = false
     @State private var showUpdateAlert = false
+    @State private var navigateToBooster = false
     @State private var selectedMilestone: MilestoneIdentifier? = nil
     
     @AppStorage("isFirstLaunch") private var isFirstLaunch = true
@@ -88,6 +89,8 @@ struct ContentView: View {
     @AppStorage("nextBoosterAvailableTime") private var nextBoosterAvailableTime: Double = Date().timeIntervalSince1970
     
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    
+    @StateObject private var notificationManager = NotificationManager.shared
     
     private var viewSize: ViewSize {
         horizontalSizeClass == .compact ? .compact : .regular
@@ -737,12 +740,30 @@ struct ContentView: View {
             .presentationBackground(.clear)
         }
         .onAppear {
+            notificationManager.requestPermission()
             startTimer()
             playMusic()
         }
         .onDisappear {
             stopMusic()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .openBoosterView)) { _ in
+            navigateToBooster = true
+        }
+        .alert("Update Available", isPresented: $showUpdateAlert) {
+            Button("Update") {
+                AppUpdateChecker.shared.openAppStore()
+            }
+            Button("Later", role: .cancel) { }
+        } message: {
+            Text("A new version of Pocket Car is available on the App Store.")
+        }
+        .background(
+            NavigationLink(
+                destination: ShopView(collectionManager: collectionManager, storeManager: StoreManager.shared),
+                isActive: $navigateToBooster
+            ) { EmptyView() }
+        )
     }
     
     var progressBarSection: some View {

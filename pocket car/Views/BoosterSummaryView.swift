@@ -8,89 +8,101 @@ struct BoosterSummaryView: View {
     @State private var preloadedContentView: ContentView? = nil
     
     var body: some View {
-        VStack {
-            Text("Opening Summary")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(.gray)
-                .padding(.top, 30)
+        ZStack {
+            // Light background with subtle gradient
+            LinearGradient(
+                colors: [
+                    Color(red: 0.98, green: 0.98, blue: 0.98),
+                    Color(red: 0.95, green: 0.95, blue: 0.95)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
             
-            Rectangle()
-                .fill(LinearGradient(
-                    colors: [.purple, .blue, .green],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                ))
-                .frame(height: 2)
-                .padding(.horizontal)
-            
-            Spacer()
-            
-            VStack(spacing: -150) {
-                HStack(spacing: -120) {
-                    ForEach(drawnCards.prefix(3), id: \.number) { card in
-                        CardSummaryView(card: card)
-                            .onTapGesture {
-                                selectedCard = card
-                            }
-                    }
-                }
-                .padding(.horizontal)
+            VStack {
+                Text("Opening Summary")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.gray)
+                    .padding(.top, 30)
                 
-                HStack(spacing: -120) {
-                    ForEach(drawnCards.suffix(2), id: \.number) { card in
-                        CardSummaryView(card: card)
-                            .onTapGesture {
-                                selectedCard = card
-                            }
+                Rectangle()
+                    .fill(LinearGradient(
+                        colors: [.purple.opacity(0.7), .blue.opacity(0.7), .green.opacity(0.7)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ))
+                    .frame(height: 2)
+                    .padding(.horizontal)
+                
+                Spacer()
+                
+                // Cards display with adjusted spacing
+                VStack(spacing: -180) {
+                    HStack(spacing: -120) {
+                        ForEach(drawnCards.prefix(3), id: \.number) { card in
+                            CardSummaryView(card: card)
+                                .onTapGesture {
+                                    selectedCard = card
+                                }
+                        }
                     }
+                    .padding(.horizontal)
+                    
+                    HStack(spacing: -120) {
+                        ForEach(drawnCards.suffix(2), id: \.number) { card in
+                            CardSummaryView(card: card)
+                                .onTapGesture {
+                                    selectedCard = card
+                                }
+                        }
+                    }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
-            }
-            
-            Spacer()
-            
-            Button(action: {
-                // Utiliser la vue préchargée si disponible
-                if preloadedContentView != nil {
-                    dismiss()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                
+                Spacer()
+                
+                Button(action: {
+                    if preloadedContentView != nil {
                         dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            dismiss()
+                        }
                     }
-                }
-            }) {
-                HStack {
-                    Image(systemName: "house.fill")
-                        .font(.system(size: 16))
-                    Text("Home")
-                        .font(.headline)
-                }
-                .foregroundColor(.gray)
-                .frame(width: 120)
-                .frame(height: 50)
-                .background(
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 25)
-                            .glow(
-                                fill: .angularGradient(
-                                    colors: [.blue, .purple, .red, .orange, .yellow, .blue],
-                                    center: .center,
-                                    startAngle: .degrees(glowRotationAngle),
-                                    endAngle: .degrees(glowRotationAngle + 360)
-                                ),
-                                lineWidth: 2.0,
-                                blurRadius: 4.0
-                            )
-                            .opacity(0.4)
-                        
-                        RoundedRectangle(cornerRadius: 25)
-                            .fill(Color.white)
+                }) {
+                    HStack {
+                        Image(systemName: "house.fill")
+                            .font(.system(size: 16))
+                        Text("Home")
+                            .font(.headline)
                     }
-                )
+                    .foregroundColor(.gray)
+                    .frame(width: 120)
+                    .frame(height: 50)
+                    .background(
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 25)
+                                .glow(
+                                    fill: .angularGradient(
+                                        colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                        center: .center,
+                                        startAngle: .degrees(glowRotationAngle),
+                                        endAngle: .degrees(glowRotationAngle + 360)
+                                    ),
+                                    lineWidth: 2.0,
+                                    blurRadius: 4.0
+                                )
+                                .opacity(0.4)
+                            
+                            RoundedRectangle(cornerRadius: 25)
+                                .fill(Color.white)
+                        }
+                    )
+                }
+                .padding(.bottom, 30)
             }
-            .padding(.bottom, 30)
         }
-        .background(Color.white)
         .preferredColorScheme(.light)
         .overlay(
             Group {
@@ -114,7 +126,6 @@ struct BoosterSummaryView: View {
             }
         )
         .onAppear {
-            // Précharger ContentView dès que BoosterSummaryView apparaît
             DispatchQueue.global(qos: .userInitiated).async {
                 let contentView = ContentView()
                 DispatchQueue.main.async {
