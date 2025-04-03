@@ -12,202 +12,159 @@ class IAPManager: ObservableObject {
     
     @Published private(set) var products: [Product] = []
     @Published private(set) var purchaseInProgress = false
+    @Published var purchaseError: String?
     
-    @Published var boosters: Int = 0 {
-        didSet {
-            UserDefaults.standard.set(boosters, forKey: "boosters")
+    private let productIdentifiers = Set([
+        "com.pocketcarcollectors.100coins",
+        "com.pocketcarcollectors.500coins"
+    ])
+    
+    private var updateListenerTask: Task<Void, Error>?
+    
+    private init() {
+        print("🚀 Initializing IAPManager")
+        updateListenerTask = listenForTransactions()
+        
+        Task {
+            await loadProducts()
         }
     }
     
-    @Published var nextFreeBoosterDate: Date? {
-        didSet {
-            if let date = nextFreeBoosterDate {
-                UserDefaults.standard.set(date.timeIntervalSince1970, forKey: "nextBoosterTimestamp")
-            } else {
-                UserDefaults.standard.removeObject(forKey: "nextBoosterTimestamp")
+    deinit {
+        updateListenerTask?.cancel()
+    }
+    
+    private func listenForTransactions() -> Task<Void, Error> {
+        return Task.detached {
+            for await result in Transaction.updates {
+                await self.handle(updatedTransaction: result)
             }
         }
     }
     
-    private var appOpenCount: Int {
-        get { UserDefaults.standard.integer(forKey: "appOpenCount") }
-        set { UserDefaults.standard.set(newValue, forKey: "appOpenCount") }
-    }
-    
-    private var hasRequestedReview: Bool {
-        get { UserDefaults.standard.bool(forKey: "hasRequestedReview") }
-        set { UserDefaults.standard.set(newValue, forKey: "hasRequestedReview") }
-    }
-    
-    @Published private var cheatAttempts: Int = 0 {
-        didSet {
-            UserDefaults.standard.set(cheatAttempts, forKey: "cheatAttempts")
-        }
-    }
-    
-    private let productIdentifiers = [
-        "com.pocketcarcollectors.100coins",
-        "com.pocketcarcollectors.500coins"
-    ]
-    
-    private let userDefaults = UserDefaults.standard
-    private let lastTimestampKey = "lastTimestampKey"
-    private let maxTimeJump = 6 * 3600.0 // 6 heures maximum de saut
-    
-    private var lastKnownTimestamp: TimeInterval {
-        get {
-            userDefaults.double(forKey: lastTimestampKey)
-        }
-        set {
-            userDefaults.set(newValue, forKey: lastTimestampKey)
-        }
-    }
-    
-    enum PurchaseError: Error {
-        case failedVerification
-        case cancelled
-    }
-    
-    private init() {
-        self.boosters = UserDefaults.standard.integer(forKey: "boosters")
-        self.cheatAttempts = UserDefaults.standard.integer(forKey: "cheatAttempts")
-        
-        if userDefaults.double(forKey: lastTimestampKey) == 0 {
-            lastKnownTimestamp = Date().timeIntervalSince1970
-        }
-        
-        if let savedTimestamp = UserDefaults.standard.object(forKey: "nextBoosterTimestamp") as? TimeInterval {
-            self.nextFreeBoosterDate = Date(timeIntervalSince1970: savedTimestamp)
-        }
-    }
-    
-    private func validateTimeAndApplyPenalty(_ currentTime: TimeInterval) -> Bool {
-        let timeDifference = currentTime - lastKnownTimestamp
-        
-        if timeDifference < 0 {
-            applyCheatPenalty()
-            return false
-        }
-        
-        if timeDifference > maxTimeJump {
-            applyCheatPenalty()
-            return false
-        }
-        
-        return true
-    }
-    
-    private func applyCheatPenalty() {
-        cheatAttempts += 1
-        
-        let penaltyHours = Double(min(24 * cheatAttempts, 168))
-        nextFreeBoosterDate = Date(timeIntervalSinceNow: penaltyHours * 3600)
-        
-        NotificationCenter.default.post(
-            name: Notification.Name("CheatDetected"),
-            object: nil,
-            userInfo: ["penaltyHours": penaltyHours]
-        )
-    }
-    
-    func checkForReviewRequest() {
-        appOpenCount += 1
-        
-        if appOpenCount >= 5 && !hasRequestedReview {
-            NotificationManager.shared.scheduleReviewNotification()
-            hasRequestedReview = true
-        }
-    }
-    
-    func checkForFreeBooster() {
-        let currentTime = Date().timeIntervalSince1970
-        
-        guard validateTimeAndApplyPenalty(currentTime) else {
-            lastKnownTimestamp = currentTime
+    private func handle(updatedTransaction transaction: VerificationResult<Transaction>) async {
+        guard case .verified(let transaction) = transaction else {
+            print("🚫 Unverified transaction")
             return
         }
         
-        if let nextDate = nextFreeBoosterDate {
-            if Date() >= nextDate {
-                boosters += 1
-                nextFreeBoosterDate = Date(timeIntervalSinceNow: 6 * 3600)
-                cheatAttempts = max(0, cheatAttempts - 1)
-                NotificationManager.shared.scheduleBoosterNotification(for: nextFreeBoosterDate!)
+        print("✅ Processing transaction: \(transaction.productID)")
+        
+        await MainActor.run {
+            let collectionManager = CollectionManager.shared
+            
+            switch transaction.productID {
+            case "com.pocketcarcollectors.100coins":
+                collectionManager.coins += 100
+                print("💰 Added 100 coins. New total: \(collectionManager.coins)")
+                
+            case "com.pocketcarcollectors.500coins":
+                collectionManager.coins += 500
+                print("💰 Added 500 coins. New total: \(collectionManager.coins)")
+                
+            default:
+                print("⚠️ Unknown product ID: \(transaction.productID)")
             }
-        } else {
-            nextFreeBoosterDate = Date(timeIntervalSinceNow: 6 * 3600)
-            NotificationManager.shared.scheduleBoosterNotification(for: nextFreeBoosterDate!)
+            
+            // Save changes
+            collectionManager.saveCollection()
+            
+            // Notify all observers
+            NotificationCenter.default.post(name: .coinsDidUpdate, object: nil)
         }
         
-        lastKnownTimestamp = currentTime
+        await transaction.finish()
     }
     
     func loadProducts() async {
         do {
             products = try await Product.products(for: productIdentifiers)
-            print("Successfully loaded \(products.count) products:")
-            for product in products {
-                print("- \(product.id): \(product.displayName) (\(product.displayPrice))")
-            }
+            print("📦 Loaded \(products.count) products")
         } catch {
-            print("Failed to load products: \(error)")
-            if IAPManager.isTestMode {
-                print("⚠️ In test mode: Make sure you're signed in with a Sandbox account in Settings")
-                print("⚠️ Products need to be configured in App Store Connect")
-            }
+            print("❌ Failed to load products: \(error)")
         }
     }
     
     func purchase(_ product: Product) async throws -> Bool {
         purchaseInProgress = true
-        defer { purchaseInProgress = false }
-        
-        if IAPManager.isTestMode {
-            print("🚀 Starting purchase for \(product.id)")
-        }
         
         do {
             let result = try await product.purchase()
             
             switch result {
             case .success(let verification):
-                if IAPManager.isTestMode {
-                    print("✅ Purchase success, verifying transaction")
-                }
                 switch verification {
                 case .verified(let transaction):
+                    await MainActor.run {
+                        let collectionManager = CollectionManager.shared
+                        
+                        switch product.id {
+                        case "com.pocketcarcollectors.100coins":
+                            collectionManager.coins += 100
+                            print("💰 Direct add: 100 coins. New total: \(collectionManager.coins)")
+                            
+                        case "com.pocketcarcollectors.500coins":
+                            collectionManager.coins += 500
+                            print("💰 Direct add: 500 coins. New total: \(collectionManager.coins)")
+                            
+                        default:
+                            break
+                        }
+                        
+                        // Save changes
+                        collectionManager.saveCollection()
+                        
+                        // Notify all observers
+                        NotificationCenter.default.post(name: .coinsDidUpdate, object: nil)
+                    }
+                    
                     await transaction.finish()
-                    if IAPManager.isTestMode {
-                        print("✅ Transaction verified and finished")
-                    }
+                    purchaseInProgress = false
                     return true
+                    
                 case .unverified:
-                    if IAPManager.isTestMode {
-                        print("❌ Transaction verification failed")
-                    }
                     throw PurchaseError.failedVerification
                 }
+                
             case .userCancelled:
-                if IAPManager.isTestMode {
-                    print("❌ Purchase cancelled by user")
-                }
+                purchaseInProgress = false
                 throw PurchaseError.cancelled
+                
             case .pending:
-                if IAPManager.isTestMode {
-                    print("⏳ Purchase pending")
-                }
-                return false
+                purchaseInProgress = false
+                throw PurchaseError.pending
+                
             @unknown default:
-                if IAPManager.isTestMode {
-                    print("❌ Unknown purchase state")
-                }
-                return false
+                purchaseInProgress = false
+                throw PurchaseError.unknown
             }
         } catch {
-            if IAPManager.isTestMode {
-                print("❌ Purchase error: \(error)")
-            }
+            purchaseInProgress = false
             throw error
         }
     }
+    
+    enum PurchaseError: Error, LocalizedError {
+        case failedVerification
+        case cancelled
+        case pending
+        case unknown
+        
+        var errorDescription: String? {
+            switch self {
+            case .failedVerification:
+                return "Purchase verification failed"
+            case .cancelled:
+                return "Purchase cancelled"
+            case .pending:
+                return "Purchase pending"
+            case .unknown:
+                return "Unknown error occurred"
+            }
+        }
+    }
+}
+
+extension Notification.Name {
+    static let coinsDidUpdate = Notification.Name("coinsDidUpdate")
 }

@@ -14,6 +14,7 @@ struct ShopView: View {
     @State private var showingPurchaseErrorAlert = false
     @State private var glowRotationAngle: Double = 0
     @State private var selectedBoosterType: BoosterType = .single
+    @State private var coinsCount: Int = 0
     
     enum BoosterType {
         case single
@@ -57,7 +58,7 @@ struct ShopView: View {
                 HStack {
                     Spacer()
                     HStack(spacing: 4) {
-                        Text("\(collectionManager.coins)")
+                        Text("\(coinsCount)")
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(.gray)
                         Image("coin")
@@ -141,6 +142,13 @@ struct ShopView: View {
                 .padding(.bottom, 8)
             }
         }
+        .onAppear {
+            coinsCount = collectionManager.coins
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .coinsDidUpdate)) { _ in
+            print("💰 Updating coins display in ShopView")
+            coinsCount = collectionManager.coins
+        }
         .task {
             await iapManager.loadProducts()
         }
@@ -181,24 +189,15 @@ struct ShopView: View {
                         
                         // Play purchase sound
                         AudioServicesPlaySystemSound(soundEffect)
+                        print("💰 Purchase successful")
                         
-                        if product.id == "com.pocketcarcollectors.100coins" {
-                            collectionManager.coins += 100
-                            print("💰 Added 100 coins")
-                        } else {
-                            collectionManager.coins += 500
-                            print("💰 Added 500 coins")
+                        // Update local state
+                        await MainActor.run {
+                            coinsCount = collectionManager.coins
                         }
-                        collectionManager.saveCollection()
                     }
-                } catch let error as IAPManager.PurchaseError {
-                    print("❌ Purchase failed with error: \(error.localizedDescription)")
-                    // Haptic feedback for error
-                    HapticManager.shared.impact(style: .rigid)
-                    showingPurchaseErrorAlert = true
                 } catch {
-                    print("❌ Unexpected error: \(error)")
-                    // Haptic feedback for error
+                    print("❌ Purchase failed: \(error.localizedDescription)")
                     HapticManager.shared.impact(style: .rigid)
                     showingPurchaseErrorAlert = true
                 }
@@ -242,8 +241,8 @@ struct ShopView: View {
                     Spacer()
                 }
                 .padding(.horizontal, 20)
+                .opacity(iapManager.purchaseInProgress ? 0.5 : 1)
             }
-            .padding(.horizontal)
         }
         .disabled(iapManager.purchaseInProgress)
     }

@@ -5,9 +5,14 @@ struct CollectionView: View {
     @ObservedObject var collectionManager: CollectionManager
     @State private var selectedCard: BoosterCard? = nil
     @State private var showingRarityInfo = false
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+
+    private var viewSize: ViewSize {
+        horizontalSizeClass == .compact ? .compact : .regular
+    }
 
     var body: some View {
-        NavigationView {
+        GeometryReader { geometry in
             ZStack {
                 LinearGradient(
                     gradient: Gradient(colors: [.white, Color(.systemGray5)]),
@@ -42,6 +47,8 @@ struct CollectionView: View {
                         CollectionGridView(cards: collectionManager.cards, selectedCard: $selectedCard)
                     }
                 }
+                .frame(maxWidth: viewSize == .compact ? .infinity : min(geometry.size.width * 0.8, 800))
+                .frame(maxWidth: .infinity)
 
                 if let selectedCard = selectedCard {
                     ZoomedCardView(selectedCard: $selectedCard, collectionManager: collectionManager)

@@ -43,28 +43,26 @@ class StoreManager: ObservableObject {
         
         if let savedTimestamp = UserDefaults.standard.object(forKey: "nextBoosterTimestamp") as? TimeInterval {
             let currentTime = Date().timeIntervalSince1970
-            
-            if currentTime < self.lastKnownTimestamp {
-                self.boosters = 0
-                self.nextFreeBoosterDate = Date().addingTimeInterval(6 * 3600)
-                self.lastKnownTimestamp = currentTime
-                return
-            }
-            
             let savedDate = Date(timeIntervalSince1970: savedTimestamp)
-            self.nextFreeBoosterDate = savedDate
             
             if currentTime >= savedTimestamp {
-                let timeDifference = currentTime - self.lastKnownTimestamp
-                let expectedBoosters = Int(timeDifference / (6 * 3600))
+                let hoursElapsed = Int((currentTime - savedTimestamp) / 3600)
+                let boostersToAdd = min(hoursElapsed / 6, 1)  // Max 1 booster
                 
-                let maxAccumulatedBoosters = 1
-                self.boosters += min(expectedBoosters, maxAccumulatedBoosters)
-                
-                if self.boosters > 0 {
-                    self.nextFreeBoosterDate = nil
+                if boostersToAdd > 0 {
+                    self.boosters += boostersToAdd
+                    // Set next booster time 6 hours from now
+                    self.nextFreeBoosterDate = Date().addingTimeInterval(6 * 3600)
+                } else {
+                    // Keep the existing next booster date
+                    self.nextFreeBoosterDate = savedDate
                 }
+            } else {
+                self.nextFreeBoosterDate = savedDate
             }
+        } else if self.boosters == 0 {
+            // If no saved timestamp and no boosters, start timer
+            self.nextFreeBoosterDate = Date().addingTimeInterval(6 * 3600)
         }
         
         self.lastKnownTimestamp = Date().timeIntervalSince1970
@@ -73,10 +71,20 @@ class StoreManager: ObservableObject {
     func useBooster() {
         if boosters > 0 {
             boosters -= 1
-            let currentTime = Date().timeIntervalSince1970
-            let nextTimestamp = currentTime + (6 * 3600)
-            nextFreeBoosterDate = Date(timeIntervalSince1970: nextTimestamp)
-            lastKnownTimestamp = currentTime
+            
+            // Set next booster time if no more boosters
+            if boosters == 0 {
+                let currentTime = Date().timeIntervalSince1970
+                let nextTime = currentTime + (6 * 3600)
+                nextFreeBoosterDate = Date(timeIntervalSince1970: nextTime)
+                lastKnownTimestamp = currentTime
+                
+                print("🕒 Setting next booster time to: \(nextFreeBoosterDate!)")
+                if let nextDate = nextFreeBoosterDate {
+                    NotificationManager.shared.scheduleBoosterNotification(for: nextDate)
+                }
+            }
+            
             print("Booster used. Remaining: \(boosters)")
         }
     }
@@ -86,25 +94,24 @@ class StoreManager: ObservableObject {
         let currentTime = Date().timeIntervalSince1970
         let nextTimestamp = nextDate.timeIntervalSince1970
         
-        if currentTime < lastKnownTimestamp {
-            boosters = 0
-            nextFreeBoosterDate = Date().addingTimeInterval(6 * 3600)
-            lastKnownTimestamp = currentTime
-            return
-        }
+        print("⏱ Checking for free booster - Current time: \(Date())")
+        print("⏰ Next booster time: \(nextDate)")
         
         if currentTime >= nextTimestamp {
-            let timeDifference = currentTime - lastKnownTimestamp
-            if timeDifference <= (6 * 3600) {
-                boosters += 1
-                nextFreeBoosterDate = nil
-                lastKnownTimestamp = currentTime
-                print("Free booster added. Now have: \(boosters)")
+            boosters += 1
+            
+            if boosters == 1 {
+                // Start new timer only if this was the first booster
+                let newDate = Date().addingTimeInterval(6 * 3600)
+                nextFreeBoosterDate = newDate
+                print("🆕 Scheduling next booster notification for: \(newDate)")
+                NotificationManager.shared.scheduleBoosterNotification(for: newDate)
             } else {
-                boosters = 0
-                nextFreeBoosterDate = Date().addingTimeInterval(6 * 3600)
-                lastKnownTimestamp = currentTime
+                nextFreeBoosterDate = nil
             }
+            
+            lastKnownTimestamp = currentTime
+            print("Free booster added. Now have: \(boosters)")
         }
     }
 }

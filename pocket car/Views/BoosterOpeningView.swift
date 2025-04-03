@@ -86,10 +86,10 @@ struct ParticleSystem: View {
     
     var body: some View {
         GeometryReader { geometry in
-            ForEach(particles.prefix(150), id: \.id) { particle in 
+            ForEach(particles.prefix(150), id: \.id) { particle in
                 Circle()
                     .fill(haloColor(for: rarity))
-                    .frame(width: 4, height: 4) 
+                    .frame(width: 4, height: 4)
                     .scaleEffect(particle.scale)
                     .position(particle.position)
                     .opacity(particle.opacity)
@@ -103,18 +103,18 @@ struct ParticleSystem: View {
     
     private func createParticles() {
         particles = []
-        for i in 0..<150 { 
+        for i in 0..<150 {
             let angle = Double.random(in: -Double.pi...Double.pi)
-            let speed = Double.random(in: 100...400) 
-            let scale = Double.random(in: 0.3...1.2) 
+            let speed = Double.random(in: 100...400)
+            let scale = Double.random(in: 0.3...1.2)
             let startPosition = CGPoint(x: 120, y: 170)
-            let duration = Double.random(in: 0.6...1.2) 
-            let delay = Double.random(in: 0...0.3) 
+            let duration = Double.random(in: 0.6...1.2)
+            let delay = Double.random(in: 0...0.3)
             
             var particle = (
                 id: i,
                 position: startPosition,
-                opacity: Double.random(in: 0.3...0.8), 
+                opacity: Double.random(in: 0.3...0.8),
                 scale: scale,
                 speed: speed
             )
@@ -123,7 +123,7 @@ struct ParticleSystem: View {
             withAnimation(
                 Animation
                     .easeOut(duration: duration)
-                    .delay(delay) 
+                    .delay(delay)
             ) {
                 let distance = speed * duration
                 let dx = cos(angle) * distance
@@ -131,7 +131,7 @@ struct ParticleSystem: View {
                 particle.position.x += CGFloat(dx)
                 particle.position.y += CGFloat(dy)
                 particle.opacity = 0
-                particle.scale *= 0.5 
+                particle.scale *= 0.5
                 particles[i] = particle
             }
         }
@@ -189,6 +189,21 @@ struct ParticleSystem: View {
 struct EnhancedRarityButton: View {
     let rarity: CardRarity
     
+    private func getDropRate(for rarity: CardRarity) -> String {
+        switch rarity {
+        case .common:
+            return "70%"
+        case .rare:
+            return "25%"
+        case .epic:
+            return "4%"
+        case .legendary:
+            return "0.9%"
+        case .HolyT:
+            return "0.1%"
+        }
+    }
+    
     private func getGradientColors(for rarity: CardRarity) -> [Color] {
         switch rarity {
         case .common:
@@ -231,13 +246,20 @@ struct EnhancedRarityButton: View {
                             lineWidth: 1
                         )
                 )
-                .frame(width: 160, height: 45)
+                .frame(width: 160, height: 55)
             
             // Texte
-            Text(rarity.rawValue.uppercased())
-                .font(.system(size: 15, weight: .black, design:.default))
-                .foregroundColor(.white)
-                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+            VStack(spacing: 2) {
+                Text(rarity.rawValue.uppercased())
+                    .font(.system(size: 15, weight: .black, design:.default))
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+                
+                // ADD: Drop rate text
+                Text(getDropRate(for: rarity))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.white.opacity(0.7))
+            }
         }
         .shadow(color: getGradientColors(for: rarity).first?.opacity(0.3) ?? .clear, radius: 5, x: 0, y: 2)
     }
@@ -269,6 +291,35 @@ struct NewCardBadge: View {
     }
 }
 
+struct GestureHintView: View {
+    @State private var tapOpacity: Double = 0.6
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "hand.tap.fill")
+                .font(.system(size: 16))
+            Text("Tap anywhere")
+                .font(.system(size: 14, weight: .medium))
+        }
+        .foregroundColor(.white)
+        .opacity(tapOpacity)
+        .onAppear {
+            withAnimation(
+                .easeInOut(duration: 1.2)
+                .repeatForever(autoreverses: true)
+            ) {
+                tapOpacity = 0.2
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 15)
+                .fill(Color.black.opacity(0.2))
+                .blur(radius: 5)
+        )
+    }
+}
+
 struct BoosterOpeningView: View {
     @ObservedObject var collectionManager: CollectionManager
     @ObservedObject var storeManager = StoreManager.shared
@@ -294,6 +345,7 @@ struct BoosterOpeningView: View {
     @State private var showNewBadge: Bool = false
     @State private var drawnCards: [BoosterCard] = []
     @State private var showSummary = false
+    @State private var showGestureHint = true
     
     private let allCards: [BoosterCard] = [
         // Common (40%) - Cards 1-100
@@ -501,7 +553,7 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Koenigsegg One:1", rarity: .epic, number: 198),
         BoosterCard(name: "Pagani Zonda Cinque Roadster", rarity: .epic, number: 199),
         BoosterCard(name: "McLaren Speedtail", rarity: .epic, number: 200),
-        BoosterCard(name: "Ferrari P80/C", rarity: .epic, number: 201),
+        BoosterCard(name: "Ferrari P80", rarity: .epic, number: 201),
         BoosterCard(name: "Aston Martin Victor", rarity: .epic, number: 202),
         BoosterCard(name: "Lamborghini Essenza SCV12", rarity: .epic, number: 203),
         BoosterCard(name: "Bugatti Centodieci", rarity: .epic, number: 204),
@@ -523,7 +575,7 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "McLaren 720S Spider", rarity: .epic, number: 220),
         BoosterCard(name: "Ferrari 812 Competizione", rarity: .epic, number: 221),
         BoosterCard(name: "Aston Martin V12 Speedster", rarity: .epic, number: 222),
-        BoosterCard(name: "Lamborghini Aventador Ultimae", rarity: .epic, number: 223),
+        BoosterCard(name: "Lamborghini Aventador Ultimate", rarity: .epic, number: 223),
         BoosterCard(name: "Bugatti Chiron Super Sport", rarity: .epic, number: 224),
         BoosterCard(name: "Koenigsegg Regera Final Edition", rarity: .epic, number: 225),
 
@@ -553,7 +605,7 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Pagani Zonda F", rarity: .legendary, number: 248),
         BoosterCard(name: "Lamborghini Miura SV", rarity: .legendary, number: 249),
         BoosterCard(name: "Bugatti Chiron Super Sport 300+", rarity: .legendary, number: 250)
-,
+        ,
         
         // HolyT (0,1%) - Cards 251-253
     
@@ -631,75 +683,95 @@ struct BoosterOpeningView: View {
     
     @ViewBuilder
     private func cardRevealView(for selectedCard: BoosterCard) -> some View {
-        VStack(spacing: 60) {
-            ZStack {
-                ParticleSystem(rarity: selectedCard.rarity)
-                    .frame(width: 300, height: 400)
-                    .id(currentCardIndex)
-                
-                ZStack(alignment: .topTrailing) {
-                    HolographicCard(
-                        cardImage: selectedCard.name,
-                        rarity: selectedCard.rarity,
-                        cardNumber: selectedCard.number
-                    )
-                    
-                    if showNewBadge {
-                        NewCardBadge()
-                            .offset(x: -20, y: -35)
-                            .transition(.scale.combined(with: .opacity))
-                    }
-                }
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(haloColor(for: selectedCard.rarity))
-                        .blur(radius: 20)
-                        .opacity(0.7)
-                )
-                .scaleEffect(cardScale)
-                .offset(y: cardOffset + dragOffset)
-                .modifier(AutoHolographicAnimation())
-                .gesture(
-                    DragGesture()
-                        .onChanged { gesture in
-                            if isTransitioning { return }
-                            let translation = gesture.translation.height
-                            if translation < 0 {
-                                dragOffset = translation
-                                showArrowIndicator = false
-                            }
-                        }
-                        .onEnded { gesture in
-                            if isTransitioning { return }
-                            if dragOffset < -50 {
-                                handleCardReveal(selectedCard)
-                            } else {
-                                withAnimation {
-                                    dragOffset = 0
-                                    showArrowIndicator = true
-                                }
-                            }
-                        }
-                )
+        ZStack {
+            // Clickable background for the whole screen
+            Color.clear
+                .contentShape(Rectangle())
                 .onTapGesture {
                     handleCardReveal(selectedCard)
                 }
-                .onAppear {
-                    isNewCard = collectionManager.isNewCard(selectedCard)
-                    withAnimation(.spring()) {
-                        showNewBadge = isNewCard
-                    }
-                    SoundManager.shared.playSound(for: selectedCard.rarity)
-                }
-            }
+                .ignoresSafeArea()
             
-            EnhancedRarityButton(rarity: selectedCard.rarity)
+            VStack {
+                Spacer()
+                
+                // Card and button container with more space at the top
+                VStack(spacing: 60) {
+                    ZStack {
+                        ParticleSystem(rarity: selectedCard.rarity)
+                            .frame(width: 300, height: 400)
+                            .id(currentCardIndex)
+                        
+                        ZStack(alignment: .topTrailing) {
+                            HolographicCard(
+                                cardImage: selectedCard.name,
+                                rarity: selectedCard.rarity,
+                                cardNumber: selectedCard.number
+                            )
+                            .onTapGesture {  // CHANGE: Added tap gesture to the card
+                                handleCardReveal(selectedCard)
+                            }
+                            
+                            if showNewBadge {
+                                NewCardBadge()
+                                    .offset(x: -20, y: -35)
+                                    .transition(.scale.combined(with: .opacity))
+                            }
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(haloColor(for: selectedCard.rarity))
+                                .blur(radius: 20)
+                                .opacity(0.7)
+                        )
+                        .scaleEffect(cardScale)
+                        .offset(y: cardOffset + dragOffset)
+                        .modifier(AutoHolographicAnimation())
+                        .gesture(
+                            DragGesture()
+                                .onChanged { gesture in
+                                    if isTransitioning { return }
+                                    let translation = gesture.translation.height
+                                    if translation < 0 {
+                                        dragOffset = translation
+                                        showArrowIndicator = false
+                                    }
+                                }
+                                .onEnded { gesture in
+                                    if isTransitioning { return }
+                                    if dragOffset < -50 {
+                                        handleCardReveal(selectedCard)
+                                    } else {
+                                        withAnimation {
+                                            dragOffset = 0
+                                            showArrowIndicator = true
+                                        }
+                                    }
+                                }
+                        )
+                    }
+                    
+                    EnhancedRarityButton(rarity: selectedCard.rarity)
+                        .allowsHitTesting(false)
+                }
+                // Add padding to push content down
+                .padding(.top, 80)
+                
+                Spacer()
+                
+                GestureHintView()
+                    .padding(.bottom, 50)
+            }
         }
     }
-    
+
     private func handleCardReveal(_ selectedCard: BoosterCard) {
         if isTransitioning { return }
         isTransitioning = true
+        
+        withAnimation {
+            showGestureHint = false
+        }
         
         withAnimation(.easeInOut(duration: 0.3)) {
             cardOffset = -UIScreen.main.bounds.height
@@ -722,6 +794,7 @@ struct BoosterOpeningView: View {
             isNewCard = false
             if currentCardIndex < 5 {
                 currentCard = randomCard()
+                showGestureHint = true
                 SoundManager.shared.playSound(for: currentCard!.rarity)
             } else {
                 showSummary = true
@@ -776,7 +849,7 @@ struct AutoHolographicAnimation: ViewModifier {
             .onAppear {
                 withAnimation(
                     Animation
-                        .easeInOut(duration: 1.5)
+                        .easeInOut(duration: 3.0)
                         .repeatForever(autoreverses: true)
                 ) {
                     isAnimating = true

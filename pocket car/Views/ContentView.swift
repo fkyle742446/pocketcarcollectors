@@ -129,425 +129,426 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             GeometryReader { geometry in
-                ZStack {
-                    LinearGradient(
-                        gradient: Gradient(colors: [.white, Color(.systemGray5)]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .ignoresSafeArea()
+                HStack(spacing: 0) {
+                    // Main content
+                    ZStack {
+                        LinearGradient(
+                            gradient: Gradient(colors: [.white, Color(.systemGray5)]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .ignoresSafeArea()
 
-                    VStack {
-                        Spacer()
-                    }
-
-                    VStack(spacing: viewSize == .compact ? 1 : 5) {
-                        // Top logo section - Adjust size for iPad
-                        VStack(spacing: -50) {
-                            // 3D Model View with Legendary Halo
-                            ZStack {
-                                // Base rectangle with depth effect
-                                RoundedRectangle(cornerRadius: 25)
-                                    .fill(Color("mint").opacity(0.1))
-                                    .frame(height: viewSize == .compact ? 200 : 250)
-                                    .overlay(
-                                        
-                                        RoundedRectangle(cornerRadius: 25)
-                                            .stroke(Color("mint").opacity(0.3), lineWidth: 1)
-                                    )
-                                    .shadow(color: Color("mint").opacity(0.1), radius: 10, x: 0, y: 5)
-                                
-                                // Surface rectangle
-                                RoundedRectangle(cornerRadius: 25)
-                                    .fill(Color.white.opacity(1))
-                                    .frame(height: 170)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 25)
-                                            .stroke(Color.white, lineWidth: 1)
-                                    )
-                                    .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 2)
-                                    .offset(y: 30)
-
-                                // ADD: Few days left text positioned on top of the rectangle
-                                VStack {
-                                    HStack {
-                                        Spacer()
-                                        Text("Few days left")
-                                            .font(.system(size: 10, weight: .semibold))
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 10)
-                                            .padding(.vertical, 4)
-                                            .background(
-                                                Capsule()
-                                                    .fill(
-                                                        LinearGradient(
-                                                            colors: [Color.yellow, Color.orange],
-                                                            startPoint: .leading,
-                                                            endPoint: .trailing
-                                                        )
-                                                    )
-                                                    .shadow(color: .black.opacity(0.2), radius: 4)
-                                            )
-                                            .overlay(
-                                                Capsule()
-                                                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                                            )
-                                            .offset(y: 80)
-                                            .padding(.trailing, 20)
-                                    }
-                                    Spacer()
-                                }
-                                .zIndex(2)
-
-                                Button(action: {
-                                    showExclusiveCarInfo = true
-                                    HapticManager.shared.impact(style: .medium)
-                                }) {
-                                    ZStack {
-                                        // 3D Model View
-                                        SpriteView(scene: { () -> SKScene in
-                                            let scene = SKScene()
-                                            scene.backgroundColor = UIColor.clear
+                        VStack(spacing: viewSize == .compact ? 1 : 5) {
+                            // Top logo section - Adjust size for iPad
+                            VStack(spacing: -50) {
+                                // 3D Model View with Legendary Halo
+                                ZStack {
+                                    // Base rectangle with depth effect
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .fill(Color("mint").opacity(0.1))
+                                        .frame(height: viewSize == .compact ? 200 : 250)
+                                        .overlay(
                                             
-                                            let model = SK3DNode(viewportSize: .init(width: 12, height: 12))
-                                            model.scnScene = {
-                                                let scnScene = SCNScene(named: "car.obj")!
-                                                scnScene.background.contents = UIColor.clear
+                                            RoundedRectangle(cornerRadius: 25)
+                                                .stroke(Color("mint").opacity(0.3), lineWidth: 1)
+                                        )
+                                        .shadow(color: Color("mint").opacity(0.1), radius: 10, x: 0, y: 5)
+                                    
+                                    // Surface rectangle
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .fill(Color.white.opacity(1))
+                                        .frame(height: 170)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 25)
+                                                .stroke(Color.white, lineWidth: 1)
+                                        )
+                                        .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 2)
+                                        .offset(y: 30)
+
+                                    // ADD: Few days left text positioned on top of the rectangle
+                                    VStack {
+                                        HStack {
+                                            Spacer()
+                                            Text("Few days left")
+                                                .font(.system(size: 10, weight: .semibold))
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 10)
+                                                .padding(.vertical, 4)
+                                                .background(
+                                                    Capsule()
+                                                        .fill(
+                                                            LinearGradient(
+                                                                colors: [Color.yellow, Color.orange],
+                                                                startPoint: .leading,
+                                                                endPoint: .trailing
+                                                            )
+                                                        )
+                                                        .shadow(color: .black.opacity(0.2), radius: 4)
+                                                )
+                                                .overlay(
+                                                    Capsule()
+                                                        .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                                                )
+                                                .offset(y: 80)
+                                                .padding(.trailing, 20)
+                                        }
+                                        Spacer()
+                                    }
+                                    .zIndex(2)
+
+                                    Button(action: {
+                                        showExclusiveCarInfo = true
+                                        HapticManager.shared.impact(style: .medium)
+                                    }) {
+                                        ZStack {
+                                            // 3D Model View
+                                            SpriteView(scene: { () -> SKScene in
+                                                let scene = SKScene()
+                                                scene.backgroundColor = UIColor.clear
                                                 
-                                                let node = scnScene.rootNode.childNodes.first!
-                                                
-                                                // Add rotation animation
-                                                let rotation = CABasicAnimation(keyPath: "rotation")
-                                                rotation.fromValue = NSValue(scnVector4: SCNVector4(0, 1, 0, 0))
-                                                rotation.toValue = NSValue(scnVector4: SCNVector4(0, 1, 0, Float.pi * 2))
-                                                rotation.duration = 15
-                                                rotation.repeatCount = .infinity
-                                                node.addAnimation(rotation, forKey: "rotate")
-                                                
-                                                let material = SCNMaterial()
-                                                material.diffuse.contents = UIImage(named: "texture_diffuse.png")
-                                                material.metalness.contents = UIImage(named: "texture_metallic.png")
-                                                material.normal.contents = UIImage(named: "texture_normal.png")
-                                                material.roughness.contents = UIImage(named: "texture_roughness.png")
-                                                material.emission.contents = UIColor.white
-                                                material.emission.intensity = 0.2
-                                                material.specular.contents = UIColor.white
-                                                material.shininess = 0.7
-                                                
-                                                node.geometry?.materials = [material]
-                                                
-                                                let cameraNode = SCNNode()
-                                                cameraNode.camera = SCNCamera()
-                                                cameraNode.position = SCNVector3(x: -1.6, y: 0, z: 14)
-                                                scnScene.rootNode.addChildNode(cameraNode)
-                                                
-                                                return scnScene
-                                            }()
+                                                let model = SK3DNode(viewportSize: .init(width: 12, height: 12))
+                                                model.scnScene = {
+                                                    let scnScene = SCNScene(named: "car.obj")!
+                                                    scnScene.background.contents = UIColor.clear
+                                                    
+                                                    let node = scnScene.rootNode.childNodes.first!
+                                                    
+                                                    // Add rotation animation
+                                                    let rotation = CABasicAnimation(keyPath: "rotation")
+                                                    rotation.fromValue = NSValue(scnVector4: SCNVector4(0, 1, 0, 0))
+                                                    rotation.toValue = NSValue(scnVector4: SCNVector4(0, 1, 0, Float.pi * 2))
+                                                    rotation.duration = 15
+                                                    rotation.repeatCount = .infinity
+                                                    node.addAnimation(rotation, forKey: "rotate")
+                                                    
+                                                    let material = SCNMaterial()
+                                                    material.diffuse.contents = UIImage(named: "texture_diffuse.png")
+                                                    material.metalness.contents = UIImage(named: "texture_metallic.png")
+                                                    material.normal.contents = UIImage(named: "texture_normal.png")
+                                                    material.roughness.contents = UIImage(named: "texture_roughness.png")
+                                                    material.emission.contents = UIColor.white
+                                                    material.emission.intensity = 0.2
+                                                    material.specular.contents = UIColor.white
+                                                    material.shininess = 0.7
+                                                    
+                                                    node.geometry?.materials = [material]
+                                                    
+                                                    let cameraNode = SCNNode()
+                                                    cameraNode.camera = SCNCamera()
+                                                    cameraNode.position = SCNVector3(x: -1.6, y: 0, z: 14)
+                                                    scnScene.rootNode.addChildNode(cameraNode)
+                                                    
+                                                    return scnScene
+                                                }()
+                                            
+                                            scene.addChild(model)
+                                            return scene
+                                        }(), options: [.allowsTransparency])
+                                        .frame(height: 150)
+                                        .background(Color.clear)
+                                        .offset(y: -20)
                                         
-                                        scene.addChild(model)
-                                        return scene
-                                    }(), options: [.allowsTransparency])
-                                    .frame(height: 150)
-                                    .background(Color.clear)
-                                    .offset(y: -20)
+                                        VStack {
+                                            Spacer()
+                                            
+                                            // Season availability text at the bottom
+                                            Text("only available this season 1")
+                                                .font(.system(size: 12, weight: .medium))
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 6)
+                                                .background(
+                                                    Capsule()
+                                                        .fill(
+                                                            LinearGradient(
+                                                                colors: [Color.yellow, Color.orange],
+                                                                startPoint: .leading,
+                                                                endPoint: .trailing
+                                                            )
+                                                        )
+                                                        .shadow(color: .black.opacity(0.2), radius: 4)
+                                                )
+                                                .overlay(
+                                                    Capsule()
+                                                        .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                                                )
+                                                .padding(.bottom, 10)
+                                        }
+                                        .zIndex(3)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal)
+
+                            }
+                            .padding(.top, viewSize == .compact ? 10 : 20)
+                            
+                            Spacer()
+
+                            VStack(spacing: viewSize == .compact ? 8 : 15) {
+                                // Boosters section - Adjust for iPad
+                                ZStack {
+                                    // Base rectangle with depth effect
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .fill(Color("mint").opacity(0.1))
+                                        .frame(height: viewSize == .compact ? 350 : 450)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 25)
+                                                .stroke(Color("mint").opacity(0.3), lineWidth: 1)
+                                        )
+                                        .shadow(color: Color("mint").opacity(0.1), radius: 10, x: 0, y: 5)
+                                    
+                                    // Surface rectangle
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .fill(Color.white.opacity(1))
+                                        .frame(height: viewSize == .compact ? 320 : 420)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 25)
+                                                .stroke(Color.white, lineWidth: 1)
+                                        )
+                                        .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
+                                        .offset(y: 0)
                                     
                                     VStack {
                                         Spacer()
-                                        
-                                        // Season availability text at the bottom
-                                        Text("only available this season 1")
-                                            .font(.system(size: 12, weight: .medium))
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 12)
-                                            .padding(.vertical, 6)
-                                            .background(
-                                                Capsule()
-                                                    .fill(
-                                                        LinearGradient(
-                                                            colors: [Color.yellow, Color.orange],
-                                                            startPoint: .leading,
-                                                            endPoint: .trailing
-                                                        )
-                                                    )
-                                                    .shadow(color: .black.opacity(0.2), radius: 4)
-                                            )
-                                            .overlay(
-                                                Capsule()
-                                                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                                            )
-                                            .padding(.bottom, 10)
-                                    }
-                                    .zIndex(3)
-                                    }
-                                }
-                            }
-                            .padding(.horizontal)
-
-                        }
-                        .padding(.top, viewSize == .compact ? 10 : 20)
-                        
-                        Spacer()
-
-                        VStack(spacing: viewSize == .compact ? 8 : 15) {
-                            // Boosters section - Adjust for iPad
-                            ZStack {
-                                // Base rectangle with depth effect
-                                RoundedRectangle(cornerRadius: 25)
-                                    .fill(Color("mint").opacity(0.1))
-                                    .frame(height: viewSize == .compact ? 350 : 450)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 25)
-                                            .stroke(Color("mint").opacity(0.3), lineWidth: 1)
-                                    )
-                                    .shadow(color: Color("mint").opacity(0.1), radius: 10, x: 0, y: 5)
-                                
-                                // Surface rectangle
-                                RoundedRectangle(cornerRadius: 25)
-                                    .fill(Color.white.opacity(1))
-                                    .frame(height: viewSize == .compact ? 320 : 420)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 25)
-                                            .stroke(Color.white, lineWidth: 1)
-                                    )
-                                    .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
-                                    .offset(y: 0)
-                                
-                                VStack {
-                                    Spacer()
-                                    HStack(spacing: viewSize == .compact ? 30 : 50) {
-                                        // First booster with glare and 3D rotation
-                                        Button(action: {
-                                            if StoreManager.shared.boosters == 0 {
-                                                showLockedBoosterInfo = true
-                                                HapticManager.shared.impact(style: .medium)
-                                            }
-                                        }) {
-                                            NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 1)) {
-                                                ZStack {
-                                                    Image("booster_closed_1")
-                                                        .resizable()
-                                                        .scaledToFit()
-                                                        .frame(height: boosterHeight)
-                                                        // ADD: 3D rotation effect
-                                                        .rotation3DEffect(
-                                                            .degrees(booster1Rotation),
-                                                            axis: (x: 0.0, y: 1.0, z: 0.0)
-                                                        )
-                                                        .shadow(color: .black.opacity(0.3), radius: 5, x: -3, y: 3)
-                                                    
-                                                    Rectangle()
-                                                        .fill(
-                                                            LinearGradient(
-                                                                gradient: Gradient(colors: [
-                                                                    .clear,
-                                                                    .white.opacity(0.01),
-                                                                    .white.opacity(0.15),
-                                                                    .white.opacity(0.01),
-                                                                    .clear
-                                                                ]),
-                                                                startPoint: .topLeading,
-                                                                endPoint: .bottomTrailing
-                                                            )
-                                                        )
-                                                        .frame(width: 100)
-                                                        .rotationEffect(.degrees(-65))
-                                                        .offset(x: booster1GlareOffset, y: booster1GlareOffset/3)
-                                                        .blur(radius: 3)
+                                        HStack(spacing: viewSize == .compact ? 30 : 50) {
+                                            // First booster with glare and 3D rotation
+                                            Button(action: {
+                                                if StoreManager.shared.boosters == 0 {
+                                                    showLockedBoosterInfo = true
+                                                    HapticManager.shared.impact(style: .medium)
                                                 }
-                                                .mask(
-                                                    Image("booster_closed_1")
-                                                        .resizable()
-                                                        .scaledToFit()
-                                                        .frame(height: boosterHeight)
-                                                )
-                                            }
-                                            .allowsHitTesting(StoreManager.shared.boosters > 0)
-                                        }
-                                        .opacity(StoreManager.shared.boosters == 0 ? 0.5 : 1)
-
-                                        // Second booster with 3D rotation
-                                        Button(action: {
-                                            if StoreManager.shared.boosters == 0 {
-                                                showLockedBoosterInfo = true
-                                                HapticManager.shared.impact(style: .medium)
-                                            }
-                                        }) {
-                                            NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 2)) {
-                                                ZStack {
-                                                    Image("booster_closed_2")
-                                                        .resizable()
-                                                        .scaledToFit()
-                                                        .frame(height: boosterHeight)
-                                                        // ADD: 3D rotation effect
-                                                        .rotation3DEffect(
-                                                            .degrees(booster2Rotation),
-                                                            axis: (x: 0.0, y: 1.0, z: 0.0)
-                                                        )
-                                                        .shadow(color: .black.opacity(0.3), radius: 5, x: 3, y: 3)
-                                                    
-                                                    Rectangle()
-                                                        .fill(
-                                                            LinearGradient(
-                                                                gradient: Gradient(colors: [
-                                                                    .clear,
-                                                                    .white.opacity(0.01),
-                                                                    .white.opacity(0.15),
-                                                                    .white.opacity(0.01),
-                                                                    .clear
-                                                                ]),
-                                                                startPoint: .topLeading,
-                                                                endPoint: .bottomTrailing
+                                            }) {
+                                                NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 1)) {
+                                                    ZStack {
+                                                        Image("booster_closed_1")
+                                                            .resizable()
+                                                            .scaledToFit()
+                                                            .frame(height: boosterHeight)
+                                                            // ADD: 3D rotation effect
+                                                            .rotation3DEffect(
+                                                                .degrees(booster1Rotation),
+                                                                axis: (x: 0.0, y: 1.0, z: 0.0)
                                                             )
-                                                        )
-                                                        .frame(width: 100)
-                                                        .rotationEffect(.degrees(-65))
-                                                        .offset(x: booster2GlareOffset, y: booster2GlareOffset/3)
-                                                        .blur(radius: 3)
-                                                }
-                                                .mask(
-                                                    Image("booster_closed_2")
-                                                        .resizable()
-                                                        .scaledToFit()
-                                                        .frame(height: boosterHeight)
-                                                )
-                                            }
-                                            .allowsHitTesting(StoreManager.shared.boosters > 0)
-                                        }
-                                        .opacity(StoreManager.shared.boosters == 0 ? 0.5 : 1)
-                                    }
-                                    Spacer()
-                                    
-                                    // Timer display or instruction text
-                                    HStack {
-                                        if StoreManager.shared.boosters > 0 {
-                                            Image("gift")
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(width: 30, height: 30)
-                                                .modifier(ShakeEffect(animatableData: Double(shakeOffset)))
-                                                .onAppear {
-                                                    withAnimation(
-                                                        .easeInOut(duration: 0.6)
-                                                        .repeatForever()
-                                                    ) {
-                                                        shakeOffset = 1
+                                                            .shadow(color: .black.opacity(0.3), radius: 5, x: -3, y: 3)
+                                                        
+                                                        Rectangle()
+                                                            .fill(
+                                                                LinearGradient(
+                                                                    gradient: Gradient(colors: [
+                                                                        .clear,
+                                                                        .white.opacity(0.01),
+                                                                        .white.opacity(0.15),
+                                                                        .white.opacity(0.01),
+                                                                        .clear
+                                                                    ]),
+                                                                    startPoint: .topLeading,
+                                                                    endPoint: .bottomTrailing
+                                                                )
+                                                            )
+                                                            .frame(width: 100)
+                                                            .rotationEffect(.degrees(-65))
+                                                            .offset(x: booster1GlareOffset, y: booster1GlareOffset/3)
+                                                            .blur(radius: 3)
                                                     }
+                                                    .mask(
+                                                        Image("booster_closed_1")
+                                                            .resizable()
+                                                            .scaledToFit()
+                                                            .frame(height: boosterHeight)
+                                                    )
                                                 }
-                                            HStack(spacing: 4) {
-                                                Text("\(StoreManager.shared.boosters)")
-                                                    .foregroundColor(.gray)
-                                                Text("booster remaining")
+                                                .allowsHitTesting(StoreManager.shared.boosters > 0)
                                             }
-                                            .font(.system(size: 14, weight: .medium))
-                                            .foregroundColor(.gray)
-                                        } else if StoreManager.shared.nextFreeBoosterDate != nil {
-                                            BoosterTimerView(storeManager: StoreManager.shared)
-                                        } else {
-                                            Image(systemName: "hand.tap")
-                                                .foregroundColor(.gray)
-                                            Text("Click on a booster")
-                                                .font(.system(size: 14, weight: .medium))
-                                                .foregroundColor(.gray)
-                                        }
-                                    }
-                                    .padding(.vertical, 8)
-                                    .padding(.horizontal, 15)
-                                    .background(
-                                        ZStack {
-                                            Capsule()
-                                                .glow(
-                                                    fill: .angularGradient(
-                                                        colors: [.blue, .purple, .red, .orange, .yellow, .blue],
-                                                        center: .center,
-                                                        startAngle: .degrees(glowRotationAngle),
-                                                        endAngle: .degrees(glowRotationAngle + 360)
-                                                    ),
-                                                    lineWidth: 2.0,
-                                                    blurRadius: 4.0
-                                                )
-                                                .opacity(0.4)
-                                            
-                                            Capsule()
-                                                .fill(Color.white)
-                                        }
-                                    )
-                                    .padding(.bottom, 0)
-                                }
-                            }
-                            .padding(.horizontal, horizontalPadding)
-                            .padding(.vertical, viewSize == .compact ? 8 : 15)
+                                            .opacity(StoreManager.shared.boosters == 0 ? 0.5 : 1)
 
-                            // Collection and Shop buttons
-                            HStack(spacing: 15) {
-                                // Collection Button
-                                NavigationLink(destination: CollectionView(collectionManager: collectionManager)) {
-                                    buttonView(icon: "", text: "", colors: [.gray.opacity(0.3)], textColor: .gray)
-                                        .overlay(
-                                            VStack(spacing: 4) {
-                                                Image("collection")
-                                                    .resizable()
-                                                    .scaledToFit()
-                                                    .frame(width: 35, height: 35)
-                                                Text("Collection")
-                                                    .font(.system(size: 12, weight: .medium))
-                                                    .foregroundColor(.gray)
+                                            // Second booster with 3D rotation
+                                            Button(action: {
+                                                if StoreManager.shared.boosters == 0 {
+                                                    showLockedBoosterInfo = true
+                                                    HapticManager.shared.impact(style: .medium)
+                                                }
+                                            }) {
+                                                NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 2)) {
+                                                    ZStack {
+                                                        Image("booster_closed_2")
+                                                            .resizable()
+                                                            .scaledToFit()
+                                                            .frame(height: boosterHeight)
+                                                            // ADD: 3D rotation effect
+                                                            .rotation3DEffect(
+                                                                .degrees(booster2Rotation),
+                                                                axis: (x: 0.0, y: 1.0, z: 0.0)
+                                                            )
+                                                            .shadow(color: .black.opacity(0.3), radius: 5, x: 3, y: 3)
+                                                        
+                                                        Rectangle()
+                                                            .fill(
+                                                                LinearGradient(
+                                                                    gradient: Gradient(colors: [
+                                                                        .clear,
+                                                                        .white.opacity(0.01),
+                                                                        .white.opacity(0.15),
+                                                                        .white.opacity(0.01),
+                                                                        .clear
+                                                                    ]),
+                                                                    startPoint: .topLeading,
+                                                                    endPoint: .bottomTrailing
+                                                                )
+                                                            )
+                                                            .frame(width: 100)
+                                                            .rotationEffect(.degrees(-65))
+                                                            .offset(x: booster2GlareOffset, y: booster2GlareOffset/3)
+                                                            .blur(radius: 3)
+                                                    }
+                                                    .mask(
+                                                        Image("booster_closed_2")
+                                                            .resizable()
+                                                            .scaledToFit()
+                                                            .frame(height: boosterHeight)
+                                                    )
+                                                }
+                                                .allowsHitTesting(StoreManager.shared.boosters > 0)
                                             }
-                                        )
-                                        .onAppear {
-                                            withAnimation(
-                                                Animation
-                                                    .easeInOut(duration: 2.0)
-                                                    .repeatForever(autoreverses: true)
-                                            ) {
-                                                glowRotationAngle = 360
-                                            }
+                                            .opacity(StoreManager.shared.boosters == 0 ? 0.5 : 1)
                                         }
-                                }
-                                .simultaneousGesture(TapGesture().onEnded {
-                                    HapticManager.shared.impact(style: .medium)
-                                })
-                                
-                                // Shop Button
-                                NavigationLink(destination: ShopView(collectionManager: collectionManager, storeManager: StoreManager.shared)) {
-                                    buttonView(icon: "", text: "", colors: [.gray.opacity(0.3)], textColor: .gray)
-                                        .overlay(
-                                            HStack(spacing: 4) {
-                                                Text("\(collectionManager.coins)")
-                                                    .font(.system(size: 16, weight: .medium))
-                                                    .foregroundColor(.gray)
-                                                Image("coin")
+                                        Spacer()
+                                        
+                                        // Timer display or instruction text
+                                        HStack {
+                                            if StoreManager.shared.boosters > 0 {
+                                                Image("gift")
                                                     .resizable()
                                                     .scaledToFit()
-                                                    .frame(width: 50, height: 50)
-                                                    .scaleEffect(coinScale)
+                                                    .frame(width: 30, height: 30)
+                                                    .modifier(ShakeEffect(animatableData: Double(shakeOffset)))
                                                     .onAppear {
                                                         withAnimation(
-                                                            .easeInOut(duration: 1.0)
-                                                            .repeatForever(autoreverses: true)
+                                                            .easeInOut(duration: 0.6)
+                                                            .repeatForever()
                                                         ) {
-                                                            coinScale = 1.1
+                                                            shakeOffset = 1
                                                         }
                                                     }
+                                                HStack(spacing: 4) {
+                                                    Text("\(StoreManager.shared.boosters)")
+                                                        .foregroundColor(.gray)
+                                                    Text("booster remaining")
+                                                }
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.gray)
+                                            } else if StoreManager.shared.nextFreeBoosterDate != nil {
+                                                BoosterTimerView(storeManager: StoreManager.shared)
+                                            } else {
+                                                Image(systemName: "hand.tap")
+                                                    .foregroundColor(.gray)
+                                                Text("Click on a booster")
+                                                    .font(.system(size: 14, weight: .medium))
+                                                    .foregroundColor(.gray)
+                                            }
+                                        }
+                                        .padding(.vertical, 8)
+                                        .padding(.horizontal, 15)
+                                        .background(
+                                            ZStack {
+                                                Capsule()
+                                                    .glow(
+                                                        fill: .angularGradient(
+                                                            colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                                            center: .center,
+                                                            startAngle: .degrees(glowRotationAngle),
+                                                            endAngle: .degrees(glowRotationAngle + 360)
+                                                        ),
+                                                        lineWidth: 2.0,
+                                                        blurRadius: 4.0
+                                                    )
+                                                    .opacity(0.4)
+                                                
+                                                Capsule()
+                                                    .fill(Color.white)
                                             }
                                         )
+                                        .padding(.bottom, 0)
+                                    }
                                 }
-                                .simultaneousGesture(TapGesture().onEnded {
-                                    HapticManager.shared.impact(style: .medium)
-                                })
-                            }
-                            .padding(.horizontal, horizontalPadding)
-                            .padding(.vertical, viewSize == .compact ? 8 : 15)
+                                .padding(.horizontal, horizontalPadding)
+                                .padding(.vertical, viewSize == .compact ? 8 : 15)
 
-                            progressBarSection
-                            
-                            // ... rest of the view ...
+                                // Collection and Shop buttons
+                                HStack(spacing: 15) {
+                                    // Collection Button
+                                    NavigationLink(destination: CollectionView(collectionManager: collectionManager)
+                                        .navigationBarTitleDisplayMode(.inline)
+                                    ) {
+                                        buttonView(icon: "", text: "", colors: [.gray.opacity(0.3)], textColor: .gray)
+                                            .overlay(
+                                                VStack(spacing: 4) {
+                                                    Image("collection")
+                                                        .resizable()
+                                                        .scaledToFit()
+                                                        .frame(width: 35, height: 35)
+                                                    Text("Collection")
+                                                        .font(.system(size: 12, weight: .medium))
+                                                        .foregroundColor(.gray)
+                                                }
+                                            )
+                                            .onAppear {
+                                                withAnimation(
+                                                    Animation
+                                                        .easeInOut(duration: 2.0)
+                                                        .repeatForever(autoreverses: true)
+                                                ) {
+                                                    glowRotationAngle = 360
+                                                }
+                                            }
+                                    }
+                                    .simultaneousGesture(TapGesture().onEnded {
+                                        HapticManager.shared.impact(style: .medium)
+                                    })
+                                    
+                                    // Shop Button
+                                    NavigationLink(destination: ShopView(collectionManager: collectionManager, storeManager: StoreManager.shared)) {
+                                        buttonView(icon: "", text: "", colors: [.gray.opacity(0.3)], textColor: .gray)
+                                            .overlay(
+                                                HStack(spacing: 4) {
+                                                    Text("\(collectionManager.coins)")
+                                                        .font(.system(size: 16, weight: .medium))
+                                                        .foregroundColor(.gray)
+                                                    Image("coin")
+                                                        .resizable()
+                                                        .scaledToFit()
+                                                        .frame(width: 50, height: 50)
+                                                        .scaleEffect(coinScale)
+                                                        .onAppear {
+                                                            withAnimation(
+                                                                .easeInOut(duration: 1.0)
+                                                                .repeatForever(autoreverses: true)
+                                                            ) {
+                                                                coinScale = 1.1
+                                                            }
+                                                        }
+                                                }
+                                            )
+                                    }
+                                    .simultaneousGesture(TapGesture().onEnded {
+                                        HapticManager.shared.impact(style: .medium)
+                                    })
+                                }
+                                .padding(.horizontal, horizontalPadding)
+                                .padding(.vertical, viewSize == .compact ? 8 : 15)
+
+                                progressBarSection
+                                
+                                // ... rest of the view ...
+                            }
                         }
+                        .frame(maxWidth: viewSize == .compact ? .infinity : min(geometry.size.width * 0.8, 800))
+                        .frame(maxWidth: .infinity)
                     }
-                    .padding(.horizontal, viewSize == .compact ? 0 : geometry.size.width * 0.1)
                 }
             }
-            // Improved iPad navigation style
-            .navigationViewStyle(StackNavigationViewStyle())
+            .navigationViewStyle(DoubleColumnNavigationViewStyle())
         }
         .task {
             if await AppUpdateChecker.shared.checkForUpdate() {

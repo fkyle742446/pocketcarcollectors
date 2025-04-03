@@ -8,6 +8,16 @@ class NotificationManager: NSObject, ObservableObject, UNUserNotificationCenterD
     override init() {
         super.init()
         UNUserNotificationCenter.current().delegate = self
+        checkPermissionStatus()
+    }
+    
+    // Check current permission status
+    private func checkPermissionStatus() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                self.hasPermission = settings.authorizationStatus == .authorized
+            }
+        }
     }
     
     func requestPermission() {
@@ -22,16 +32,30 @@ class NotificationManager: NSObject, ObservableObject, UNUserNotificationCenterD
     }
     
     func scheduleBoosterNotification(for date: Date) {
+        guard hasPermission else {
+            print("❌ No notification permission")
+            return
+        }
+        
+        // Cancel any existing booster notifications
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["booster_notification"])
+        
         let content = UNMutableNotificationContent()
         content.title = "New Booster Available! 🎉"
         content.body = "Your free booster is ready to be opened!"
         content.sound = .default
         content.userInfo = ["type": "booster"]
         
-        let trigger = UNCalendarNotificationTrigger(
-            dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date),
-            repeats: false
-        )
+        // Add debugging information
+        print("⏰ Scheduling notification for: \(date)")
+        
+        // Include seconds for more precise timing
+        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        
+        if let triggerDate = trigger.nextTriggerDate() {
+            print("📅 Next trigger date: \(triggerDate)")
+        }
         
         let request = UNNotificationRequest(
             identifier: "booster_notification",
@@ -39,7 +63,23 @@ class NotificationManager: NSObject, ObservableObject, UNUserNotificationCenterD
             trigger: trigger
         )
         
-        UNUserNotificationCenter.current().add(request)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("❌ Failed to schedule notification: \(error.localizedDescription)")
+            } else {
+                print("✅ Successfully scheduled notification")
+                // Verify pending notifications
+                UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+                    print("📬 Pending notifications: \(requests.count)")
+                    for request in requests {
+                        if let trigger = request.trigger as? UNCalendarNotificationTrigger,
+                           let nextTrigger = trigger.nextTriggerDate() {
+                            print("📌 Pending notification scheduled for: \(nextTrigger)")
+                        }
+                    }
+                }
+            }
+        }
     }
     
     func scheduleReviewNotification() {
@@ -60,12 +100,13 @@ class NotificationManager: NSObject, ObservableObject, UNUserNotificationCenterD
         UNUserNotificationCenter.current().add(request)
     }
     
-    // Gestion des notifications quand l'app est en premier plan
+    // Improve foreground notification handling
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        print("📱 Notification received while app is in foreground")
         completionHandler([.banner, .sound, .badge])
     }
     
@@ -76,10 +117,12 @@ class NotificationManager: NSObject, ObservableObject, UNUserNotificationCenterD
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let userInfo = response.notification.request.content.userInfo
+        print("👆 User tapped notification with userInfo: \(userInfo)")
         
         if let type = userInfo["type"] as? String {
             switch type {
             case "booster":
+                print("🎁 Opening booster view from notification")
                 NotificationCenter.default.post(name: .openBoosterView, object: nil)
             case "review":
                 AppUpdateChecker.shared.openAppStore()

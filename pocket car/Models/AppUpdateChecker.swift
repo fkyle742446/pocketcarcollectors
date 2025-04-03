@@ -10,29 +10,49 @@ class AppUpdateChecker: ObservableObject {
     private init() {}
     
     func checkForUpdate() async -> Bool {
-        // Simulation en mode DEBUG
-        #if DEBUG
-        return true
-        #else
-        do {
-            let items = try await Task.detached(priority: .utility) {
-                try await Bundle.main.appStoreReceiptURL.map { url in
-                    let data = try Data(contentsOf: url)
-                    return data.count > 0
-                } ?? false
-            }.value
-            return items
-        } catch {
-            print("Failed to check for updates: \(error)")
+        guard let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
+              let bundleIdentifier = Bundle.main.bundleIdentifier,
+              let url = URL(string: "https://itunes.apple.com/lookup?bundleId=pocket-car.pocket-car") else {
             return false
         }
-        #endif
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let results = json["results"] as? [[String: Any]],
+               let appStoreVersion = results.first?["version"] as? String {
+                
+                let current = currentVersion.split(separator: ".").map { Int($0) ?? 0 }
+                let appStore = appStoreVersion.split(separator: ".").map { Int($0) ?? 0 }
+                
+                // Compare version numbers
+                for i in 0..<min(current.count, appStore.count) {
+                    if appStore[i] > current[i] {
+                        return true
+                    } else if current[i] > appStore[i] {
+                        return false
+                    }
+                }
+                
+                // If all numbers are equal, longer version is newer
+                return appStore.count > current.count
+            }
+        } catch {
+            print("Error checking for updates: \(error)")
+        }
+        
+        return false
     }
     
     func openAppStore() {
-        guard let url = URL(string: "itms-apps://itunes.apple.com/app/id6743163346") else { return }
-        if UIApplication.shared.canOpenURL(url) {
-            UIApplication.shared.open(url)
+        guard let bundleIdentifier = Bundle.main.bundleIdentifier,
+              let url = URL(string: "itms-apps://itunes.apple.com/app/id\(bundleIdentifier)") else {
+            return
+        }
+        
+        Task { @MainActor in
+            await UIApplication.shared.open(url)
         }
     }
     
