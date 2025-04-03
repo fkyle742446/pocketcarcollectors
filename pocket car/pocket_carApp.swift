@@ -13,18 +13,18 @@ struct pocket_carApp: App {
     @StateObject private var iapManager = IAPManager.shared
     
     init() {
-        // Force le mode clair pour toute l'application
+        // Force light mode for the entire application
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             windowScene.windows.forEach { window in
                 window.overrideUserInterfaceStyle = .light
             }
         }
         
-        // Configuration supplémentaire pour s'assurer que le mode clair est appliqué
+        // Additional configuration to ensure light mode is applied
         let appearance = UIView.appearance()
         appearance.overrideUserInterfaceStyle = .light
         
-        // Force également le mode clair pour la navigation
+        // Force light mode for navigation
         let navigationBarAppearance = UINavigationBarAppearance()
         navigationBarAppearance.configureWithDefaultBackground()
         UINavigationBar.appearance().standardAppearance = navigationBarAppearance
@@ -36,10 +36,10 @@ struct pocket_carApp: App {
             pocket_car.SplashScreenView()
                 .preferredColorScheme(.light)
                 .task {
-                    // Load products when app starts
                     await iapManager.loadProducts()
                 }
                 .environmentObject(iapManager)
+                .navigationViewStyle(StackNavigationViewStyle())
         }
     }
 }
