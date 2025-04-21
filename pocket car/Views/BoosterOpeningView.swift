@@ -832,7 +832,7 @@ struct BoosterOpeningView: View {
         case .legendary:
             return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
-            return Color(white: 0.9)
+            return Color(red: 0.1, green: 0.1, blue: 0.1) // CHANGE: Updated to carbon black
         }
     }
 }
