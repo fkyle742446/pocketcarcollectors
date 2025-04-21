@@ -29,6 +29,14 @@ struct pocket_carApp: App {
         navigationBarAppearance.configureWithDefaultBackground()
         UINavigationBar.appearance().standardAppearance = navigationBarAppearance
         UINavigationBar.appearance().overrideUserInterfaceStyle = .light
+        
+        // ADD: Configuration for StoreKit testing
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" {
+            // Only print in debug, not in previews
+            print("🛍️ Initializing StoreKit configuration")
+        }
+        #endif
     }
     
     var body: some Scene {
@@ -36,7 +44,10 @@ struct pocket_carApp: App {
             pocket_car.SplashScreenView()
                 .preferredColorScheme(.light)
                 .task {
-                    await iapManager.loadProducts()
+                    // CHANGE: Ensure products are loaded at launch
+                    if iapManager.products.isEmpty {
+                        await iapManager.loadProducts()
+                    }
                 }
                 .environmentObject(iapManager)
                 .navigationViewStyle(StackNavigationViewStyle())

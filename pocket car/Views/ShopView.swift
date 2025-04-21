@@ -53,93 +53,104 @@ struct ShopView: View {
             )
             .ignoresSafeArea()
             
-            VStack(spacing: 10) {
-                // Top coins display
-                HStack {
-                    Spacer()
-                    HStack(spacing: 4) {
-                        Text("\(coinsCount)")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.gray)
-                        Image("coin")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 20, height: 20)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 15)
-                            .fill(Color.white)
-                            .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                    )
-                }
-                .padding(.top, 40)
-                .padding(.horizontal)
-                
-                // Boosters section
+            if iapManager.productsLoaded {
                 VStack(spacing: 10) {
-                    boosterCard(
-                        image: "booster_closed_1",
-                        title: "Single x1 Booster",
-                        price: 100,
-                        count: 1,
-                        type: .single
-                    )
-                    
-                    boosterCard(
-                        image: "booster_closed_2",
-                        title: "Bundle Pack x5 Boosters",
-                        price: 500,
-                        count: 5,
-                        type: .bundle,
-                        isBundle: true
-                    )
-                }
-                .padding(.horizontal)
-                
-                // IAP Section
-                VStack(spacing: 8) {
-                    ForEach(iapManager.products) { product in
-                        coinPurchaseCard(for: product)
-                    }
-                }
-                
-                // Home button
-                Button(action: {
-                    dismiss()
-                }) {
+                    // Top coins display
                     HStack {
-                        Image(systemName: "house.fill")
-                            .font(.system(size: 16))
-                        Text("Home")
-                            .font(.headline)
-                    }
-                    .foregroundColor(.gray)
-                    .frame(width: 120)
-                    .frame(height: 45)
-                    .background(
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 25)
-                                .glow(
-                                    fill: .angularGradient(
-                                        colors: [.blue, .purple, .red, .orange, .yellow, .blue],
-                                        center: .center,
-                                        startAngle: .degrees(glowRotationAngle),
-                                        endAngle: .degrees(glowRotationAngle + 360)
-                                    ),
-                                    lineWidth: 2.0,
-                                    blurRadius: 4.0
-                                )
-                                .opacity(0.4)
-                            
-                            RoundedRectangle(cornerRadius: 25)
-                                .fill(Color.white)
+                        Spacer()
+                        HStack(spacing: 4) {
+                            Text("\(coinsCount)")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(.gray)
+                            Image("coin")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
                         }
-                    )
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 15)
+                                .fill(Color.white)
+                                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                        )
+                    }
+                    .padding(.top, 40)
+                    .padding(.horizontal)
+                    
+                    // Boosters section
+                    VStack(spacing: 10) {
+                        boosterCard(
+                            image: "booster_closed_1",
+                            title: "Single x1 Booster",
+                            price: 100,
+                            count: 1,
+                            type: .single
+                        )
+                        
+                        boosterCard(
+                            image: "booster_closed_2",
+                            title: "Bundle Pack x5 Boosters",
+                            price: 500,
+                            count: 5,
+                            type: .bundle,
+                            isBundle: true
+                        )
+                    }
+                    .padding(.horizontal)
+                    
+                    // IAP Section
+                    VStack(spacing: 8) {
+                        ForEach(iapManager.products) { product in
+                            coinPurchaseCard(for: product)
+                        }
+                    }
+                    
+                    // Home button
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "house.fill")
+                                .font(.system(size: 16))
+                            Text("Home")
+                                .font(.headline)
+                        }
+                        .foregroundColor(.gray)
+                        .frame(width: 120)
+                        .frame(height: 45)
+                        .background(
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 25)
+                                    .glow(
+                                        fill: .angularGradient(
+                                            colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                            center: .center,
+                                            startAngle: .degrees(glowRotationAngle),
+                                            endAngle: .degrees(glowRotationAngle + 360)
+                                        ),
+                                        lineWidth: 2.0,
+                                        blurRadius: 4.0
+                                    )
+                                    .opacity(0.4)
+                                
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(Color.white)
+                            }
+                        )
+                    }
+                    .padding(.top, 5)
+                    .padding(.bottom, 8)
                 }
-                .padding(.top, 5)
-                .padding(.bottom, 8)
+            } else {
+                VStack {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Text("Loading Store...")
+                        .font(.headline)
+                        .foregroundColor(.gray)
+                        .padding(.top)
+                }
             }
         }
         .onAppear {
@@ -150,7 +161,9 @@ struct ShopView: View {
             coinsCount = collectionManager.coins
         }
         .task {
-            await iapManager.loadProducts()
+            if iapManager.products.isEmpty {
+                await iapManager.loadProducts()
+            }
         }
         .alert("Erreur d'achat", isPresented: $showingPurchaseErrorAlert) {
             Button("OK", role: .cancel) { }
@@ -191,8 +204,16 @@ struct ShopView: View {
                         AudioServicesPlaySystemSound(soundEffect)
                         print("💰 Purchase successful")
                         
-                        // Update local state
+                        // Update CollectionManager coins directly
                         await MainActor.run {
+                            if product.id.contains("100") {
+                                collectionManager.coins += 100
+                            } else if product.id.contains("500") {
+                                collectionManager.coins += 500
+                            } else if product.id.contains("1000") {
+                                collectionManager.coins += 1000
+                            }
+                            // Update local state
                             coinsCount = collectionManager.coins
                         }
                     }

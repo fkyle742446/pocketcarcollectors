@@ -39,12 +39,14 @@ struct CollectionView: View {
                         }
                         .padding(.trailing, 16)
                     }
-                    .padding(.top, 20)
+                    .padding(.top, 10)
+                    .padding(.bottom, 8)
 
                     if collectionManager.cards.isEmpty {
                         EmptyCollectionView()
                     } else {
                         CollectionGridView(cards: collectionManager.cards, selectedCard: $selectedCard)
+                            .padding(.top, 8)
                     }
                 }
                 .frame(maxWidth: viewSize == .compact ? .infinity : min(geometry.size.width * 0.8, 800))
@@ -85,7 +87,7 @@ struct CardView: View {
         case .legendary:
             return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
-            return Color(white: 0.8)
+            return Color.black
         }
     }
     
@@ -138,7 +140,6 @@ struct CardView: View {
     var body: some View {
         VStack(spacing: 8) {
             ZStack(alignment: .topTrailing) {
-                // Card Image with border
                 Image(card.name)
                     .resizable()
                     .aspectRatio(3 / 4, contentMode: .fit)
@@ -149,18 +150,17 @@ struct CardView: View {
                             .strokeBorder(
                                 LinearGradient(
                                     colors: [
-                                        rarityColor(for: card.rarity).opacity(0.8),
-                                        rarityColor(for: card.rarity).opacity(0.4)
+                                        rarityColor(for: card.rarity).opacity(card.rarity == .HolyT ? 0.9 : 0.8),
+                                        rarityColor(for: card.rarity).opacity(card.rarity == .HolyT ? 0.7 : 0.4)
                                     ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ),
-                                lineWidth: 2
+                                lineWidth: card.rarity == .HolyT ? 2.5 : 2
                             )
                     )
-                    .shadow(color: rarityColor(for: card.rarity).opacity(0.3), radius: 5, x: 0, y: 4)
+                    .shadow(color: rarityColor(for: card.rarity).opacity(card.rarity == .HolyT ? 0.5 : 0.3), radius: card.rarity == .HolyT ? 8 : 5, x: 0, y: 4)
 
-                // Count badge if more than 1
                 if count > 1 {
                     Text("\(count)")
                         .font(.system(size: 12, weight: .bold))
@@ -175,7 +175,6 @@ struct CardView: View {
                 }
             }
 
-            // Rarity badge
             Text(rarityBadge(for: card.rarity))
                 .font(.system(size: 10, weight: .bold))
                 .foregroundColor(rarityColor(for: card.rarity))
@@ -187,7 +186,6 @@ struct CardView: View {
                         .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                 )
 
-            // Card name
             Text(card.name)
                 .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundColor(.gray)
@@ -201,7 +199,7 @@ struct CardView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(rarityGradient(for: card.rarity))
                 )
-                .shadow(color: rarityColor(for: card.rarity).opacity(0.2), radius: 8, x: 0, y: 4)
+                .shadow(color: rarityColor(for: card.rarity).opacity(card.rarity == .HolyT ? 0.4 : 0.2), radius: card.rarity == .HolyT ? 10 : 8, x: 0, y: 4)
         )
     }
 }
@@ -401,7 +399,7 @@ struct ZoomedCardView: View {
         case .legendary:
             return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
-            return Color(white: 0.8)
+            return Color.black
         }
     }
     

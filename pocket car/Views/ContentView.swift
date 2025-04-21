@@ -852,6 +852,7 @@ struct ContentView: View {
                                 milestones[index].isReached = true
                                 collectionManager.coins += milestone.reward
                                 HapticManager.shared.impact(style: .medium)
+                                NotificationCenter.default.post(name: .coinsDidUpdate, object: nil)
                             }
                         }
                     }

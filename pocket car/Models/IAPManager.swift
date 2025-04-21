@@ -13,6 +13,7 @@ class IAPManager: ObservableObject {
     @Published private(set) var products: [Product] = []
     @Published private(set) var purchaseInProgress = false
     @Published var purchaseError: String?
+    @Published var productsLoaded = false
     
     private let productIdentifiers = Set([
         "com.pocketcarcollectors.100coins",
@@ -80,8 +81,14 @@ class IAPManager: ObservableObject {
         do {
             products = try await Product.products(for: productIdentifiers)
             print("📦 Loaded \(products.count) products")
+            await MainActor.run {
+                productsLoaded = true
+            }
         } catch {
             print("❌ Failed to load products: \(error)")
+            await MainActor.run {
+                productsLoaded = false
+            }
         }
     }
     

@@ -246,18 +246,21 @@ struct EnhancedRarityButton: View {
                             lineWidth: 1
                         )
                 )
-                .frame(width: 160, height: 55)
+                .frame(width: 160, height: 40)
             
             // Texte
-            VStack(spacing: 2) {
+            HStack(spacing: 8) {
                 Text(rarity.rawValue.uppercased())
                     .font(.system(size: 15, weight: .black, design:.default))
                     .foregroundColor(.white)
                     .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
                 
-                // ADD: Drop rate text
+                Text("•")
+                    .foregroundColor(.white.opacity(0.7))
+                
+                // Drop rate text
                 Text(getDropRate(for: rarity))
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.white.opacity(0.7))
             }
         }
@@ -556,7 +559,7 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Ferrari P80", rarity: .epic, number: 201),
         BoosterCard(name: "Aston Martin Victor", rarity: .epic, number: 202),
         BoosterCard(name: "Lamborghini Essenza SCV12", rarity: .epic, number: 203),
-        BoosterCard(name: "Bugatti Centodieci", rarity: .epic, number: 204),
+        BoosterCard(name: "Bugatti Centodiecéi", rarity: .epic, number: 204),
         BoosterCard(name: "Koenigsegg CCXR Edition", rarity: .epic, number: 205),
         BoosterCard(name: "Pagani Huayra Tricolore", rarity: .epic, number: 206),
         BoosterCard(name: "McLaren 600LT Spider", rarity: .epic, number: 207),
