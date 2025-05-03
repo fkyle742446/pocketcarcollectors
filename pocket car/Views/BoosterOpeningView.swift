@@ -269,28 +269,74 @@ struct EnhancedRarityButton: View {
 }
 
 struct NewCardBadge: View {
+    @State private var rotation: Double = -15
+    @State private var scale: CGFloat = 0
+    @State private var glowOpacity: Double = 0
+    
     var body: some View {
-        Text("NEW")
-            .font(.system(size: 8, weight: .black))
-            .foregroundColor(.white)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.green, Color.green.opacity(0.8)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+        ZStack {
+            // Glow effect
+            Text("NEW")
+                .font(.system(size: 14, weight: .black))
+                .foregroundColor(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.green)
+                        .blur(radius: 10)
+                )
+                .opacity(glowOpacity)
+            
+            // Main badge
+            Text("NEW")
+                .font(.system(size: 14, weight: .black))
+                .foregroundColor(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.green,
+                                    Color.green.opacity(0.8)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
                         )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
-                    )
-            )
-            .rotationEffect(.degrees(0))
-            .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .strokeBorder(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.white.opacity(0.8),
+                                            Color.white.opacity(0.3)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1.5
+                                )
+                        )
+                )
+                .shadow(color: Color.green.opacity(0.5), radius: 8, x: 0, y: 2)
+        }
+        .rotationEffect(.degrees(rotation))
+        .scaleEffect(scale)
+        .onAppear {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.6)) {
+                rotation = 0
+                scale = 1
+            }
+            withAnimation(
+                .easeInOut(duration: 1.5)
+                .repeatForever(autoreverses: true)
+            ) {
+                glowOpacity = 0.6
+            }
+        }
     }
 }
 
@@ -634,28 +680,25 @@ struct BoosterOpeningView: View {
             } else if storeManager.boosters > 0 || !isOpening {
                 VStack {
                     if isOpening {
-                        Image(boosterImage)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 300, height: 400)
-                            .scaleEffect(boosterScale)
-                            .opacity(boosterOpacity)
-                            .rotation3DEffect(
-                                .degrees(rotationAngle),
-                                axis: (x: -1.0, y: 1.0, z: 0.0)
-                            )
-                            .onTapGesture {
-                                withAnimation(.easeInOut(duration: 0.5)) {
-                                    boosterScale = 1.2
-                                    boosterOpacity = 0
+                        VStack(spacing: 30) {
+                            Image(boosterImage)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 300, height: 400)
+                                .scaleEffect(boosterScale)
+                                .opacity(boosterOpacity)
+                                .rotation3DEffect(
+                                    .degrees(rotationAngle),
+                                    axis: (x: -1.0, y: 1.0, z: 0.0)
+                                )
+                                .onTapGesture {
+                                    openBooster()
                                 }
-                                
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    isOpening = false
-                                    currentCard = randomCard()
-                                    storeManager.useBooster()
-                                }
+                            
+                            AnimatedButton(title: "OPEN") {
+                                openBooster()
                             }
+                        }
                     } else if let selectedCard = currentCard {
                         cardRevealView(for: selectedCard)
                     }
@@ -666,11 +709,9 @@ struct BoosterOpeningView: View {
                         .font(.title)
                         .foregroundColor(.white)
                     
-                    Button("Retour") {
+                    AnimatedButton(title: "Retour") {
                         dismiss()
                     }
-                    .padding()
-                    .foregroundColor(.white)
                 }
             }
         }
@@ -684,10 +725,24 @@ struct BoosterOpeningView: View {
         }
     }
     
+    private func openBooster() {
+        withAnimation(.easeInOut(duration: 0.5)) {
+            boosterScale = 1.2
+            boosterOpacity = 0
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            isOpening = false
+            currentCard = randomCard()
+            storeManager.useBooster()
+            // Jouer le son immédiatement quand la première carte apparaît
+            SoundManager.shared.playSound(for: currentCard!.rarity)
+        }
+    }
+
     @ViewBuilder
     private func cardRevealView(for selectedCard: BoosterCard) -> some View {
         ZStack {
-            // Clickable background for the whole screen
             Color.clear
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -698,27 +753,25 @@ struct BoosterOpeningView: View {
             VStack {
                 Spacer()
                 
-                // Card and button container with more space at the top
                 VStack(spacing: 60) {
                     ZStack {
-                        ParticleSystem(rarity: selectedCard.rarity)
-                            .frame(width: 300, height: 400)
-                            .id(currentCardIndex)
-                        
                         ZStack(alignment: .topTrailing) {
                             HolographicCard(
                                 cardImage: selectedCard.name,
                                 rarity: selectedCard.rarity,
                                 cardNumber: selectedCard.number
                             )
-                            .onTapGesture {  // CHANGE: Added tap gesture to the card
+                            .onTapGesture {
                                 handleCardReveal(selectedCard)
                             }
                             
-                            if showNewBadge {
+                            if collectionManager.isNewCard(selectedCard) {
                                 NewCardBadge()
-                                    .offset(x: -20, y: -35)
-                                    .transition(.scale.combined(with: .opacity))
+                                    .offset(x: -20, y: 20)
+                                    .transition(.asymmetric(
+                                        insertion: .scale.combined(with: .opacity),
+                                        removal: .scale.combined(with: .opacity)
+                                    ))
                             }
                         }
                         .background(
@@ -730,44 +783,23 @@ struct BoosterOpeningView: View {
                         .scaleEffect(cardScale)
                         .offset(y: cardOffset + dragOffset)
                         .modifier(AutoHolographicAnimation())
-                        .gesture(
-                            DragGesture()
-                                .onChanged { gesture in
-                                    if isTransitioning { return }
-                                    let translation = gesture.translation.height
-                                    if translation < 0 {
-                                        dragOffset = translation
-                                        showArrowIndicator = false
-                                    }
-                                }
-                                .onEnded { gesture in
-                                    if isTransitioning { return }
-                                    if dragOffset < -50 {
-                                        handleCardReveal(selectedCard)
-                                    } else {
-                                        withAnimation {
-                                            dragOffset = 0
-                                            showArrowIndicator = true
-                                        }
-                                    }
-                                }
-                        )
                     }
                     
                     EnhancedRarityButton(rarity: selectedCard.rarity)
                         .allowsHitTesting(false)
                 }
-                // Add padding to push content down
                 .padding(.top, 80)
                 
                 Spacer()
                 
-                GestureHintView()
-                    .padding(.bottom, 50)
+                if showGestureHint {
+                    GestureHintView()
+                        .padding(.bottom, 50)
+                }
             }
         }
     }
-
+    
     private func handleCardReveal(_ selectedCard: BoosterCard) {
         if isTransitioning { return }
         isTransitioning = true
@@ -780,13 +812,8 @@ struct BoosterOpeningView: View {
             cardOffset = -UIScreen.main.bounds.height
         }
         
-        let newCard = collectionManager.addCard(selectedCard)
         if !drawnCards.contains(where: { $0.name == selectedCard.name }) {
             drawnCards.append(selectedCard)
-        }
-        
-        withAnimation {
-            isNewCard = newCard
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -794,7 +821,6 @@ struct BoosterOpeningView: View {
             currentCardIndex += 1
             dragOffset = 0
             showArrowIndicator = true
-            isNewCard = false
             if currentCardIndex < 5 {
                 currentCard = randomCard()
                 showGestureHint = true
@@ -804,6 +830,9 @@ struct BoosterOpeningView: View {
             }
             isTransitioning = false
         }
+        
+        // Ajouter la carte à la collection après avoir montré l'animation
+        collectionManager.addCard(selectedCard)
     }
     
     private func randomCard() -> BoosterCard {
@@ -858,6 +887,54 @@ struct AutoHolographicAnimation: ViewModifier {
                     isAnimating = true
                 }
             }
+    }
+}
+
+struct AnimatedButton: View {
+    let title: String
+    let action: () -> Void
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button(action: {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                isPressed = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    isPressed = false
+                }
+                action()
+            }
+        }) {
+            Text(title)
+                .font(.system(size: 16, weight: .black))
+                .foregroundColor(.white)
+                .frame(width: 160, height: 45)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.yellow.opacity(0.8), Color.orange.opacity(0.8)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [.white.opacity(0.6), .white.opacity(0.2)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            lineWidth: 1
+                        )
+                )
+                .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
+                .scaleEffect(isPressed ? 0.95 : 1)
+        }
     }
 }
 

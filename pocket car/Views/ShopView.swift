@@ -23,7 +23,7 @@ struct ShopView: View {
         var price: Int {
             switch self {
             case .single: return 100
-            case .bundle: return 500
+            case .bundle: return 400
             }
         }
         
@@ -54,93 +54,95 @@ struct ShopView: View {
             .ignoresSafeArea()
             
             if iapManager.productsLoaded {
-                VStack(spacing: 10) {
-                    // Top coins display
-                    HStack {
-                        Spacer()
-                        HStack(spacing: 4) {
-                            Text("\(coinsCount)")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(.gray)
-                            Image("coin")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 20, height: 20)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(Color.white)
-                                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                        )
-                    }
-                    .padding(.top, 40)
-                    .padding(.horizontal)
-                    
-                    // Boosters section
-                    VStack(spacing: 10) {
-                        boosterCard(
-                            image: "booster_closed_1",
-                            title: "Single x1 Booster",
-                            price: 100,
-                            count: 1,
-                            type: .single
-                        )
-                        
-                        boosterCard(
-                            image: "booster_closed_2",
-                            title: "Bundle Pack x5 Boosters",
-                            price: 500,
-                            count: 5,
-                            type: .bundle,
-                            isBundle: true
-                        )
-                    }
-                    .padding(.horizontal)
-                    
-                    // IAP Section
-                    VStack(spacing: 8) {
-                        ForEach(iapManager.products) { product in
-                            coinPurchaseCard(for: product)
-                        }
-                    }
-                    
-                    // Home button
-                    Button(action: {
-                        dismiss()
-                    }) {
+                ScrollView {
+                    VStack(spacing: 6) {
+                        // Top coins display
                         HStack {
-                            Image(systemName: "house.fill")
-                                .font(.system(size: 16))
-                            Text("Home")
-                                .font(.headline)
-                        }
-                        .foregroundColor(.gray)
-                        .frame(width: 120)
-                        .frame(height: 45)
-                        .background(
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 25)
-                                    .glow(
-                                        fill: .angularGradient(
-                                            colors: [.blue, .purple, .red, .orange, .yellow, .blue],
-                                            center: .center,
-                                            startAngle: .degrees(glowRotationAngle),
-                                            endAngle: .degrees(glowRotationAngle + 360)
-                                        ),
-                                        lineWidth: 2.0,
-                                        blurRadius: 4.0
-                                    )
-                                    .opacity(0.4)
-                                
-                                RoundedRectangle(cornerRadius: 25)
-                                    .fill(Color.white)
+                            Spacer()
+                            HStack(spacing: 10) {
+                                Text("\(coinsCount)")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(.gray)
+                                Image("coin")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 20, height: 20)
                             }
-                        )
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 0)
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .fill(Color.white)
+                                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                            )
+                        }
+                        .padding(.top, 0)
+                        .padding(.horizontal)
+                        
+                        // Boosters section
+                        VStack(spacing: 10) {
+                            boosterCard(
+                                image: "booster_closed_1",
+                                title: "Single x1 Booster",
+                                price: 100,
+                                count: 1,
+                                type: .single
+                            )
+                            
+                            boosterCard(
+                                image: "booster_closed_2",
+                                title: "Bundle Pack x5 Boosters",
+                                price: 400,
+                                count: 5,
+                                type: .bundle,
+                                isBundle: true
+                            )
+                        }
+                        .padding(.horizontal)
+                        
+                        // IAP Section
+                        VStack(spacing: 8) {
+                            ForEach(iapManager.products) { product in
+                                coinPurchaseCard(for: product)
+                            }
+                        }
+                        
+                        // Home button
+                        Button(action: {
+                            dismiss()
+                        }) {
+                            HStack {
+                                Image(systemName: "house.fill")
+                                    .font(.system(size: 16))
+                                Text("Home")
+                                    .font(.headline)
+                            }
+                            .foregroundColor(.gray)
+                            .frame(width: 120)
+                            .frame(height: 45)
+                            .background(
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .glow(
+                                            fill: .angularGradient(
+                                                colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                                center: .center,
+                                                startAngle: .degrees(glowRotationAngle),
+                                                endAngle: .degrees(glowRotationAngle + 360)
+                                            ),
+                                            lineWidth: 2.0,
+                                            blurRadius: 4.0
+                                        )
+                                        .opacity(0.4)
+                                    
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .fill(Color.white)
+                                }
+                            )
+                        }
+                        .padding(.top, 5)
+                        .padding(.bottom, 8)
                     }
-                    .padding(.top, 5)
-                    .padding(.bottom, 8)
                 }
             } else {
                 VStack {
@@ -266,62 +268,91 @@ struct ShopView: View {
             }
         }
         .disabled(iapManager.purchaseInProgress)
+        .padding(.horizontal)
     }
     
     @ViewBuilder
     private func boosterCard(image: String, title: String, price: Int, count: Int, type: BoosterType, isBundle: Bool = false) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 25)
-                .fill(Color.white)
-                .frame(height: 200)
-                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
-            
-            Button(action: {
-                selectedBoosterType = type
-                if collectionManager.coins >= type.price {
-                    showingPurchaseAlert = true
-                } else {
-                    showingInsufficientCoinsAlert = true
-                }
-            }) {
-                VStack(spacing: 12) {
-                    if isBundle {
-                        // Bundle of 5 boosters
-                        ZStack {
-                            ForEach(0..<5) { index in
-                                Image(index % 2 == 0 ? "booster_closed_1" : "booster_closed_2")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(height: 130)
-                                    .offset(x: CGFloat(index - 2) * 20)
-                                    .zIndex(Double(-index))
+        Button(action: {
+            selectedBoosterType = type
+            if collectionManager.coins >= type.price {
+                showingPurchaseAlert = true
+            } else {
+                showingInsufficientCoinsAlert = true
+            }
+        }) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 25)
+                    .fill(Color.white)
+                    .frame(height: 230)
+                    .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                
+                VStack(spacing: 20) {
+                    ZStack {
+                        if isBundle {
+                            // Bundle of 5 boosters
+                            ZStack {
+                                ForEach(0..<5) { index in
+                                    Image(index % 2 == 0 ? "booster_closed_1" : "booster_closed_2")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(height: 120)
+                                        .offset(x: CGFloat(index - 2) * 20)
+                                        .zIndex(Double(-index))
+                                }
                             }
-                        }
-                        .shadow(radius: 5)
-                    } else {
-                        Image(image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(height: 130)
                             .shadow(radius: 5)
+                            .padding(.top, 25)
+                            
+                            // Badge "1 Free"
+                            Text("1 FREE")
+                                .font(.system(size: 12, weight: .heavy))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(
+                                    ZStack {
+                                        Capsule()
+                                            .fill(Color.red)
+                                        Capsule()
+                                            .stroke(Color.white, lineWidth: 1.5)
+                                    }
+                                )
+                                .rotationEffect(.degrees(-10))
+                                .offset(x: 60, y: -35)
+                                .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
+                        } else {
+                            Image(image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(height: 120)
+                                .shadow(radius: 5)
+                                .padding(.top, 5)
+                        }
                     }
                     
-                    HStack(spacing: 8) {
-                        Text(title)
+                    VStack(spacing: 4) {
+                        Text(isBundle ? "5 boosters" : "1 booster")
+                            .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.gray)
-                        Text("•")
-                            .foregroundColor(.gray)
-                        HStack(spacing: 4) {
-                            Text("\(price)")
-                                .fontWeight(.semibold)
-                            Image("coin")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 16, height: 16)
+                        
+                        HStack(spacing: 6) {
+                            if isBundle {
+                                Text("500")
+                                    .strikethrough()
+                                    .foregroundColor(.gray)
+                                    .font(.system(size: 14))
+                            }
+                            HStack(spacing: 4) {
+                                Text("\(price)")
+                                    .fontWeight(.semibold)
+                                Image("coin")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 16, height: 16)
+                            }
                         }
                     }
-                    .font(.system(size: 15))
-                    .foregroundColor(.gray)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
                     .background(
@@ -329,10 +360,11 @@ struct ShopView: View {
                             .fill(Color.white)
                             .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                     )
+                    .padding(.bottom, 10)
                 }
             }
-            .buttonStyle(ScaleButtonStyle())
         }
+        .buttonStyle(ScaleButtonStyle())
     }
 
     struct ScaleButtonStyle: ButtonStyle {

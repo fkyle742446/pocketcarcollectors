@@ -252,7 +252,7 @@ struct ProgressCard: View {
                         )
                     )
                     .frame(width: progress / Double(total) * UIScreen.main.bounds.width * 0.75, height: 6)
-                    .animation(.easeInOut(duration: 3.0), value: progress)
+                    .animation(.easeInOut(duration: 1), value: progress)
             }
         }
         .padding(12)

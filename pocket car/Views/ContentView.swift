@@ -170,7 +170,7 @@ struct ContentView: View {
                                     VStack {
                                         HStack {
                                             Spacer()
-                                            Text("Few days left")
+                                            Text("Only this season")
                                                 .font(.system(size: 10, weight: .semibold))
                                                 .foregroundColor(.white)
                                                 .padding(.horizontal, 10)
@@ -253,7 +253,7 @@ struct ContentView: View {
                                             Spacer()
                                             
                                             // Season availability text at the bottom
-                                            Text("only available this season 1")
+                                            Text("0,001%")
                                                 .font(.system(size: 12, weight: .medium))
                                                 .foregroundColor(.white)
                                                 .padding(.horizontal, 12)

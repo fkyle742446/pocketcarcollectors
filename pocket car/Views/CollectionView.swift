@@ -1,14 +1,28 @@
 import SwiftUI
 import AVFoundation
+import AudioToolbox
 
 struct CollectionView: View {
     @ObservedObject var collectionManager: CollectionManager
     @State private var selectedCard: BoosterCard? = nil
     @State private var showingRarityInfo = false
+    @State private var showingCompleteView = true
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
     private var viewSize: ViewSize {
         horizontalSizeClass == .compact ? .compact : .regular
+    }
+    
+    private var allSlots: [Int] {
+        Array(1...250).reversed()
+    }
+    
+    private var collectedCards: [(card: BoosterCard, count: Int)] {
+        collectionManager.cards.sorted { $0.card.number > $1.card.number }
+    }
+    
+    private func getCard(for number: Int) -> (card: BoosterCard, count: Int)? {
+        return collectionManager.cards.first { $0.card.number == number }
     }
 
     var body: some View {
@@ -23,7 +37,11 @@ struct CollectionView: View {
 
                 VStack(spacing: 16) {
                     HStack {
+                        CustomToggleButton(isOn: $showingCompleteView)
+                            .padding(.leading, 16)
+                        
                         Spacer()
+                        
                         Text("\(collectionManager.cards.count)/250")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.gray)
@@ -42,11 +60,45 @@ struct CollectionView: View {
                     .padding(.top, 10)
                     .padding(.bottom, 8)
 
-                    if collectionManager.cards.isEmpty {
-                        EmptyCollectionView()
-                    } else {
-                        CollectionGridView(cards: collectionManager.cards, selectedCard: $selectedCard)
-                            .padding(.top, 8)
+                    ScrollView {
+                        LazyVGrid(
+                            columns: [
+                                GridItem(.fixed(120), spacing: 8),
+                                GridItem(.fixed(120), spacing: 8),
+                                GridItem(.fixed(120), spacing: 8)
+                            ],
+                            spacing: 8
+                        ) {
+                            if showingCompleteView {
+                                ForEach(collectedCards, id: \.card.number) { cardData in
+                                    CardView(card: cardData.card, count: cardData.count)
+                                        .onTapGesture {
+                                            HapticManager.shared.impact(style: .light)
+                                            AudioManager.shared.playCardTapSound()
+                                            withAnimation(.easeInOut(duration: 0.2)) {
+                                                selectedCard = cardData.card
+                                            }
+                                        }
+                                }
+                            } else {
+                                ForEach(allSlots, id: \.self) { number in
+                                    if let cardData = getCard(for: number) {
+                                        CardView(card: cardData.card, count: cardData.count)
+                                            .onTapGesture {
+                                                HapticManager.shared.impact(style: .light)
+                                                AudioManager.shared.playCardTapSound()
+                                                withAnimation(.easeInOut(duration: 0.2)) {
+                                                    selectedCard = cardData.card
+                                                }
+                                            }
+                                    } else {
+                                        EmptySlotView(number: number)
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
                     }
                 }
                 .frame(maxWidth: viewSize == .compact ? .infinity : min(geometry.size.width * 0.8, 800))
@@ -56,6 +108,106 @@ struct CollectionView: View {
                     ZoomedCardView(selectedCard: $selectedCard, collectionManager: collectionManager)
                 }
             }
+        }
+    }
+}
+
+struct EmptySlotView: View {
+    let number: Int
+    
+    var body: some View {
+        ZStack {
+            // Base layer avec un effet plus premium
+            RoundedRectangle(cornerRadius: 12)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(.systemGray6),
+                            Color(.systemGray5).opacity(0.8),
+                            Color(.systemGray6)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 120, height: 180)
+                .overlay(
+                    // Effet de glassmorphism subtil
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(stops: [
+                                    .init(color: Color.white.opacity(0.3), location: 0),
+                                    .init(color: Color.white.opacity(0.1), location: 0.3),
+                                    .init(color: Color.white.opacity(0.05), location: 0.7),
+                                    .init(color: Color.white.opacity(0.0), location: 1)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.white.opacity(0.5),
+                                    Color.white.opacity(0.2)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 0.5
+                        )
+                )
+                .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
+            
+            // Effet de profondeur supplémentaire
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.white.opacity(0.2),
+                            Color.black.opacity(0.05)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+                .blur(radius: 0.5)
+            
+            Text("\(number)")
+                .font(.system(size: 42, weight: .bold, design: .rounded))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [
+                            Color(.systemGray3),
+                            Color(.systemGray4)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .shadow(color: .white.opacity(0.3), radius: 1, x: 0, y: 1)
+                .overlay(
+                    Text("\(number)")
+                        .font(.system(size: 42, weight: .bold, design: .rounded))
+                        .foregroundColor(.white.opacity(0.3))
+                        .offset(x: 0.5, y: 0.5)
+                        .mask(
+                            LinearGradient(
+                                gradient: Gradient(stops: [
+                                    .init(color: .clear, location: 0),
+                                    .init(color: .white, location: 0.3),
+                                    .init(color: .clear, location: 1)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                )
         }
     }
 }
@@ -201,6 +353,51 @@ struct CardView: View {
                 )
                 .shadow(color: rarityColor(for: card.rarity).opacity(card.rarity == .HolyT ? 0.4 : 0.2), radius: card.rarity == .HolyT ? 10 : 8, x: 0, y: 4)
         )
+    }
+}
+
+struct CustomToggleButton: View {
+    @Binding var isOn: Bool
+    private let width: CGFloat = 45
+    private let height: CGFloat = 28
+    
+    var body: some View {
+        Button(action: {
+            withAnimation(.spring(response: 0.2, dampingFraction: 0.7, blendDuration: 0)) {
+                isOn.toggle()
+                HapticManager.shared.impact(style: .light)
+                AudioManager.shared.playToggleSound()
+            }
+        }) {
+            ZStack {
+                Capsule()
+                    .fill(isOn ?
+                        LinearGradient(
+                            colors: [.yellow.opacity(0.5), .orange.opacity(0.5)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ) :
+                        LinearGradient(
+                            colors: [Color(.systemGray5), Color(.systemGray5)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: width, height: height)
+                
+                Capsule()
+                    .strokeBorder(isOn ? Color.orange.opacity(0) : Color(.systemGray4), lineWidth: 0.5)
+                    .frame(width: width, height: height)
+                
+                Circle()
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.15), radius: 1, x: 0, y: 1)
+                    .frame(width: height - 3, height: height - 3)
+                    .offset(x: isOn ? 8 : -8)
+                    .animation(.interpolatingSpring(stiffness: 500, damping: 35), value: isOn)
+            }
+            .buttonStyle(.plain)
+        }
     }
 }
 
@@ -406,11 +603,6 @@ struct ZoomedCardView: View {
     var body: some View {
         ZStack {
             Color.black.opacity(0.9).ignoresSafeArea()
-                .onTapGesture {
-                    withAnimation(.spring()) {
-                        selectedCard = nil
-                    }
-                }
             
             VStack(spacing: 20) {
                 ZStack {
@@ -437,7 +629,6 @@ struct ZoomedCardView: View {
                 
                 if let card = selectedCard {
                     Button(action: {
-                        print("Sell button tapped")
                         HapticManager.shared.impact(style: .heavy)
                         if collectionManager.sellCard(card) {
                             AudioManager.shared.playSellSound()
@@ -475,22 +666,15 @@ struct ZoomedCardView: View {
                                     )
                             }
                         )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 15)
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [.yellow.opacity(0.3), .orange.opacity(0.3)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    ),
-                                    lineWidth: 1
-                                )
-                                .blur(radius: 2)
-                        )
                     }
                 }
             }
         }
         .transition(.opacity)
+        .onTapGesture {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                selectedCard = nil
+            }
+        }
     }
 }
