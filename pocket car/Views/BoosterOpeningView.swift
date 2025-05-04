@@ -698,6 +698,8 @@ struct BoosterOpeningView: View {
                 VStack {
                     if isOpening {
                         VStack(spacing: 30) {
+                            Spacer()
+                            
                             Image(boosterImage)
                                 .resizable()
                                 .scaledToFit()
@@ -711,10 +713,14 @@ struct BoosterOpeningView: View {
                                 .onTapGesture {
                                     openBooster()
                                 }
+                                .padding(.top, 80) // Ajout d'un padding pour descendre le booster
+                            
+                            Spacer()
                             
                             AnimatedButton(title: "OPEN") {
                                 openBooster()
                             }
+                            .padding(.bottom, 50) // Même padding que le bouton "NEXT CARD"
                         }
                     } else if let selectedCard = currentCard {
                         cardRevealView(for: selectedCard)

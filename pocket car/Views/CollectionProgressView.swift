@@ -108,8 +108,10 @@ struct CollectionProgressView: View {
                         dismiss()
                     }) {
                         HStack {
-                            Image(systemName: "house.fill")
-                                .font(.system(size: 16))
+                            Image("home_icon")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 20, height: 20)
                             Text("Home")
                                 .font(.headline)
                         }
