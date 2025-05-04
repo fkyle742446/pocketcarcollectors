@@ -61,8 +61,6 @@ struct ContentView: View {
     @State private var boosterAvailableIn: TimeInterval = 6 * 3600
     @State private var timer: Timer? = nil
     @State private var giftAvailableIn: TimeInterval = 1 * 6
-    @State private var audioPlayer: AVAudioPlayer?
-    @State private var isFadingOut: Bool = false
     @State private var glareOffset: CGFloat = -200
     @State private var booster1GlareOffset: CGFloat = -200
     @State private var booster2GlareOffset: CGFloat = -200
@@ -743,10 +741,7 @@ struct ContentView: View {
         .onAppear {
             notificationManager.requestPermission()
             startTimer()
-            playMusic()
-        }
-        .onDisappear {
-            stopMusic()
+            AudioManager.shared.startBackgroundMusic()
         }
         .onReceive(NotificationCenter.default.publisher(for: .openBoosterView)) { _ in
             navigateToBooster = true
@@ -958,44 +953,8 @@ struct ContentView: View {
             }
         }
     }
-    
-    private func playMusic() {
-        guard let path = Bundle.main.path(forResource: "Background", ofType: "mp3") else {
-            print("Could not find Background.mp3")
-            return
-        }
-        let url = URL(fileURLWithPath: path)
-        do {
-            audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.numberOfLoops = -1
-            audioPlayer?.volume = 0.5
-            audioPlayer?.play()
-            
-            audioPlayer?.volume = 0
-            Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-                if let player = audioPlayer, player.volume < 0.5 {
-                    player.volume += 0.1
-                } else {
-                    timer.invalidate()
-                }
-            }
-        } catch {
-            print("Error playing music: \(error.localizedDescription)")
-        }
-    }
-    
-    private func stopMusic() {
-        isFadingOut = true
-        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-            if let player = audioPlayer, player.volume > 0 {
-                player.volume -= 0.1
-            } else {
-                timer.invalidate()
-                audioPlayer?.stop()
-                isFadingOut = false
-            }
-        }
-    }
+
+    // Rest of the methods remain the same...
 }
 
 private struct MilestoneIdentifier: Identifiable {

@@ -54,95 +54,155 @@ struct ShopView: View {
             .ignoresSafeArea()
             
             if iapManager.productsLoaded {
-                ScrollView {
-                    VStack(spacing: 6) {
-                        // Top coins display
-                        HStack {
-                            Spacer()
-                            HStack(spacing: 10) {
-                                Text("\(coinsCount)")
-                                    .font(.system(size: 20, weight: .semibold))
-                                    .foregroundColor(.gray)
-                                Image("coin")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 20, height: 20)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 0)
-                            .background(
-                                RoundedRectangle(cornerRadius: 15)
-                                    .fill(Color.white)
-                                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                            )
-                        }
-                        .padding(.top, 0)
-                        .padding(.horizontal)
-                        
-                        // Boosters section
-                        VStack(spacing: 10) {
-                            boosterCard(
-                                image: "booster_closed_1",
-                                title: "Single x1 Booster",
-                                price: 100,
-                                count: 1,
-                                type: .single
-                            )
+                VStack(spacing: 0) {
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            Spacer(minLength: 20)
                             
-                            boosterCard(
-                                image: "booster_closed_2",
-                                title: "Bundle Pack x5 Boosters",
-                                price: 400,
-                                count: 5,
-                                type: .bundle,
-                                isBundle: true
-                            )
-                        }
-                        .padding(.horizontal)
-                        
-                        // IAP Section
-                        VStack(spacing: 8) {
-                            ForEach(iapManager.products) { product in
-                                coinPurchaseCard(for: product)
-                            }
-                        }
-                        
-                        // Home button
-                        Button(action: {
-                            dismiss()
-                        }) {
+                            // Top coins display
                             HStack {
-                                Image(systemName: "house.fill")
-                                    .font(.system(size: 16))
-                                Text("Home")
-                                    .font(.headline)
+                                Spacer()
+                                HStack(spacing: 10) {
+                                    Text("\(coinsCount)")
+                                        .font(.system(size: 20, weight: .semibold))
+                                        .foregroundColor(.gray)
+                                    Image("coin")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 20, height: 20)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 0)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 15)
+                                        .fill(Color.white)
+                                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                                )
                             }
-                            .foregroundColor(.gray)
-                            .frame(width: 120)
-                            .frame(height: 45)
-                            .background(
+                            .padding(.horizontal)
+                            
+                            Spacer(minLength: 20)
+                            
+                            // Boosters section
+                            HStack(spacing: 15) {
+                                // Single Booster
+                                boosterCard(
+                                    image: "booster_closed_1",
+                                    title: "Single x1 Booster",
+                                    price: 100,
+                                    count: 1,
+                                    type: .single
+                                )
+                                .frame(maxWidth: .infinity)
+                                
+                                // Bundle Pack
+                                boosterCard(
+                                    image: "booster_closed_2",
+                                    title: "Bundle Pack x5",
+                                    price: 400,
+                                    count: 5,
+                                    type: .bundle,
+                                    isBundle: true
+                                )
+                                .frame(maxWidth: .infinity)
+                            }
+                            .padding(.horizontal)
+                            
+                            // IAP Section
+                            VStack(spacing: 12) {
+                                ForEach(iapManager.products) { product in
+                                    coinPurchaseCard(for: product)
+                                }
+                            }
+                            .padding(.top, 8)
+                            
+                            // Slot Machine Button
+                            NavigationLink(destination: SlotMachineView(collectionManager: collectionManager)) {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 25)
-                                        .glow(
-                                            fill: .angularGradient(
-                                                colors: [.blue, .purple, .red, .orange, .yellow, .blue],
-                                                center: .center,
-                                                startAngle: .degrees(glowRotationAngle),
-                                                endAngle: .degrees(glowRotationAngle + 360)
-                                            ),
-                                            lineWidth: 2.0,
-                                            blurRadius: 4.0
-                                        )
-                                        .opacity(0.4)
-                                    
-                                    RoundedRectangle(cornerRadius: 25)
                                         .fill(Color.white)
+                                        .frame(height: 80)
+                                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                                    
+                                    HStack(spacing: 20) {
+                                        Image("slots")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 40, height: 40)
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Slot Machine")
+                                                .font(.system(size: 18, weight: .bold))
+                                                .foregroundColor(.gray)
+                                            
+                                            Text("Try your luck!")
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.gray.opacity(0.8))
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        HStack(spacing: 4) {
+                                            Text("20")
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(.primary)
+                                            Image("coin")
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(width: 16, height: 16)
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .fill(Color.white)
+                                                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                                        )
+                                    }
+                                    .padding(.horizontal, 20)
                                 }
-                            )
+                            }
+                            .padding(.horizontal)
+                            .padding(.top, 8)
+                            
+                            Spacer(minLength: 100)
                         }
-                        .padding(.top, 5)
-                        .padding(.bottom, 8)
                     }
+                    
+                    // Home button en bas fixe
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "house.fill")
+                                .font(.system(size: 16))
+                            Text("Home")
+                                .font(.headline)
+                        }
+                        .foregroundColor(.gray)
+                        .frame(width: 120)
+                        .frame(height: 45)
+                        .background(
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 25)
+                                    .glow(
+                                        fill: .angularGradient(
+                                            colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                            center: .center,
+                                            startAngle: .degrees(glowRotationAngle),
+                                            endAngle: .degrees(glowRotationAngle + 360)
+                                        ),
+                                        lineWidth: 2.0,
+                                        blurRadius: 4.0
+                                    )
+                                    .opacity(0.4)
+                                
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(Color.white)
+                            }
+                        )
+                    }
+                    .padding(.vertical, 20)
                 }
             } else {
                 VStack {
@@ -284,32 +344,31 @@ struct ShopView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 25)
                     .fill(Color.white)
-                    .frame(height: 230)
+                    .frame(height: 180)
                     .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                 
-                VStack(spacing: 20) {
+                VStack(spacing: 15) {
                     ZStack {
                         if isBundle {
-                            // Bundle of 5 boosters
+                            // Bundle de 5 boosters
                             ZStack {
                                 ForEach(0..<5) { index in
                                     Image(index % 2 == 0 ? "booster_closed_1" : "booster_closed_2")
                                         .resizable()
                                         .aspectRatio(contentMode: .fit)
-                                        .frame(height: 120)
-                                        .offset(x: CGFloat(index - 2) * 20)
+                                        .frame(height: 80)
+                                        .offset(x: CGFloat(index - 2) * 15)
                                         .zIndex(Double(-index))
                                 }
                             }
                             .shadow(radius: 5)
-                            .padding(.top, 25)
                             
-                            // Badge "1 Free"
+                            // Badge "1 FREE"
                             Text("1 FREE")
                                 .font(.system(size: 12, weight: .heavy))
                                 .foregroundColor(.white)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
                                 .background(
                                     ZStack {
                                         Capsule()
@@ -319,21 +378,20 @@ struct ShopView: View {
                                     }
                                 )
                                 .rotationEffect(.degrees(-10))
-                                .offset(x: 60, y: -35)
+                                .offset(x: 40, y: -25)
                                 .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
                         } else {
                             Image(image)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .frame(height: 120)
+                                .frame(height: 80)
                                 .shadow(radius: 5)
-                                .padding(.top, 5)
                         }
                     }
                     
                     VStack(spacing: 4) {
                         Text(isBundle ? "5 boosters" : "1 booster")
-                            .font(.system(size: 16, weight: .medium))
+                            .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.gray)
                         
                         HStack(spacing: 6) {
@@ -341,7 +399,7 @@ struct ShopView: View {
                                 Text("500")
                                     .strikethrough()
                                     .foregroundColor(.gray)
-                                    .font(.system(size: 14))
+                                    .font(.system(size: 12))
                             }
                             HStack(spacing: 4) {
                                 Text("\(price)")
@@ -353,15 +411,15 @@ struct ShopView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
                     .background(
-                        RoundedRectangle(cornerRadius: 15)
+                        RoundedRectangle(cornerRadius: 12)
                             .fill(Color.white)
                             .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                     )
-                    .padding(.bottom, 10)
                 }
+                .padding(.vertical, 15)
             }
         }
         .buttonStyle(ScaleButtonStyle())
