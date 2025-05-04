@@ -176,6 +176,7 @@ class CollectionManager: ObservableObject {
         case .epic: return 50
         case .legendary: return 75
         case .HolyT: return 200
+        case .Season1: return 1000
         }
     }
     

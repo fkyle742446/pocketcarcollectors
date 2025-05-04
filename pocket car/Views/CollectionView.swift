@@ -14,7 +14,7 @@ struct CollectionView: View {
     }
     
     private var allSlots: [Int] {
-        Array(1...250).reversed()
+        [254, 253, 252, 251] + Array((1...250).reversed())
     }
     
     private var collectedCards: [(card: BoosterCard, count: Int)] {
@@ -151,10 +151,10 @@ struct EmptySlotView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(
                             LinearGradient(
-                                gradient: Gradient(colors: [
+                                colors: [
                                     Color.white.opacity(0.5),
                                     Color.white.opacity(0.2)
-                                ]),
+                                ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
@@ -178,7 +178,7 @@ struct EmptySlotView: View {
                 )
                 .blur(radius: 0.5)
             
-            Text("\(number)")
+            Text(number > 250 ? "?" : "\(number)")
                 .font(.system(size: 42, weight: .bold, design: .rounded))
                 .foregroundStyle(
                     LinearGradient(
@@ -192,7 +192,7 @@ struct EmptySlotView: View {
                 )
                 .shadow(color: .white.opacity(0.3), radius: 1, x: 0, y: 1)
                 .overlay(
-                    Text("\(number)")
+                    Text(number > 250 ? "?" : "\(number)")
                         .font(.system(size: 42, weight: .bold, design: .rounded))
                         .foregroundColor(.white.opacity(0.3))
                         .offset(x: 0.5, y: 0.5)
@@ -240,6 +240,8 @@ struct CardView: View {
             return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
             return Color.black
+        case .Season1:
+            return Color.red
         }
     }
     
@@ -275,6 +277,14 @@ struct CardView: View {
                 colors: [Color.white.opacity(0.3), Color.white.opacity(0.1)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
+                
+                )
+                
+                case .Season1:
+                    return LinearGradient(
+                        colors: [Color.red.opacity(0.3), Color.red.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
             )
         }
     }
@@ -286,6 +296,7 @@ struct CardView: View {
         case .epic: return "EPIC"
         case .legendary: return "LEGENDARY"
         case .HolyT: return "HOLY"
+        case .Season1: return "SEASON"
         }
     }
 
@@ -413,6 +424,7 @@ struct RarityInfoView: View {
         case .epic: totalCards = 50
         case .legendary: totalCards = 25
         case .HolyT: totalCards = 3
+        case .Season1: totalCards = 1
         }
         return (collectedCards, totalCards)
     }
@@ -491,6 +503,7 @@ struct RarityInfoView: View {
         case .epic: return "sparkles"
         case .legendary: return "crown.fill"
         case .HolyT: return "bolt.fill"
+        case .Season1: return "bolt.fill"
         }
     }
     
@@ -501,6 +514,7 @@ struct RarityInfoView: View {
         case .epic: return .purple
         case .legendary: return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT: return Color(white: 0.8)
+        case .Season1: return .red
         }
     }
     
@@ -508,9 +522,10 @@ struct RarityInfoView: View {
         switch rarity {
         case .common: return "70%"
         case .rare: return "25%"
-        case .epic: return "10%"
-        case .legendary: return "2%"
+        case .epic: return "8%%"
+        case .legendary: return "1%"
         case .HolyT: return "0.1%"
+        case .Season1: return "0.01%"
         }
     }
     
@@ -536,6 +551,8 @@ struct CollectionProgressBar: View {
             return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
             return Color(white: 0.8)
+        case .Season1:
+            return .red
         }
     }
     
@@ -597,6 +614,8 @@ struct ZoomedCardView: View {
             return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
             return Color.black
+        case .Season1:
+            return Color.red
         }
     }
     

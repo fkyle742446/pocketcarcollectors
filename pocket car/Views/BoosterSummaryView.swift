@@ -4,6 +4,7 @@ struct BoosterSummaryView: View {
     let drawnCards: [BoosterCard]
     @Environment(\.dismiss) var dismiss
     @State private var selectedCard: BoosterCard? = nil
+    @State private var currentCardIndex: Int = 0
     @State private var glowRotationAngle: Double = 0
     @State private var preloadedContentView: ContentView? = nil
     
@@ -44,7 +45,10 @@ struct BoosterSummaryView: View {
                         ForEach(drawnCards.prefix(3), id: \.number) { card in
                             CardSummaryView(card: card)
                                 .onTapGesture {
-                                    selectedCard = card
+                                    if let index = drawnCards.firstIndex(where: { $0.number == card.number }) {
+                                        currentCardIndex = index
+                                        selectedCard = card
+                                    }
                                 }
                         }
                     }
@@ -54,7 +58,10 @@ struct BoosterSummaryView: View {
                         ForEach(drawnCards.suffix(2), id: \.number) { card in
                             CardSummaryView(card: card)
                                 .onTapGesture {
-                                    selectedCard = card
+                                    if let index = drawnCards.firstIndex(where: { $0.number == card.number }) {
+                                        currentCardIndex = index
+                                        selectedCard = card
+                                    }
                                 }
                         }
                     }
@@ -102,29 +109,37 @@ struct BoosterSummaryView: View {
                 }
                 .padding(.bottom, 30)
             }
-        }
-        .preferredColorScheme(.light)
-        .overlay(
-            Group {
-                if let selectedCard = selectedCard {
-                    ZStack {
-                        Color.black
-                            .opacity(0.9)
-                            .ignoresSafeArea()
-                            .onTapGesture {
-                                self.selectedCard = nil
-                            }
-                        
-                        HolographicCard(
-                            cardImage: selectedCard.name,
-                            rarity: selectedCard.rarity,
-                            cardNumber: selectedCard.number
-                        )
-                        .frame(width: 250, height: 350)
+            .allowsHitTesting(selectedCard == nil)
+            
+            // Overlay for selected card
+            if let selectedCard = selectedCard {
+                Color.black
+                    .opacity(0.9)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        showNextCard()
                     }
+                
+                ZStack {
+                    HolographicCard(
+                        cardImage: selectedCard.name,
+                        rarity: selectedCard.rarity,
+                        cardNumber: selectedCard.number
+                    )
+                    .frame(width: 250, height: 350)
+                    .allowsHitTesting(false) // Désactive les interactions sur la carte
+                    
+                    // Rectangle transparent pour capturer le tap
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(width: 250, height: 350)
+                        .onTapGesture {
+                            showNextCard()
+                        }
                 }
             }
-        )
+        }
+        .preferredColorScheme(.light)
         .onAppear {
             DispatchQueue.global(qos: .userInitiated).async {
                 let contentView = ContentView()
@@ -139,6 +154,13 @@ struct BoosterSummaryView: View {
             ) {
                 glowRotationAngle = 360
             }
+        }
+    }
+    
+    private func showNextCard() {
+        withAnimation {
+            currentCardIndex = (currentCardIndex + 1) % drawnCards.count
+            selectedCard = drawnCards[currentCardIndex]
         }
     }
 }
@@ -206,6 +228,8 @@ struct PocketCardView: View {
             return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
             return Color(white: 0.8)
+        case .Season1:
+            return Color.red
         }
     }
 }

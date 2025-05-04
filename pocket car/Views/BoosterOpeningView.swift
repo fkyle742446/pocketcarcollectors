@@ -26,6 +26,10 @@ class SoundManager {
         case .HolyT:
             soundName = "legendary_reveal"
             volume = 0.9
+            
+        case .Season1:
+            soundName = "legendary_reveal"
+            volume = 1
         }
         
         guard let path = Bundle.main.path(forResource: soundName, ofType: "mp3") else {
@@ -182,6 +186,8 @@ struct ParticleSystem: View {
             return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
             return Color(white: 0.8)
+        case .Season1:
+            return .red
         }
     }
 }
@@ -196,11 +202,14 @@ struct EnhancedRarityButton: View {
         case .rare:
             return "25%"
         case .epic:
-            return "4%"
+            return "8%"
         case .legendary:
-            return "0.9%"
-        case .HolyT:
             return "0.1%"
+        case .HolyT:
+            return "0.01%"
+            
+        case .Season1:
+            return "0.001%"
         }
     }
     
@@ -215,6 +224,8 @@ struct EnhancedRarityButton: View {
         case .legendary:
             return [Color(red: 0.8, green: 0.6, blue: 0.0), Color(red: 1.0, green: 0.84, blue: 0.0)]
         case .HolyT:
+            return [Color(red: 0.1, green: 0.1, blue: 0.1), Color(red: 0.2, green: 0.2, blue: 0.2)]
+        case .Season1:
             return [Color(red: 0.1, green: 0.1, blue: 0.1), Color(red: 0.2, green: 0.2, blue: 0.2)]
         }
     }
@@ -397,7 +408,7 @@ struct BoosterOpeningView: View {
     @State private var showGestureHint = true
     
     private let allCards: [BoosterCard] = [
-        // Common (40%) - Cards 1-100
+        // Common (70%) - Cards 1-100
         BoosterCard(name: "Renault Clio", rarity: .common, number: 1),
         BoosterCard(name: "Peugeot 208", rarity: .common, number: 2),
         BoosterCard(name: "Volkswagen Polo", rarity: .common, number: 3),
@@ -499,7 +510,7 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Mazda CX-5", rarity: .common, number: 99),
         BoosterCard(name: "Kia Sorento", rarity: .common, number: 100),
 
-        // Rare (30%) - Cards 101-175
+        // Rare (25%) - Cards 101-175
         BoosterCard(name: "Porsche 911", rarity: .rare, number: 101),
         BoosterCard(name: "Mercedes-AMG GT", rarity: .rare, number: 102),
         BoosterCard(name: "Audi RS6", rarity: .rare, number: 103),
@@ -576,7 +587,7 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Porsche 718 Cayman GT4", rarity: .rare, number: 174),
         BoosterCard(name: "Mercedes-AMG CLA 45", rarity: .rare, number: 175),
 
-        // Epic (20%) - Cards 176-225
+        // Epic (8%) - Cards 176-225
         BoosterCard(name: "Bugatti Chiron", rarity: .epic, number: 176),
         BoosterCard(name: "Koenigsegg Jesko", rarity: .epic, number: 177),
         BoosterCard(name: "Pagani Huayra BC", rarity: .epic, number: 178),
@@ -602,10 +613,10 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Koenigsegg One:1", rarity: .epic, number: 198),
         BoosterCard(name: "Pagani Zonda Cinque Roadster", rarity: .epic, number: 199),
         BoosterCard(name: "McLaren Speedtail", rarity: .epic, number: 200),
-        BoosterCard(name: "Ferrari P80", rarity: .epic, number: 201),
+        BoosterCard(name: "Ferrari P80/C", rarity: .epic, number: 201),
         BoosterCard(name: "Aston Martin Victor", rarity: .epic, number: 202),
         BoosterCard(name: "Lamborghini Essenza SCV12", rarity: .epic, number: 203),
-        BoosterCard(name: "Bugatti Centodiecéi", rarity: .epic, number: 204),
+        BoosterCard(name: "Bugatti Centodieci", rarity: .epic, number: 204),
         BoosterCard(name: "Koenigsegg CCXR Edition", rarity: .epic, number: 205),
         BoosterCard(name: "Pagani Huayra Tricolore", rarity: .epic, number: 206),
         BoosterCard(name: "McLaren 600LT Spider", rarity: .epic, number: 207),
@@ -628,7 +639,7 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Bugatti Chiron Super Sport", rarity: .epic, number: 224),
         BoosterCard(name: "Koenigsegg Regera Final Edition", rarity: .epic, number: 225),
 
-        // Legendary (10%) - Cards 226-250
+        // Legendary (0,1%) - Cards 226-250
         BoosterCard(name: "Koenigsegg Jesko Absolut", rarity: .legendary, number: 226),
         BoosterCard(name: "Pagani Zonda Cinque", rarity: .legendary, number: 227),
         BoosterCard(name: "Lamborghini Sesto Elemento", rarity: .legendary, number: 228),
@@ -656,11 +667,17 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Bugatti Chiron Super Sport 300+", rarity: .legendary, number: 250)
         ,
         
-        // HolyT (0,1%) - Cards 251-253
+        // HolyT (0,01%) - Cards 251-253
     
         BoosterCard(name: "McLaren P1 Holy Trinity", rarity: .HolyT, number: 251),
         BoosterCard(name: "Ferrari LaFerrari Holy Trinity", rarity: .HolyT, number: 252),
         BoosterCard(name: "Porsche 918 Spyder Holy Trinity", rarity: .HolyT, number: 253)
+        ,
+        
+        // HolyT (0,01%) - Cards 254-255
+    
+        BoosterCard(name: "Formula 1", rarity: .Season1, number: 254),
+   
     ]
     
     init(collectionManager: CollectionManager, boosterNumber: Int) {
@@ -743,13 +760,9 @@ struct BoosterOpeningView: View {
     @ViewBuilder
     private func cardRevealView(for selectedCard: BoosterCard) -> some View {
         ZStack {
-            Color.clear
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    handleCardReveal(selectedCard)
-                }
+            Color.black.opacity(0.9)
                 .ignoresSafeArea()
-            
+
             VStack {
                 Spacer()
                 
@@ -761,9 +774,17 @@ struct BoosterOpeningView: View {
                                 rarity: selectedCard.rarity,
                                 cardNumber: selectedCard.number
                             )
-                            .onTapGesture {
-                                handleCardReveal(selectedCard)
-                            }
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { gesture in
+                                        dragOffset = gesture.translation.height
+                                    }
+                                    .onEnded { _ in
+                                        withAnimation(.spring()) {
+                                            dragOffset = 0
+                                        }
+                                    }
+                            )
                             
                             if collectionManager.isNewCard(selectedCard) {
                                 NewCardBadge()
@@ -792,14 +813,15 @@ struct BoosterOpeningView: View {
                 
                 Spacer()
                 
-                if showGestureHint {
-                    GestureHintView()
-                        .padding(.bottom, 50)
+                // Remplace le bouton Next Card par un AnimatedButton
+                AnimatedButton(title: "NEXT CARD") {
+                    handleCardReveal(selectedCard)
                 }
+                .padding(.bottom, 50)
             }
         }
     }
-    
+
     private func handleCardReveal(_ selectedCard: BoosterCard) {
         if isTransitioning { return }
         isTransitioning = true
@@ -839,9 +861,10 @@ struct BoosterOpeningView: View {
         let probabilities: [CardRarity: Double] = [
             .common: 0.7 / 100,
             .rare: 0.25 / 75,
-            .epic: 0.1 / 50,
+            .epic: 0.08 / 50,
             .legendary: 0.01 / 25,
-            .HolyT: 0.001 / 3
+            .HolyT: 0.001 / 3,
+            .Season1: 0.0001 / 1
         ]
 
         let weightedCards = allCards.flatMap { card -> [BoosterCard] in
@@ -864,7 +887,9 @@ struct BoosterOpeningView: View {
         case .legendary:
             return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
-            return Color(red: 0.1, green: 0.1, blue: 0.1) // CHANGE: Updated to carbon black
+            return Color(red: 0.1, green: 0.1, blue: 0.1)
+        case .Season1:
+            return Color.red
         }
     }
 }

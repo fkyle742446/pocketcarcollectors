@@ -4,6 +4,6 @@ struct Card {
 }
 
 enum Rarity {
-    case common, rare, legendary
+    case common, rare, legendary, HolyT,Season1
 }
 

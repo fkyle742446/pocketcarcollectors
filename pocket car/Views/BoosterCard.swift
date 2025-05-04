@@ -6,10 +6,12 @@ enum CardRarity: String {
     case epic
     case legendary
     case HolyT
+    case Season1
 
     // Définir l'ordre de tri
     var sortOrder: Int {
         switch self {
+        case .Season1: return 6
         case .HolyT: return 5
         case .legendary: return 4
         case .epic: return 3

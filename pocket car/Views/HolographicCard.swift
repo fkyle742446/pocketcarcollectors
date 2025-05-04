@@ -5,15 +5,10 @@ struct HolographicCard: View {
     let rarity: CardRarity
     let cardNumber: Int
     
-    init(cardImage: String, rarity: CardRarity, cardNumber: Int = 0) {
-        self.cardImage = cardImage
-        self.rarity = rarity
-        self.cardNumber = cardNumber
-    }
-    
-    @State var translation: CGSize = .zero
-    @GestureState private var press = false
+    @State private var translation: CGSize = .zero
     @State private var isAnimating = false
+    @State private var gradientPhase: CGFloat = 0
+    @State private var hoverLocation: CGPoint = .zero
     
     private func cardThemeColor(for rarity: CardRarity) -> Color {
         switch rarity {
@@ -27,24 +22,72 @@ struct HolographicCard: View {
             return Color(red: 1, green: 0.84, blue: 0)
         case .HolyT:
             return Color(red: 0.1, green: 0.1, blue: 0.1)
+        case .Season1:
+            return Color(red: 0.1, green: 0.1, blue: 0.1)
         }
     }
     
-    var drag: some Gesture {
-        DragGesture()
+    private var drag: some Gesture {
+        DragGesture(minimumDistance: 0)
             .onChanged { value in
                 translation = value.translation
+                hoverLocation = value.location
             }
             .onEnded { _ in
                 withAnimation(.spring()) {
                     translation = .zero
+                    hoverLocation = .zero
                 }
             }
     }
     
+    private var holoEffect: some View {
+        GeometryReader { geo in
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color(red: 1, green: 0.2, blue: 0.6).opacity(0.4),
+                        Color(red: 1, green: 0.85, blue: 0.3).opacity(0.4),
+                        Color(red: 0.2, green: 0.9, blue: 0.3).opacity(0.4),
+                        Color(red: 0.2, green: 0.7, blue: 1).opacity(0.4),
+                        Color(red: 0.7, green: 0.2, blue: 1).opacity(0.4)
+                    ],
+                    startPoint: UnitPoint(
+                        x: 0.5 + (translation.width / geo.size.width) * 0.2,
+                        y: 0.5 + (translation.height / geo.size.height) * 0.2
+                    ),
+                    endPoint: UnitPoint(
+                        x: 1 + (translation.width / geo.size.width) * 0.2,
+                        y: 1 + (translation.height / geo.size.height) * 0.2
+                    )
+                )
+                .blendMode(.overlay)
+            }
+        }
+    }
+    
+    private var glareEffect: some View {
+        GeometryReader { geo in
+            RadialGradient(
+                gradient: Gradient(stops: [
+                    .init(color: .white, location: 0),
+                    .init(color: .white.opacity(0.3), location: 0.3),
+                    .init(color: .clear, location: 0.6)
+                ]),
+                center: UnitPoint(
+                    x: hoverLocation.x / geo.size.width,
+                    y: hoverLocation.y / geo.size.height
+                ),
+                startRadius: 5,
+                endRadius: 300
+            )
+            .opacity(hoverLocation == .zero ? 0 : 1)
+            .blendMode(.overlay)
+        }
+    }
+    
     var body: some View {
         ZStack {
-            // Card background with rarity color and texture
             RoundedRectangle(cornerRadius: 15)
                 .fill(cardThemeColor(for: rarity))
                 .overlay(
@@ -52,38 +95,24 @@ struct HolographicCard: View {
                         if rarity == .HolyT {
                             CarbonPatternView()
                                 .clipShape(RoundedRectangle(cornerRadius: 15))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 15)
-                                        .stroke(
-                                            LinearGradient(
-                                                colors: [
-                                                    Color(white: 0.9),
-                                                    Color(white: 0.6),
-                                                    Color(white: 0.9)
-                                                ],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            ),
-                                            lineWidth: 2
-                                        )
-                                )
-                        } else {
-                            RoundedRectangle(cornerRadius: 15)
-                                .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                                .blur(radius: 1)
                         }
                     }
                 )
                 .frame(width: 250, height: 350)
             
-            // Main card content
+            if rarity != .common {
+                holoEffect
+                    .mask(
+                        RoundedRectangle(cornerRadius: 15)
+                            .frame(width: 250, height: 350)
+                    )
+            }
+            
             VStack(spacing: 0) {
-                // Title bar with name and rarity
                 HStack {
                     Text(cardImage)
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.3), radius: 1, x: 1, y: 1)
                         .lineLimit(1)
                         .padding(.leading, 15)
                     
@@ -92,25 +121,19 @@ struct HolographicCard: View {
                     Text("\(rarity.rawValue.uppercased())")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.3), radius: 1, x: 1, y: 1)
                         .padding(.trailing, 15)
                 }
                 .padding(.vertical, 12)
                 .background(Color.black.opacity(0.2))
                 
-                // Image section with decorative frame
                 ZStack {
-                    // Outer frame
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color.white.opacity(0.9))
-                        .shadow(color: .black.opacity(0.2), radius: 2)
                     
-                    // Inner frame
                     RoundedRectangle(cornerRadius: 6)
                         .stroke(cardThemeColor(for: rarity), lineWidth: 2)
                         .padding(4)
                     
-                    // Car image
                     Image(cardImage)
                         .resizable()
                         .scaledToFill()
@@ -121,79 +144,33 @@ struct HolographicCard: View {
                 .frame(width: 240, height: 260)
                 .padding(.vertical, 10)
                 
-                // Stats and info section
-                VStack(spacing: 12) {
-                    HStack {
-                        Text("POCKET CAR ILLUSTRATION ")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundColor(.white)
-                            .shadow(color: .black.opacity(0.3), radius: 1, x: 1, y: 1)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 4)
-                        
-                        Spacer()
-                        
-                        Text("№ \(cardNumber)/250")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(
-                                Capsule()
-                                    .fill(Color.black.opacity(0.3))
-                            )
-                    }
-                    .padding(.horizontal, 15)
+                HStack {
+                    Text("POCKET CAR ILLUSTRATION ")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 5)
+                    
+                    Spacer()
+                    
+                    Text("№ \(cardNumber)/250")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule()
+                                .fill(Color.black.opacity(0.3))
+                        )
                 }
+                .padding(.horizontal, 15)
             }
             
-            // Improved holographic effects
-            Group {
-                // Moving shine effect
-                LinearGradient(
-                    colors: [
-                        .clear,
-                        .white.opacity(0.5),
-                        .white.opacity(0.3),
-                        .clear
-                    ],
-                    startPoint: UnitPoint(
-                        x: isAnimating ? 0 : 1,
-                        y: isAnimating ? 0 : 1
-                    ),
-                    endPoint: UnitPoint(
-                        x: isAnimating ? 1 : 0,
-                        y: isAnimating ? 1 : 0
-                    )
+            glareEffect
+                .mask(
+                    RoundedRectangle(cornerRadius: 15)
+                        .frame(width: 250, height: 350)
                 )
-                .frame(width: 250, height: 350)
-                .clipShape(RoundedRectangle(cornerRadius: 15))
-                .blendMode(.overlay)
-                .opacity(0.5)
-                
-                // Interactive shine effect
-                LinearGradient(
-                    colors: [
-                        .clear,
-                        .white.opacity(0.4),
-                        .white.opacity(0.2),
-                        .clear
-                    ],
-                    startPoint: UnitPoint(
-                        x: 0.2 + translation.width / 500,
-                        y: 0.2 + translation.height / 500
-                    ),
-                    endPoint: UnitPoint(
-                        x: 0.8 + translation.width / 250,
-                        y: 0.8 + translation.height / 250
-                    )
-                )
-                .frame(width: 250, height: 350)
-                .clipShape(RoundedRectangle(cornerRadius: 15))
-                .blendMode(.overlay)
-            }
             
-            // Enhanced border effect
             RoundedRectangle(cornerRadius: 15)
                 .strokeBorder(
                     LinearGradient(
@@ -206,18 +183,11 @@ struct HolographicCard: View {
                             .white.opacity(0.7),
                             cardThemeColor(for: rarity).opacity(0.8)
                         ],
-                        startPoint: UnitPoint(
-                            x: isAnimating ? 0 : 1,
-                            y: isAnimating ? 0 : 1
-                        ),
-                        endPoint: UnitPoint(
-                            x: isAnimating ? 1 : 0,
-                            y: isAnimating ? 1 : 0
-                        )
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     ),
                     lineWidth: 4
                 )
-                .frame(width: 250, height: 350)
         }
         .frame(width: 250, height: 350)
         .rotation3DEffect(
@@ -225,33 +195,100 @@ struct HolographicCard: View {
             axis: (x: -1, y: translation.width / 100, z: 0)
         )
         .gesture(drag)
-        .onAppear {
-            withAnimation(
-                .linear(duration: 2)
-                .repeatForever(autoreverses: true)
-            ) {
-                isAnimating = true
-            }
-        }
     }
 }
 
 struct CarbonPatternView: View {
+    @State private var phase: CGFloat = 0
+    
     var body: some View {
         ZStack {
-            // Premier motif de base
-            Path { path in
-                let size: CGFloat = 12
-                for x in stride(from: 0, to: 500, by: size) {
-                    for y in stride(from: 0, to: 500, by: size) {
-                        path.move(to: CGPoint(x: x, y: y))
-                        path.addLine(to: CGPoint(x: x + size, y: y + size))
-                        path.move(to: CGPoint(x: x + size, y: y))
-                        path.addLine(to: CGPoint(x: x, y: y + size))
+            GeometryReader { geo in
+                Path { path in
+                    let size: CGFloat = 8
+                    let rows = Int(geo.size.height / size) + 1
+                    let cols = Int(geo.size.width / size) + 1
+                    
+                    for row in -1...rows {
+                        for col in -1...cols {
+                            let x = CGFloat(col) * size
+                            let y = CGFloat(row) * size
+                            
+                            path.move(to: CGPoint(x: x, y: y))
+                            path.addLine(to: CGPoint(x: x + size, y: y + size))
+                            
+                            path.move(to: CGPoint(x: x + size, y: y))
+                            path.addLine(to: CGPoint(x: x, y: y + size))
+                            
+                            path.move(to: CGPoint(x: x + size/2, y: y))
+                            path.addQuadCurve(
+                                to: CGPoint(x: x + size, y: y + size/2),
+                                control: CGPoint(x: x + size * 0.75, y: y + size * 0.25)
+                            )
+                        }
                     }
                 }
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.2),
+                            Color.white.opacity(0.15),
+                            Color.white.opacity(0.1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.5
+                )
+                
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.05),
+                        Color.white.opacity(0.1),
+                        Color.white.opacity(0.05)
+                    ],
+                    startPoint: UnitPoint(x: phase, y: 0),
+                    endPoint: UnitPoint(x: phase + 1, y: 1)
+                )
+                .blendMode(.overlay)
+                
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color.white.opacity(0.1),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 4
+                        )
+                    )
+                    .frame(width: 8, height: 8)
+                    .blendMode(.overlay)
+                    .offset(x: phase * geo.size.width, y: 0)
             }
-            .stroke(Color.white.opacity(0.15), lineWidth: 1)
         }
+        .onAppear {
+            withAnimation(
+                .linear(duration: 3)
+                .repeatForever(autoreverses: true)
+            ) {
+                phase = 1
+            }
+        }
+        .background(Color.black.opacity(0.9))
+        .mask(
+            LinearGradient(
+                colors: [
+                    .black,
+                    .black.opacity(0.9),
+                    .black.opacity(0.9),
+                    .black
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
 }
