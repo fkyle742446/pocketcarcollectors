@@ -749,6 +749,7 @@ struct BoosterOpeningView: View {
     }
     
     private func openBooster() {
+        AudioManager.shared.playButtonPress()
         withAnimation(.easeInOut(duration: 0.5)) {
             boosterScale = 1.2
             boosterOpacity = 0
@@ -758,7 +759,6 @@ struct BoosterOpeningView: View {
             isOpening = false
             currentCard = randomCard()
             storeManager.useBooster()
-            // Jouer le son immédiatement quand la première carte apparaît
             SoundManager.shared.playSound(for: currentCard!.rarity)
         }
     }
@@ -831,6 +831,8 @@ struct BoosterOpeningView: View {
     private func handleCardReveal(_ selectedCard: BoosterCard) {
         if isTransitioning { return }
         isTransitioning = true
+        
+        AudioManager.shared.playNextCard()
         
         withAnimation {
             showGestureHint = false

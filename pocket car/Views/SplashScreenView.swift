@@ -9,6 +9,7 @@ struct SplashScreenView: View {
     @State private var progress = 0.0
     @State private var currentTextIndex = 0
     @State private var contentView: ContentView? = nil
+    @State private var fadeOut = false
     
     let loadingTexts = [
         "Checking the turbos...",
@@ -68,7 +69,12 @@ struct SplashScreenView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.white)
+                .opacity(fadeOut ? 0 : 1)
+                .animation(.easeInOut(duration: 0.6), value: fadeOut)
                 .onAppear {
+                    // Start splash screen music
+                    AudioManager.shared.playSplashMusic()
+                    
                     withAnimation(.easeIn(duration: 1.2)) {
                         self.size = 0.9
                         self.opacity = 1.0
@@ -93,8 +99,17 @@ struct SplashScreenView: View {
                         
                         preloadManager.preloadResources {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
-                                self.contentView = preloadedContentView
-                                withAnimation(.easeOut(duration: 0.3)) {
+                                withAnimation(.easeOut(duration: 0.6)) {
+                                    self.fadeOut = true
+                                }
+                                
+                                // Transition to ContentView after fade out
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                    AudioManager.shared.stopSplashMusic {
+                                        AudioManager.shared.startBackgroundMusic()
+                                    }
+                                    
+                                    self.contentView = preloadedContentView
                                     self.isActive = true
                                 }
                             }

@@ -601,6 +601,7 @@ struct CollectionProgressBar: View {
 struct ZoomedCardView: View {
     @Binding var selectedCard: BoosterCard?
     @ObservedObject var collectionManager: CollectionManager
+    @State private var isSelling = false
     
     private func haloColor(for rarity: CardRarity) -> Color {
         switch rarity {
@@ -649,9 +650,13 @@ struct ZoomedCardView: View {
                 if let card = selectedCard {
                     Button(action: {
                         HapticManager.shared.impact(style: .heavy)
+                        isSelling = true
                         if collectionManager.sellCard(card) {
-                            AudioManager.shared.playSellSound()
-                            selectedCard = nil
+                            // Jouer le son avant de fermer la vue
+                            AudioServicesPlaySystemSound(1104)
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                selectedCard = nil
+                            }
                         }
                     }) {
                         HStack(spacing: 8) {
@@ -686,6 +691,7 @@ struct ZoomedCardView: View {
                             }
                         )
                     }
+                    .disabled(isSelling)
                 }
             }
         }
@@ -694,6 +700,9 @@ struct ZoomedCardView: View {
             withAnimation(.easeInOut(duration: 0.2)) {
                 selectedCard = nil
             }
+        }
+        .onDisappear {
+            isSelling = false
         }
     }
 }

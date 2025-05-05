@@ -4,11 +4,26 @@ import AudioToolbox
 class AudioManager {
     static let shared = AudioManager()
     private var backgroundMusicPlayer: AVAudioPlayer?
+    private var splashMusicPlayer: AVAudioPlayer?
+    private var slotMusicPlayer: AVAudioPlayer?
     private var fadeTimer: Timer?
-    private let maxBackgroundVolume: Float = 0.3
+    
+    // Unified volume levels
+    private let maxVolume: Float = 0.15 // Background music
+    private let effectsVolume: Float = 0.15 // Sound effects
+    private let buttonVolume: Float = 0.15 // Button sounds
+    
+    private let fadeDuration: TimeInterval = 2.0
+    private let fadeSteps: Float = 100.0
     
     init() {
+        setupAllMusic()
+    }
+    
+    private func setupAllMusic() {
         setupBackgroundMusic()
+        setupSplashMusic()
+        setupSlotMusic()
     }
     
     private func setupBackgroundMusic() {
@@ -20,63 +35,107 @@ class AudioManager {
         do {
             backgroundMusicPlayer = try AVAudioPlayer(contentsOf: url)
             backgroundMusicPlayer?.numberOfLoops = -1
-            backgroundMusicPlayer?.volume = maxBackgroundVolume
-            startBackgroundMusic()
+            backgroundMusicPlayer?.volume = 0
         } catch {
             print("Error loading background music: \(error)")
         }
     }
     
+    private func setupSplashMusic() {
+        guard let url = Bundle.main.url(forResource: "SplashScreen", withExtension: "mp3") else {
+            print("Could not find SplashScreen.mp3")
+            return
+        }
+        
+        do {
+            splashMusicPlayer = try AVAudioPlayer(contentsOf: url)
+            splashMusicPlayer?.volume = 0
+        } catch {
+            print("Error loading splash music: \(error)")
+        }
+    }
+    
+    private func setupSlotMusic() {
+        guard let url = Bundle.main.url(forResource: "SlotMusic", withExtension: "mp3") else {
+            print("Could not find SlotMusic.mp3")
+            return
+        }
+        
+        do {
+            slotMusicPlayer = try AVAudioPlayer(contentsOf: url)
+            slotMusicPlayer?.volume = 0
+        } catch {
+            print("Error loading slot music: \(error)")
+        }
+    }
+    
+    private func fadeMusic(player: AVAudioPlayer?, from: Float, to: Float, duration: TimeInterval, completion: (() -> Void)? = nil) {
+        guard let player = player else { return }
+        
+        let stepCount = Int(self.fadeSteps)
+        let stepDuration = duration / TimeInterval(stepCount)
+        let volumeDelta = (to - from) / self.fadeSteps
+        
+        player.volume = from
+        if from == 0 { player.play() }
+        
+        var step = 0
+        Timer.scheduledTimer(withTimeInterval: stepDuration, repeats: true) { [weak self] timer in
+            guard let self = self else { return }
+            step += 1
+            if step >= stepCount {
+                player.volume = to
+                timer.invalidate()
+                if to == 0 { player.stop() }
+                completion?()
+            } else {
+                let progress = Float(step) / self.fadeSteps
+                let easedProgress = sin(Float.pi * 0.5 * progress)
+                player.volume = from + ((to - from) * easedProgress)
+            }
+        }
+    }
+    
     func startBackgroundMusic() {
-        fadeTimer?.invalidate()
-        backgroundMusicPlayer?.volume = 0
-        backgroundMusicPlayer?.play()
-        fadeInBackgroundMusic()
+        fadeMusic(player: backgroundMusicPlayer, from: 0, to: maxVolume, duration: fadeDuration)
     }
     
-    func fadeOutBackgroundMusic() {
-        fadeTimer?.invalidate()
+    func stopBackgroundMusic(completion: (() -> Void)? = nil) {
+        fadeMusic(player: backgroundMusicPlayer, from: backgroundMusicPlayer?.volume ?? maxVolume, to: 0, duration: fadeDuration, completion: completion)
+    }
+    
+    func playSplashMusic() {
+        fadeMusic(player: splashMusicPlayer, from: 0, to: maxVolume, duration: fadeDuration)
+    }
+    
+    func stopSplashMusic(completion: (() -> Void)? = nil) {
+        fadeMusic(player: splashMusicPlayer, from: splashMusicPlayer?.volume ?? maxVolume, to: 0, duration: fadeDuration, completion: completion)
+    }
+    
+    func playSlotMusic() {
+        fadeMusic(player: backgroundMusicPlayer, from: backgroundMusicPlayer?.volume ?? maxVolume, to: 0, duration: fadeDuration * 1.5) { [weak self] in
+            guard let self = self else { return }
+            self.backgroundMusicPlayer?.stop()
+        }
         
-        fadeTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
-            guard let self = self, let player = self.backgroundMusicPlayer else {
-                timer.invalidate()
-                return
-            }
-            
-            if player.volume > 0 {
-                player.volume = max(player.volume - 0.01, 0)
-            } else {
-                timer.invalidate()
-            }
+        DispatchQueue.main.asyncAfter(deadline: .now() + fadeDuration * 0.5) {
+            self.fadeMusic(player: self.slotMusicPlayer, from: 0, to: self.maxVolume, duration: self.fadeDuration)
         }
     }
     
-    func fadeInBackgroundMusic() {
-        fadeTimer?.invalidate()
-        backgroundMusicPlayer?.play()
-        
-        fadeTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
-            guard let self = self, let player = self.backgroundMusicPlayer else {
-                timer.invalidate()
-                return
-            }
-            
-            if player.volume < self.maxBackgroundVolume {
-                player.volume = min(player.volume + 0.01, self.maxBackgroundVolume)
-            } else {
-                timer.invalidate()
-            }
+    func stopSlotMusic() {
+        fadeMusic(player: slotMusicPlayer, from: slotMusicPlayer?.volume ?? maxVolume, to: 0, duration: fadeDuration * 1.5) { [weak self] in
+            guard let self = self else { return }
+            self.slotMusicPlayer?.stop()
         }
-    }
-    
-    func stopBackgroundMusic() {
-        fadeTimer?.invalidate()
-        backgroundMusicPlayer?.stop() 
-        backgroundMusicPlayer?.volume = 0 
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + fadeDuration * 0.5) {
+            self.fadeMusic(player: self.backgroundMusicPlayer, from: 0, to: self.maxVolume, duration: self.fadeDuration)
+        }
     }
     
     func playPurchaseSound() {
-        playSound(named: "purchase_sound")
+        playSound(named: "purchase_sound", volume: effectsVolume)
     }
     
     func playToggleSound() {
@@ -88,10 +147,18 @@ class AudioManager {
     }
     
     func playSellSound() {
-        AudioServicesPlaySystemSound(1122)  
+        playSound(named: "sell", volume: effectsVolume)
     }
     
-    private func playSound(named: String) {
+    func playButtonPress() {
+        playSound(named: "booster_open", volume: buttonVolume)
+    }
+    
+    func playNextCard() {
+        playSound(named: "next_card", volume: buttonVolume)
+    }
+    
+    private func playSound(named: String, volume: Float = 0.15) {
         guard let path = Bundle.main.url(forResource: named, withExtension: "mp3") else {
             print("Sound file not found: \(named)")
             return
@@ -99,7 +166,7 @@ class AudioManager {
         
         do {
             let audioPlayer = try AVAudioPlayer(contentsOf: path)
-            audioPlayer.volume = 0.7
+            audioPlayer.volume = volume
             audioPlayer.prepareToPlay()
             audioPlayer.play()
         } catch {
