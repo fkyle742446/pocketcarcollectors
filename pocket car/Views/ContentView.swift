@@ -578,7 +578,7 @@ struct ContentView: View {
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.gray)
                         
-                        Text("This exclusive car has a mysterious drop rate and isn't part of the regular collection. Get it now - only available this season!")
+                        Text("This exclusive car has a hardcore drop rate and isn't part of the regular collection. Get it now - only available this season!")
                             .multilineTextAlignment(.center)
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.gray)
