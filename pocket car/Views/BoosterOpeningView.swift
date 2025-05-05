@@ -728,7 +728,7 @@ struct BoosterOpeningView: View {
                 }
             } else {
                 VStack {
-                    Text("Pas de booster disponible")
+                    Text("No booster")
                         .font(.title)
                         .foregroundColor(.white)
                     
