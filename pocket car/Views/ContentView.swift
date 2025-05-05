@@ -54,6 +54,23 @@ struct ShakeEffect: GeometryEffect {
     }
 }
 
+// ADD: Deep link handling enum
+enum DeepLink {
+    case legendaryCarPopup
+    
+    init?(url: URL) {
+        print("🟡 Parsing URL: \(url.absoluteString)")
+        switch url.absoluteString {
+        case let str where str.contains("pocketcar://legendary-car"):
+            print("🟡 Matched legendary car URL")
+            self = .legendaryCarPopup
+        default:
+            print("🟡 No URL match")
+            return nil
+        }
+    }
+}
+
 struct ContentView: View {
     @StateObject var collectionManager = CollectionManager()
     @State private var floatingOffset: CGFloat = 0
@@ -124,6 +141,26 @@ struct ContentView: View {
         Milestone(progress: 1.0, reward: 500, icon: "car_mystery", isReached: false)    // 250 cartes
     ]
 
+    // ADD: Static deep link handler with print for debugging
+    static func handleDeepLink(_ url: URL) {
+        print("🟢 Handle deep link called with: \(url.absoluteString)")
+        guard let deepLink = DeepLink(url: url) else { 
+            print("🟢 Could not create DeepLink from URL")
+            return 
+        }
+        
+        switch deepLink {
+        case .legendaryCarPopup:
+            print("🟢 Posting notification for legendary car popup")
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("ShowLegendaryCarPopup"),
+                    object: nil
+                )
+            }
+        }
+    }
+    
     var body: some View {
         NavigationView {
             GeometryReader { geometry in
@@ -635,7 +672,7 @@ struct ContentView: View {
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.gray)
                     
-                    Text("Looks like your garage needs a refill! Come back later for a free booster, or hit the shop to grab some coins and keep the collection growing! 🚗✨")
+                    Text("Looks like your garage needs a refill! Come back later for a free booster, or hit the shop to grab some coins and keep the collection growing! ")
                         .multilineTextAlignment(.center)
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.gray)
@@ -739,6 +776,7 @@ struct ContentView: View {
             .presentationBackground(.clear)
         }
         .onAppear {
+            print("🔴 ContentView appeared")
             notificationManager.requestPermission()
             startTimer()
             AudioManager.shared.startBackgroundMusic()
@@ -760,6 +798,13 @@ struct ContentView: View {
                 isActive: $navigateToBooster
             ) { EmptyView() }
         )
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ShowLegendaryCarPopup"))) { _ in 
+            print("🔴 Received notification to show popup")
+            DispatchQueue.main.async {
+                self.showExclusiveCarInfo = true
+                print("🔴 Set showExclusiveCarInfo to true")
+            }
+        }
     }
     
     var progressBarSection: some View {
