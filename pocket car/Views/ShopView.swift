@@ -109,12 +109,19 @@ struct ShopView: View {
                             .padding(.horizontal)
                             
                             // IAP Section
-                            VStack(spacing: 12) {
-                                ForEach(iapManager.products) { product in
-                                    coinPurchaseCard(for: product)
+                            if iapManager.productsLoaded {
+                                VStack(spacing: 12) {
+                                    ForEach(iapManager.products, id: \.id) { product in
+                                        coinPurchaseCard(for: product)
+                                    }
                                 }
+                                .padding(.top, 8)
+                            } else {
+                                // Loading indicator for products
+                                ProgressView()
+                                    .scaleEffect(1.5)
+                                    .frame(height: 100)
                             }
-                            .padding(.top, 8)
                             
                             // Slot Machine Button
                             NavigationLink(destination: SlotMachineView(collectionManager: collectionManager)) {
@@ -219,15 +226,16 @@ struct ShopView: View {
         }
         .onAppear {
             coinsCount = collectionManager.coins
+            // Load products if they're not loaded
+            if iapManager.products.isEmpty {
+                Task {
+                    await iapManager.loadProducts()
+                }
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .coinsDidUpdate)) { _ in
             print("💰 Updating coins display in ShopView")
             coinsCount = collectionManager.coins
-        }
-        .task {
-            if iapManager.products.isEmpty {
-                await iapManager.loadProducts()
-            }
         }
         .alert("Erreur d'achat", isPresented: $showingPurchaseErrorAlert) {
             Button("OK", role: .cancel) { }
@@ -270,12 +278,10 @@ struct ShopView: View {
                         
                         // Update CollectionManager coins directly
                         await MainActor.run {
-                            if product.id.contains("100") {
+                            if product.id == "com.pocketcarcollectors.goldenpackstarter100coins" {
                                 collectionManager.coins += 100
-                            } else if product.id.contains("500") {
+                            } else if product.id == "com.pocketcarcollectors.goldenpackpremium500coins" {
                                 collectionManager.coins += 500
-                            } else if product.id.contains("1000") {
-                                collectionManager.coins += 1000
                             }
                             // Update local state
                             coinsCount = collectionManager.coins

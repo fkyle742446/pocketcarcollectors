@@ -58,7 +58,7 @@
          </EnvironmentVariable>
       </EnvironmentVariables>
       <StoreKitConfigurationFileReference
-         identifier = "../../pocket car/StoreKitConfig.storekit">
+         identifier = "../../pocket car/Views/storekitSync.storekit">
       </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
