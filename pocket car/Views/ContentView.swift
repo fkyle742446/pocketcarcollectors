@@ -115,8 +115,6 @@ struct ContentView: View {
     @State private var coinAngle: Double = 0
     @State private var coinScale: CGFloat = 1.0
     @State private var progressValue: Double = 0
-    @State private var booster1Rotation: Double = -5
-    @State private var booster2Rotation: Double = 5
     @State private var showExclusiveCarInfo = false
     @State private var showLockedBoosterInfo = false
     @State private var showUpdateAlert = false
@@ -149,7 +147,7 @@ struct ContentView: View {
     }
     
     private var boosterHeight: CGFloat {
-        viewSize == .compact ? 240 : 300
+        viewSize == .compact ? 280 : 340
     }
     
     private var mainSpacing: CGFloat {
@@ -381,12 +379,6 @@ struct ContentView: View {
                                                             .resizable()
                                                             .scaledToFit()
                                                             .frame(height: boosterHeight)
-                                                            // ADD: 3D rotation effect
-                                                            .rotation3DEffect(
-                                                                .degrees(booster1Rotation),
-                                                                axis: (x: 0.0, y: 1.0, z: 0.0)
-                                                            )
-                                                            .shadow(color: .black.opacity(0.3), radius: 5, x: -3, y: 3)
                                                         
                                                         Rectangle()
                                                             .fill(
@@ -431,12 +423,6 @@ struct ContentView: View {
                                                             .resizable()
                                                             .scaledToFit()
                                                             .frame(height: boosterHeight)
-                                                            // ADD: 3D rotation effect
-                                                            .rotation3DEffect(
-                                                                .degrees(booster2Rotation),
-                                                                axis: (x: 0.0, y: 1.0, z: 0.0)
-                                                            )
-                                                            .shadow(color: .black.opacity(0.3), radius: 5, x: 3, y: 3)
                                                         
                                                         Rectangle()
                                                             .fill(
