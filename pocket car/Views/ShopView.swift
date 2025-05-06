@@ -14,7 +14,6 @@ struct ShopView: View {
     @State private var showingPurchaseErrorAlert = false
     @State private var glowRotationAngle: Double = 0
     @State private var selectedBoosterType: BoosterType = .single
-    @State private var coinsCount: Int = 0
     
     enum BoosterType {
         case single
@@ -63,7 +62,7 @@ struct ShopView: View {
                             HStack {
                                 Spacer()
                                 HStack(spacing: 10) {
-                                    Text("\(coinsCount)")
+                                    Text("\(collectionManager.coins)")
                                         .font(.system(size: 20, weight: .semibold))
                                         .foregroundColor(.gray)
                                     Image("coin")
@@ -111,7 +110,14 @@ struct ShopView: View {
                             // IAP Section
                             if iapManager.productsLoaded {
                                 VStack(spacing: 12) {
-                                    ForEach(iapManager.products, id: \.id) { product in
+                                    let sortedProducts = iapManager.products.sorted { product1, product2 in
+                                        if product1.id == "com.pocketcarcollectors.pack100coins" { return true }
+                                        if product2.id == "com.pocketcarcollectors.pack100coins" { return false }
+                                        if product1.id == "com.pocketcarcollectors.pack500coins" { return true }
+                                        return false
+                                    }
+                                    
+                                    ForEach(sortedProducts, id: \.id) { product in
                                         coinPurchaseCard(for: product)
                                     }
                                 }
@@ -225,17 +231,11 @@ struct ShopView: View {
             }
         }
         .onAppear {
-            coinsCount = collectionManager.coins
-            // Load products if they're not loaded
             if iapManager.products.isEmpty {
                 Task {
                     await iapManager.loadProducts()
                 }
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .coinsDidUpdate)) { _ in
-            print("💰 Updating coins display in ShopView")
-            coinsCount = collectionManager.coins
         }
         .alert("Erreur d'achat", isPresented: $showingPurchaseErrorAlert) {
             Button("OK", role: .cancel) { }
@@ -269,22 +269,16 @@ struct ShopView: View {
                 do {
                     print("🎮 Attempting to purchase: \(product.id)")
                     if try await iapManager.purchase(product) {
-                        // Haptic feedback for success
                         HapticManager.shared.impact(style: .heavy)
-                        
-                        // Play purchase sound
                         AudioServicesPlaySystemSound(soundEffect)
                         print("💰 Purchase successful")
                         
-                        // Update CollectionManager coins directly
                         await MainActor.run {
                             if product.id == "com.pocketcarcollectors.goldenpackstarter100coins" {
                                 collectionManager.coins += 100
                             } else if product.id == "com.pocketcarcollectors.goldenpackpremium500coins" {
                                 collectionManager.coins += 500
                             }
-                            // Update local state
-                            coinsCount = collectionManager.coins
                         }
                     }
                 } catch {

@@ -6,12 +6,17 @@ class AppUpdateChecker: ObservableObject {
     static let shared = AppUpdateChecker()
     private let lastCheckKey = "lastUpdateCheck"
     private let checkInterval: TimeInterval = 24 * 60 * 60 // Check once per day
+    @Published var updateRequired = false
+    @Published var updateAvailable = false
     
-    private init() {}
+    private init() {
+        Task {
+            await checkForUpdate()
+        }
+    }
     
     func checkForUpdate() async -> Bool {
         guard let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
-              let bundleIdentifier = Bundle.main.bundleIdentifier,
               let url = URL(string: "https://itunes.apple.com/lookup?bundleId=pocket-car.pocket-car") else {
             return false
         }
@@ -29,6 +34,11 @@ class AppUpdateChecker: ObservableObject {
                 // Compare version numbers
                 for i in 0..<min(current.count, appStore.count) {
                     if appStore[i] > current[i] {
+                        await MainActor.run {
+                            self.updateAvailable = true
+                            // Force update if major version is different
+                            self.updateRequired = appStore[0] > current[0]
+                        }
                         return true
                     } else if current[i] > appStore[i] {
                         return false
@@ -36,7 +46,14 @@ class AppUpdateChecker: ObservableObject {
                 }
                 
                 // If all numbers are equal, longer version is newer
-                return appStore.count > current.count
+                let needsUpdate = appStore.count > current.count
+                if needsUpdate {
+                    await MainActor.run {
+                        self.updateAvailable = true
+                        self.updateRequired = appStore[0] > current[0]
+                    }
+                }
+                return needsUpdate
             }
         } catch {
             print("Error checking for updates: \(error)")
@@ -54,6 +71,21 @@ class AppUpdateChecker: ObservableObject {
         Task { @MainActor in
             await UIApplication.shared.open(url)
         }
+    }
+    
+    func showUpdateAlert() -> Alert {
+        Alert(
+            title: Text(updateRequired ? "Mise à jour requise" : "Mise à jour disponible"),
+            message: Text(updateRequired ?
+                        "Une mise à jour importante est disponible. Veuillez mettre à jour l'application pour continuer." :
+                        "Une nouvelle version de l'application est disponible."),
+            primaryButton: .default(Text("Mettre à jour")) {
+                self.openAppStore()
+            },
+            secondaryButton: .cancel(Text("Plus tard")) {
+                // Only allow cancel if update is not required
+            }
+        )
     }
     
     func requestReview() {

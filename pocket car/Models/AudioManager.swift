@@ -151,11 +151,13 @@ class AudioManager {
     }
     
     func playButtonPress() {
-        playSound(named: "booster_open", volume: buttonVolume)
+        // Utilise un son système au lieu du fichier manquant
+        AudioServicesPlaySystemSound(1519) // Son système "click"
     }
     
     func playNextCard() {
-        playSound(named: "next_card", volume: buttonVolume)
+        // Utilise un son système au lieu du fichier manquant
+        AudioServicesPlaySystemSound(1520) // Son système "click positif"
     }
     
     private func playSound(named: String, volume: Float = 0.15) {

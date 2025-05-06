@@ -59,21 +59,46 @@ enum DeepLink {
     case legendaryCarPopup
     
     init?(url: URL) {
-        print("🟡 Parsing URL: \(url.absoluteString)")
+        print(" Parsing URL: \(url.absoluteString)")
         switch url.absoluteString {
         case let str where str.contains("pocketcar://legendary-car"):
-            print("🟡 Matched legendary car URL")
+            print(" Matched legendary car URL")
             self = .legendaryCarPopup
         default:
-            print("🟡 No URL match")
+            print(" No URL match")
             return nil
         }
     }
 }
 
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (255, 0, 0, 0)
+        }
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue:  Double(b) / 255,
+            opacity: Double(a) / 255
+        )
+    }
+}
+
 struct ContentView: View {
     @StateObject var collectionManager = CollectionManager()
-    @State private var floatingOffset: CGFloat = 0
     @State private var shadowRadius: CGFloat = 15
     @State private var boosterAvailableIn: TimeInterval = 6 * 3600
     @State private var timer: Timer? = nil
@@ -83,7 +108,7 @@ struct ContentView: View {
     @State private var booster2GlareOffset: CGFloat = -200
     @State private var rotationAngle: Double = 0
     @State private var isCollectionPressed: Bool = false
-    @State private var glowRotationAngle: Double = 0
+    @State private var glowRotationAngle: Double = 45
     @State private var shakeOffset: CGFloat = 0
     @State private var shakeAngle: Double = 0
     @State private var shakeTimer: Timer?
@@ -106,6 +131,14 @@ struct ContentView: View {
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     
     @StateObject private var notificationManager = NotificationManager.shared
+    
+    @State private var waveOffset = 0.0
+    @State private var waveAnimation = false
+    
+    @State private var breathingProgress: Double = 0
+    @State private var isAnimating = false
+    
+    @State private var hasAppeared = false
     
     private var viewSize: ViewSize {
         horizontalSizeClass == .compact ? .compact : .regular
@@ -143,15 +176,15 @@ struct ContentView: View {
 
     // ADD: Static deep link handler with print for debugging
     static func handleDeepLink(_ url: URL) {
-        print("🟢 Handle deep link called with: \(url.absoluteString)")
-        guard let deepLink = DeepLink(url: url) else { 
-            print("🟢 Could not create DeepLink from URL")
-            return 
+        print(" Handle deep link called with: \(url.absoluteString)")
+        guard let deepLink = DeepLink(url: url) else {
+            print(" Could not create DeepLink from URL")
+            return
         }
         
         switch deepLink {
         case .legendaryCarPopup:
-            print("🟢 Posting notification for legendary car popup")
+            print(" Posting notification for legendary car popup")
             DispatchQueue.main.async {
                 NotificationCenter.default.post(
                     name: NSNotification.Name("ShowLegendaryCarPopup"),
@@ -174,59 +207,44 @@ struct ContentView: View {
                         )
                         .ignoresSafeArea()
 
-                        VStack(spacing: viewSize == .compact ? 1 : 5) {
-                            // Top logo section - Adjust size for iPad
-                            VStack(spacing: -50) {
-                                // 3D Model View with Legendary Halo
+                        VStack(spacing: viewSize == .compact ? 15 : 25) {
+                            // Top logo section
+                            VStack(spacing: -20) {
                                 ZStack {
-                                    // Base rectangle with depth effect
+                                    // Base rectangle with softer glow
                                     RoundedRectangle(cornerRadius: 25)
-                                        .fill(Color("mint").opacity(0.1))
-                                        .frame(height: viewSize == .compact ? 200 : 250)
-                                        .overlay(
-                                            
-                                            RoundedRectangle(cornerRadius: 25)
-                                                .stroke(Color("mint").opacity(0.3), lineWidth: 1)
+                                        .fill(
+                                            .angularGradient(
+                                                colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                                center: .center,
+                                                startAngle: .degrees(45),
+                                                endAngle: .degrees(405)
+                                            )
                                         )
-                                        .shadow(color: Color("mint").opacity(0.1), radius: 10, x: 0, y: 5)
+                                        .blur(radius: 15)
+                                        .opacity(0.4)
+                                        .frame(height: 170)
+                                        .scaleEffect(1.01)
+                                        .offset(y: 30)
                                     
                                     // Surface rectangle
                                     RoundedRectangle(cornerRadius: 25)
                                         .fill(Color.white.opacity(1))
                                         .frame(height: 170)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 25)
-                                                .stroke(Color.white, lineWidth: 1)
-                                        )
                                         .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 2)
+                                        .scaleEffect(0.99)
                                         .offset(y: 30)
 
-                                    // ADD: Few days left text positioned on top of the rectangle
+                                    // Season 1 content and 3D model
                                     VStack {
                                         HStack {
                                             Spacer()
-                                            Text("Only this season")
-                                                .font(.system(size: 10, weight: .semibold))
-                                                .foregroundColor(.white)
-                                                .padding(.horizontal, 10)
-                                                .padding(.vertical, 4)
-                                                .background(
-                                                    Capsule()
-                                                        .fill(
-                                                            LinearGradient(
-                                                                colors: [Color.yellow, Color.orange],
-                                                                startPoint: .leading,
-                                                                endPoint: .trailing
-                                                            )
-                                                        )
-                                                        .shadow(color: .black.opacity(0.2), radius: 4)
-                                                )
-                                                .overlay(
-                                                    Capsule()
-                                                        .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                                                )
-                                                .offset(y: 80)
-                                                .padding(.trailing, 20)
+                                            Image("season_1")
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(width: 120)
+                                                .offset(y: 40)
+                                                .offset(x: -UIScreen.main.bounds.width/3.3)
                                         }
                                         Spacer()
                                     }
@@ -289,26 +307,26 @@ struct ContentView: View {
                                             
                                             // Season availability text at the bottom
                                             Text("0,001%")
-                                                .font(.system(size: 12, weight: .medium))
+                                                .font(.system(size: 12, weight: .bold))
                                                 .foregroundColor(.white)
                                                 .padding(.horizontal, 12)
-                                                .padding(.vertical, 6)
+                                                .padding(.vertical, 4)
                                                 .background(
                                                     Capsule()
                                                         .fill(
                                                             LinearGradient(
-                                                                colors: [Color.yellow, Color.orange],
+                                                                colors: [Color(hex: "FFB800"), Color(hex: "FF8A00")],
                                                                 startPoint: .leading,
                                                                 endPoint: .trailing
                                                             )
                                                         )
-                                                        .shadow(color: .black.opacity(0.2), radius: 4)
+                                                        .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 1)
                                                 )
                                                 .overlay(
                                                     Capsule()
-                                                        .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                                                        .strokeBorder(Color.white.opacity(0.3), lineWidth: 0.5)
                                                 )
-                                                .padding(.bottom, 10)
+                                                .padding(.bottom, -15) // Increased bottom padding to move badge down
                                         }
                                         .zIndex(3)
                                         }
@@ -317,34 +335,36 @@ struct ContentView: View {
                                 .padding(.horizontal)
 
                             }
-                            .padding(.top, viewSize == .compact ? 10 : 20)
+                            .padding(.top, 10)
                             
                             Spacer()
+                            .frame(height: 15)
 
-                            VStack(spacing: viewSize == .compact ? 8 : 15) {
+                            VStack(spacing: viewSize == .compact ? 15 : 25) {
                                 // Boosters section - Adjust for iPad
                                 ZStack {
-                                    // Base rectangle with depth effect
+                                    // Base rectangle with softer glow
                                     RoundedRectangle(cornerRadius: 25)
-                                        .fill(Color("mint").opacity(0.1))
-                                        .frame(height: viewSize == .compact ? 350 : 450)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 25)
-                                                .stroke(Color("mint").opacity(0.3), lineWidth: 1)
+                                        .fill(
+                                            .angularGradient(
+                                                colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                                center: .center,
+                                                startAngle: .degrees(45),
+                                                endAngle: .degrees(405)
+                                            )
                                         )
-                                        .shadow(color: Color("mint").opacity(0.1), radius: 10, x: 0, y: 5)
+                                        .blur(radius: 15)
+                                        .opacity(0.25) // CHANGE: réduit davantage l'opacité
+                                        .frame(height: viewSize == .compact ? 320 : 420)
+                                        .scaleEffect(1.01)
                                     
                                     // Surface rectangle
                                     RoundedRectangle(cornerRadius: 25)
                                         .fill(Color.white.opacity(1))
                                         .frame(height: viewSize == .compact ? 320 : 420)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 25)
-                                                .stroke(Color.white, lineWidth: 1)
-                                        )
-                                        .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
-                                        .offset(y: 0)
-                                    
+                                        .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 2)
+                                        .scaleEffect(0.99)
+
                                     VStack {
                                         Spacer()
                                         HStack(spacing: viewSize == .compact ? 30 : 50) {
@@ -469,7 +489,7 @@ struct ContentView: View {
                                                 HStack(spacing: 4) {
                                                     Text("\(StoreManager.shared.boosters)")
                                                         .foregroundColor(.gray)
-                                                    Text("booster remaining")
+                                                    Text("booster to open")
                                                 }
                                                 .font(.system(size: 14, weight: .medium))
                                                 .foregroundColor(.gray)
@@ -492,19 +512,20 @@ struct ContentView: View {
                                                         fill: .angularGradient(
                                                             colors: [.blue, .purple, .red, .orange, .yellow, .blue],
                                                             center: .center,
-                                                            startAngle: .degrees(glowRotationAngle),
-                                                            endAngle: .degrees(glowRotationAngle + 360)
+                                                            startAngle: .degrees(45),
+                                                            endAngle: .degrees(405)
                                                         ),
                                                         lineWidth: 2.0,
                                                         blurRadius: 4.0
                                                     )
-                                                    .opacity(0.4)
+                                                    .opacity(0.6)
                                                 
                                                 Capsule()
                                                     .fill(Color.white)
                                             }
                                         )
-                                        .padding(.bottom, 0)
+                                        .offset(y: 15) // Modifié de 25 à 15 pour remonter l'interface
+                                        .zIndex(1) // ADD: Ensure it appears above the booster interface
                                     }
                                 }
                                 .padding(.horizontal, horizontalPadding)
@@ -528,15 +549,6 @@ struct ContentView: View {
                                                         .foregroundColor(.gray)
                                                 }
                                             )
-                                            .onAppear {
-                                                withAnimation(
-                                                    Animation
-                                                        .easeInOut(duration: 2.0)
-                                                        .repeatForever(autoreverses: true)
-                                                ) {
-                                                    glowRotationAngle = 360
-                                                }
-                                            }
                                     }
                                     .simultaneousGesture(TapGesture().onEnded {
                                         HapticManager.shared.impact(style: .medium)
@@ -571,15 +583,17 @@ struct ContentView: View {
                                     })
                                 }
                                 .padding(.horizontal, horizontalPadding)
-                                .padding(.vertical, viewSize == .compact ? 8 : 15)
+                                .padding(.vertical, viewSize == .compact ? 4 : 8)
 
                                 progressBarSection
+                                    .padding(.bottom, 15)
                                 
                                 // ... rest of the view ...
                             }
                         }
                         .frame(maxWidth: viewSize == .compact ? .infinity : min(geometry.size.width * 0.8, 800))
                         .frame(maxWidth: .infinity)
+                        .animation(hasAppeared ? .default : nil, value: hasAppeared)
                     }
                 }
             }
@@ -590,207 +604,17 @@ struct ContentView: View {
                 showUpdateAlert = true
             }
         }
-        .alert("Update Available", isPresented: $showUpdateAlert) {
-            Button("Update") {
+        .alert(AppUpdateChecker.shared.updateRequired ? "Mise à jour requise" : "Mise à jour disponible", isPresented: $showUpdateAlert) {
+            Button("Mettre à jour") {
                 AppUpdateChecker.shared.openAppStore()
             }
-            Button("Later", role: .cancel) { }
+            if !AppUpdateChecker.shared.updateRequired {
+                Button("Plus tard", role: .cancel) { }
+            }
         } message: {
-            Text("A new version of Pocket Car is available on the App Store.")
-        }
-        .sheet(isPresented: $showExclusiveCarInfo) {
-            ZStack {
-                // Background gradient
-                LinearGradient(
-                    gradient: Gradient(colors: [.white, Color(.systemGray5)]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
-                
-                // Content
-                VStack(spacing: 25) {
-                    VStack(spacing: 15) {
-                        Text("Legendary Model")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.gray)
-                        
-                        Text("This exclusive car has a hardcore drop rate and isn't part of the regular collection. Get it now - only available this season!")
-                            .multilineTextAlignment(.center)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.gray)
-                            .padding(.horizontal)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    
-                    Button(action: {
-                        showExclusiveCarInfo = false
-                        HapticManager.shared.impact(style: .medium)
-                    }) {
-                        Text("Got it!")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.gray)
-                            .padding(.vertical, 12)
-                            .padding(.horizontal, 30)
-                            .background(
-                                ZStack {
-                                    Capsule()
-                                        .fill(.white)
-                                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                                    
-                                    Capsule()
-                                        .stroke(
-                                            LinearGradient(
-                                                colors: [.yellow.opacity(0.5), .orange.opacity(0.5)],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            ),
-                                            lineWidth: 1
-                                        )
-                                }
-                            )
-                    }
-                }
-                .padding(30)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.white.opacity(0.95))
-            }
-            .presentationDetents([.height(250)])
-            .presentationBackground(.clear)
-        }
-        .sheet(isPresented: $showLockedBoosterInfo) {
-            ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [.white, Color(.systemGray5)]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
-                
-                VStack(spacing: 15) {
-                    Text("Oops! Empty Pockets?")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.gray)
-                    
-                    Text("Looks like your garage needs a refill! Come back later for a free booster, or hit the shop to grab some coins and keep the collection growing! ")
-                        .multilineTextAlignment(.center)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.gray)
-                        .padding(.horizontal)
-                        .fixedSize(horizontal: false, vertical: true)
-                    
-                    Button(action: {
-                        showLockedBoosterInfo = false
-                        HapticManager.shared.impact(style: .medium)
-                    }) {
-                        Text("I'll be back!")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.gray)
-                            .padding(.vertical, 12)
-                            .padding(.horizontal, 30)
-                            .background(
-                                ZStack {
-                                    Capsule()
-                                        .fill(.white)
-                                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                                    
-                                    Capsule()
-                                        .stroke(
-                                            LinearGradient(
-                                                colors: [.yellow.opacity(0.5), .orange.opacity(0.5)],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            ),
-                                            lineWidth: 1
-                                        )
-                                }
-                            )
-                    }
-                }
-                .padding(30)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.white.opacity(0.95))
-            }
-            .presentationDetents([.height(250)])
-            .presentationBackground(.clear)
-        }
-        .sheet(item: $selectedMilestone) { identifier in
-            let milestone = milestones[identifier.index]
-            ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [.white, Color(.systemGray5)]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
-                
-                VStack(spacing: 20) {
-                    Image(milestone.icon)
-                        .resizable()
-                        .frame(width: 50, height: 50)
-                        .scaleEffect(1.2)
-                        .padding(.top, 20)
-                    
-                    Text("Milestone Reached!")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.gray)
-                    
-                    Text("You've unlocked a reward of \(milestone.reward) coins!")
-                        .multilineTextAlignment(.center)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.gray)
-                    
-                    Button(action: {
-                        selectedMilestone = nil
-                        HapticManager.shared.impact(style: .medium)
-                    }) {
-                        Text("Great!")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.gray)
-                            .padding(.vertical, 12)
-                            .padding(.horizontal, 30)
-                            .background(
-                                ZStack {
-                                    Capsule()
-                                        .fill(.white)
-                                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                                    
-                                    Capsule()
-                                        .stroke(
-                                            LinearGradient(
-                                                colors: [Color.yellow.opacity(0.5), Color.orange.opacity(0.5)],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            ),
-                                            lineWidth: 1
-                                        )
-                                }
-                            )
-                    }
-                }
-                .padding(30)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.white.opacity(0.95))
-            }
-            .presentationDetents([.height(250)])
-            .presentationBackground(.clear)
-        }
-        .onAppear {
-            print("🔴 ContentView appeared")
-            notificationManager.requestPermission()
-            startTimer()
-            AudioManager.shared.startBackgroundMusic()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .openBoosterView)) { _ in
-            navigateToBooster = true
-        }
-        .alert("Update Available", isPresented: $showUpdateAlert) {
-            Button("Update") {
-                AppUpdateChecker.shared.openAppStore()
-            }
-            Button("Later", role: .cancel) { }
-        } message: {
-            Text("A new version of Pocket Car is available on the App Store.")
+            Text(AppUpdateChecker.shared.updateRequired ?
+                "Une mise à jour importante est requise pour continuer à utiliser l'application." :
+                "Une nouvelle version de Pocket Car est disponible sur l'App Store.")
         }
         .background(
             NavigationLink(
@@ -798,11 +622,23 @@ struct ContentView: View {
                 isActive: $navigateToBooster
             ) { EmptyView() }
         )
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ShowLegendaryCarPopup"))) { _ in 
-            print("🔴 Received notification to show popup")
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ShowLegendaryCarPopup"))) { _ in
+            print(" Received notification to show popup")
             DispatchQueue.main.async {
                 self.showExclusiveCarInfo = true
-                print("🔴 Set showExclusiveCarInfo to true")
+                print(" Set showExclusiveCarInfo to true")
+            }
+        }
+        .onAppear {
+            // Delay setting hasAppeared to ensure view is fully laid out
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                hasAppeared = true
+            }
+        }
+        .onAppear {
+            // Delay breathing animation start
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                startBreathingAnimation()
             }
         }
     }
@@ -826,17 +662,55 @@ struct ContentView: View {
                         .fill(Color.gray.opacity(0.2))
                         .frame(height: 8)
                     
-                    // Progress bar
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.yellow, Color.orange],
-                                startPoint: .leading,
-                                endPoint: .trailing
+                    // Progress bar avec effet de vague
+                    ZStack {
+                        // Barre de progression principale
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.yellow, Color.orange],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
                             )
-                        )
-                        .frame(width: calculateProgressWidth(), height: 8)
-                        .animation(.spring(), value: progressValue)
+                        
+                        // Effet de vague
+                        GeometryReader { geometry in
+                            let width = geometry.size.width
+                            let baseProgress = Double(collectionManager.cards.count) / 250.0
+                            let totalProgress = baseProgress + (breathingProgress * 0.05) // Ajuste l'amplitude ici
+                            
+                            Rectangle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [.white.opacity(0.2), .white.opacity(0.1), .clear],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .mask(
+                                    HStack(spacing: 0) {
+                                        ForEach(0..<2) { i in
+                                            Capsule()
+                                                .fill(Color.white)
+                                                .frame(width: width * 1.5)
+                                                .offset(x: -width/2 + (waveOffset + Double(i)) * width)
+                                        }
+                                    }
+                                )
+                        }
+                    }
+                    .frame(width: calculateProgressWidth(), height: 8)
+                    .animation(.spring(dampingFraction: 0.8), value: breathingProgress)
+                    .onAppear {
+                        startBreathingAnimation()
+                        withAnimation(
+                            .linear(duration: 2)
+                            .repeatForever(autoreverses: false)
+                        ) {
+                            waveOffset = 1
+                        }
+                    }
                     
                     // Milestones
                     ForEach(milestones.indices, id: \.self) { index in
@@ -907,13 +781,13 @@ struct ContentView: View {
                             fill: .angularGradient(
                                 colors: [.blue, .purple, .red, .orange, .yellow, .blue],
                                 center: .center,
-                                startAngle: .degrees(glowRotationAngle),
-                                endAngle: .degrees(glowRotationAngle + 360)
+                                startAngle: .degrees(45),
+                                endAngle: .degrees(405)
                             ),
                             lineWidth: 2.0,
                             blurRadius: 4.0
                         )
-                        .opacity(0.4)
+                        .opacity(0.6)
                     
                     RoundedRectangle(cornerRadius: 20)
                         .fill(Color.white)
@@ -930,8 +804,9 @@ struct ContentView: View {
     // MODIFY: Calculate progress width function
     private func calculateProgressWidth() -> CGFloat {
         let maxWidth = UIScreen.main.bounds.width * 0.7
-        let progress = Double(collectionManager.cards.count) / 250.0
-        return maxWidth * progress
+        let baseProgress = Double(collectionManager.cards.count) / 250.0
+        let totalProgress = baseProgress + (breathingProgress * 0.05) // Même amplitude que plus haut
+        return maxWidth * totalProgress
     }
 
     private func checkMilestoneReward(at index: Int, currentProgress: Double) {
@@ -948,15 +823,23 @@ struct ContentView: View {
             RoundedRectangle(cornerRadius: 20)
                 .glow(
                     fill: .angularGradient(
-                        colors: colors,
+                        colors: [.blue, .purple, .red, .orange, .yellow, .blue],
                         center: .center,
-                        startAngle: .degrees(glowRotationAngle),
-                        endAngle: .degrees(glowRotationAngle + 360)
+                        startAngle: .degrees(45),
+                        endAngle: .degrees(405)
                     ),
-                    lineWidth: 3.0,
-                    blurRadius: 6.0
+                    lineWidth: 2.0,
+                    blurRadius: 4.0
                 )
-                .opacity(0.7)
+                .opacity(0.6)
+            
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white.opacity(1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.white, lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
             
             VStack {
                 Image(systemName: icon)
@@ -968,34 +851,19 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: viewSize == .compact ? 60 : 100)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.white.opacity(1))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.white, lineWidth: 1)
-                    )
-                    .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
-            )
         }
     }
     
-    private func startTimer() {
-        let now = Date().timeIntervalSince1970
-        if now < nextBoosterAvailableTime {
-            boosterAvailableIn = nextBoosterAvailableTime - now
-        } else {
-            boosterAvailableIn = 0
-        }
+    private func startBreathingAnimation() {
+        guard isAnimating == false else { return }
         
-        timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-            if boosterAvailableIn > 0 {
-                boosterAvailableIn -= 1
-            }
-            if giftAvailableIn > 0 {
-                giftAvailableIn -= 1
-            }
+        isAnimating = true
+        let animation = Animation
+            .easeInOut(duration: 2) // Fixed duration instead of random
+            .repeatForever(autoreverses: true)
+        
+        withAnimation(animation) {
+            breathingProgress = 1
         }
     }
 

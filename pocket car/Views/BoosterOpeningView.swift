@@ -749,6 +749,7 @@ struct BoosterOpeningView: View {
     }
     
     private func openBooster() {
+        print("🔊 Playing button press sound...")
         AudioManager.shared.playButtonPress()
         withAnimation(.easeInOut(duration: 0.5)) {
             boosterScale = 1.2
@@ -832,6 +833,7 @@ struct BoosterOpeningView: View {
         if isTransitioning { return }
         isTransitioning = true
         
+        print("🔊 Playing next card sound...")
         AudioManager.shared.playNextCard()
         
         withAnimation {
@@ -933,6 +935,7 @@ struct AnimatedButton: View {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                 isPressed = true
             }
+            AudioManager.shared.playButtonPress() // Ajout de l'effet sonore
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                     isPressed = false
