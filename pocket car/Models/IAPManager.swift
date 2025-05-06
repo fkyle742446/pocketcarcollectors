@@ -16,8 +16,8 @@ class IAPManager: ObservableObject {
     @Published var productsLoaded = false
     
     private let productIdentifiers = Set([
-        "com.pocketcarcollectors.goldenpackstarter100coins",
-        "com.pocketcarcollectors.goldenpackpremium500coins"
+        "com.pocketcarcollectors.pack100coins",
+        "com.pocketcarcollectors.pack500coins"
     ])
     
     private var updateListenerTask: Task<Void, Error>?
@@ -55,11 +55,11 @@ class IAPManager: ObservableObject {
             let collectionManager = CollectionManager.shared
             
             switch transaction.productID {
-            case "com.pocketcarcollectors.goldenpackstarter100coins":
+            case "com.pocketcarcollectors.pack100coins":
                 collectionManager.coins += 100
                 print("💰 Added 100 coins. New total: \(collectionManager.coins)")
                 
-            case "com.pocketcarcollectors.goldenpackpremium500coins":
+            case "com.pocketcarcollectors.pack500coins":
                 collectionManager.coins += 500
                 print("💰 Added 500 coins. New total: \(collectionManager.coins)")
                 
@@ -106,11 +106,11 @@ class IAPManager: ObservableObject {
                         let collectionManager = CollectionManager.shared
                         
                         switch product.id {
-                        case "com.pocketcarcollectors.goldenpackstarter100coins":
+                        case "com.pocketcarcollectors.pack100coins":
                             collectionManager.coins += 100
                             print("💰 Direct add: 100 coins. New total: \(collectionManager.coins)")
                             
-                        case "com.pocketcarcollectors.goldenpackpremium500coins":
+                        case "com.pocketcarcollectors.pack500coins":
                             collectionManager.coins += 500
                             print("💰 Direct add: 500 coins. New total: \(collectionManager.coins)")
                             

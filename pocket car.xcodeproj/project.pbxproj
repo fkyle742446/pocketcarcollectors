@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		17C6AAAA2D9EE2D5001B1155 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 17A4B3FE2D99986800E20C0D /* StoreKit.framework */; };
+		17709D0A2DCA05E900D68D97 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 17709D092DCA05E900D68D97 /* StoreKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -31,7 +31,7 @@
 		176C373A2D05FE2D0018198C /* pocket car.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "pocket car.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		176C374B2D05FE2E0018198C /* pocket carTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pocket carTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		176C37552D05FE2E0018198C /* pocket carUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "pocket carUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		17A4B3FE2D99986800E20C0D /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		17709D092DCA05E900D68D97 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -102,7 +102,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				17C6AAAA2D9EE2D5001B1155 /* StoreKit.framework in Frameworks */,
+				17709D0A2DCA05E900D68D97 /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -129,7 +129,7 @@
 				176C373C2D05FE2D0018198C /* pocket car */,
 				176C374E2D05FE2E0018198C /* pocket carTests */,
 				176C37582D05FE2E0018198C /* pocket carUITests */,
-				17A4B3FD2D99986800E20C0D /* Frameworks */,
+				17709D082DCA05E900D68D97 /* Frameworks */,
 				176C373B2D05FE2D0018198C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -144,10 +144,10 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		17A4B3FD2D99986800E20C0D /* Frameworks */ = {
+		17709D082DCA05E900D68D97 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				17A4B3FE2D99986800E20C0D /* StoreKit.framework */,
+				17709D092DCA05E900D68D97 /* StoreKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -450,7 +450,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "pocket car/pocket_car.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20;
+				CURRENT_PROJECT_VERSION = 24;
 				DEVELOPMENT_ASSET_PATHS = "\"pocket car/Preview Content\"";
 				DEVELOPMENT_TEAM = SMXR52F652;
 				ENABLE_PREVIEWS = YES;
@@ -471,7 +471,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.1;
-				MARKETING_VERSION = 2.96;
+				MARKETING_VERSION = 3;
 				PRODUCT_BUNDLE_IDENTIFIER = "pocket-car.pocket-car";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -491,7 +491,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "pocket car/pocket_car.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20;
+				CURRENT_PROJECT_VERSION = 24;
 				DEVELOPMENT_ASSET_PATHS = "\"pocket car/Preview Content\"";
 				DEVELOPMENT_TEAM = SMXR52F652;
 				ENABLE_PREVIEWS = YES;
@@ -512,7 +512,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.1;
-				MARKETING_VERSION = 2.96;
+				MARKETING_VERSION = 3;
 				PRODUCT_BUNDLE_IDENTIFIER = "pocket-car.pocket-car";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
