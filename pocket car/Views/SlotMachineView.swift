@@ -56,6 +56,10 @@ struct SlotMachineView: View {
     @State private var coinsChangeAmount: Int = 0
     @State private var isPositiveChange: Bool = false
     
+    @AppStorage("dailyQuestSpinsCount") private var dailyQuestSpinsCount: Int = 0
+    @AppStorage("nextDailyQuestTime") private var nextDailyQuestTime: Double = Date().timeIntervalSince1970
+    @AppStorage("isCurrentDailyQuestRewardClaimed") private var isCurrentDailyQuestRewardClaimed: Bool = false
+    
     struct ReelState {
         var spinning: Bool
         var currentSymbol: String
@@ -324,6 +328,21 @@ struct SlotMachineView: View {
     private func spin() {
         guard !isSpinning && collectionManager.coins >= spinCost else { return }
         
+        let currentTime = Date().timeIntervalSince1970
+        if currentTime >= nextDailyQuestTime && !isCurrentDailyQuestRewardClaimed {
+            // If a new quest period has started and previous was claimed, this ensures `isCurrentDailyQuestRewardClaimed`
+            // might have been reset by ContentView. If not, this check is fine.
+            // A more robust way would be to check if the *current* quest period's reward is claimed.
+            // For now, if a quest *could* be active (past nextDailyQuestTime) and its reward isn't *yet* claimed for this cycle, count the spin.
+            dailyQuestSpinsCount += 1
+        } else if currentTime < nextDailyQuestTime && isCurrentDailyQuestRewardClaimed {
+            // This case means a quest was claimed, and we are in the cooldown.
+            // If a new period starts (ContentView would reset isCurrentDailyQuestRewardClaimed to false),
+            // then spins should count.
+            // This logic implies ContentView will handle resetting isCurrentDailyQuestRewardClaimed
+            // when nextDailyQuestTime is reached.
+        }
+
         isSpinning = true
         collectionManager.coins -= spinCost
         AudioServicesPlaySystemSound(1520)

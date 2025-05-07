@@ -125,6 +125,10 @@ struct ContentView: View {
     @AppStorage("lastBoosterOpenTime") private var lastBoosterOpenTime: Double = Date().timeIntervalSince1970
     @AppStorage("nextBoosterAvailableTime") private var nextBoosterAvailableTime: Double = Date().timeIntervalSince1970
     
+    @AppStorage("nextDailyQuestTime") private var nextDailyQuestTime: Double = Date().timeIntervalSince1970 // Quest available immediately on first launch
+    @AppStorage("dailyQuestSpinsCount") private var dailyQuestSpinsCount: Int = 0
+    @AppStorage("isCurrentDailyQuestRewardClaimed") private var isCurrentDailyQuestRewardClaimed: Bool = false
+    
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     
     @StateObject private var notificationManager = NotificationManager.shared
@@ -139,6 +143,9 @@ struct ContentView: View {
     
     @State private var showMilestoneRewardPopup = false
     @State private var currentMilestoneForPopup: CollectionProgressView.MilestoneToDisplay? = nil
+    
+    @State private var showDailyQuestPopup = false
+    @State private var currentDailyQuestDisplayInfo: DailyQuestDisplayInfo? = nil // Renamed for clarity
     
     private var viewSize: ViewSize {
         horizontalSizeClass == .compact ? .compact : .regular
@@ -185,6 +192,19 @@ struct ContentView: View {
         Milestone(progress: 1.0, reward: 500, icon: "car_mystery", isReached: false)
     ]
 
+    struct DailyQuestDisplayInfo {
+        let id = "dailySlotSpinQuest" // For now, we only have one type of daily quest
+        var title: String = "Daily Quest"
+        var description: String = "Spin the Slot Machine 3 times."
+        var progressText: String
+        var rewardAmount: Int = 250
+        var isCompleted: Bool
+        var canClaim: Bool // Completed and not yet claimed for this cycle
+        var cooldownActive: Bool
+        var timeRemainingForNextQuestFormatted: String?
+        var nextQuestAvailableDate: Date
+    }
+    
     static func handleDeepLink(_ url: URL) {
         print(" Handle deep link called with: \(url.absoluteString)")
         guard let deepLink = DeepLink(url: url) else {
@@ -519,6 +539,8 @@ struct ContentView: View {
                                                     .font(.system(size: 14, weight: .medium))
                                                     .foregroundColor(.gray)
                                             }
+                                            Spacer() // Pushes quest button to the right if there's space
+                                            dailyQuestButtonView()
                                         }
                                         .padding(.vertical, 8)
                                         .padding(.horizontal, 15)
@@ -641,6 +663,21 @@ struct ContentView: View {
                             )
                             .zIndex(10) // S'assurer que la popup est au-dessus
                         }
+                        if showDailyQuestPopup, let questInfo = currentDailyQuestDisplayInfo {
+                            DailyQuestPopupView(
+                                questInfo: questInfo,
+                                onClaim: {
+                                    claimDailyQuestReward()
+                                    showDailyQuestPopup = false
+                                    currentDailyQuestDisplayInfo = nil
+                                },
+                                onClose: {
+                                    showDailyQuestPopup = false
+                                    currentDailyQuestDisplayInfo = nil
+                                }
+                            )
+                            .zIndex(11) // Ensure it's above other popups if any overlap
+                        }
                     }
                 }
             }
@@ -689,6 +726,13 @@ struct ContentView: View {
                 startBreathingAnimation()
             }
             updateLocalMilestoneStates()
+            updateDailyQuestStatus()
+        }
+        .onChange(of: dailyQuestSpinsCount) { _, _ in
+            updateDailyQuestStatus()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            updateDailyQuestStatus()
         }
     }
     
@@ -796,7 +840,7 @@ struct ContentView: View {
     @ViewBuilder
     private func milestoneMarkersView() -> some View {
         // Milestones
-        ForEach($milestones) { $milestone_local in 
+        ForEach($milestones) { $milestone_local in
             let milestoneID: MilestoneIdentifier? = {
                 if let index = milestones.firstIndex(where: { $0.id == milestone_local.id }) {
                     if index < MilestoneIdentifier.allCases.count {
@@ -818,19 +862,19 @@ struct ContentView: View {
                     // Préparer et afficher la popup
                     currentMilestoneForPopup = CollectionProgressView.MilestoneToDisplay(
                         id: id,
-                        title: "Récompense débloquée !",
-                        rewardDescription: "Vous avez gagné \(id.rewardCoins) pièces !",
+                        title: "Reward Unlocked!",
+                        rewardDescription: "You've earned \(id.rewardCoins) coins!",
                         iconName: "coin" // ou une autre icône appropriée
                     )
                     showMilestoneRewardPopup = true
                     HapticManager.shared.impact(style: .medium)
                 } else if collectionManager.claimedMilestones.contains(id) {
                     // Optionnel : indiquer que c'est déjà réclamé, peut-être avec un petit message ou un haptic différent
-                    print("Palier \(id.rawValue) déjà réclamé.")
+                    print("Milestone \(id.rawValue) already claimed.")
                     HapticManager.shared.impact(style: .light)
                 } else {
                     // Optionnel : indiquer que le palier n'est pas encore atteint
-                    print("Palier \(id.rawValue) pas encore atteint.")
+                    print("Milestone \(id.rawValue) not yet reached.")
                     HapticManager.shared.impact(style: .soft)
                 }
             }) {
@@ -840,10 +884,10 @@ struct ContentView: View {
                         .frame(width: 24, height: 24)
                         .shadow(color: .black.opacity(0.1), radius: 2)
                     
-                    Image(milestone_local.icon) 
+                    Image(milestone_local.icon)
                         .resizable()
                         .frame(width: 14, height: 14)
-                        .opacity(milestone_local.isReached ? 1.0 : 0.5) 
+                        .opacity(milestone_local.isReached ? 1.0 : 0.5)
                 }
                 .overlay(
                     Circle()
@@ -864,12 +908,12 @@ struct ContentView: View {
                                 startPoint: .leading,
                                 endPoint: .trailing
                             ),
-                            lineWidth: milestone_local.isReached ? 2 : 0 
+                            lineWidth: milestone_local.isReached ? 2 : 0
                         )
                         .blur(radius: 2)
-                        .opacity(milestone_local.isReached ? 0.7 : 0) 
+                        .opacity(milestone_local.isReached ? 0.7 : 0)
                 )
-                .scaleEffect(milestone_local.isReached && !(milestoneID != nil && collectionManager.claimedMilestones.contains(milestoneID!)) ? 1.1 : 1.0) 
+                .scaleEffect(milestone_local.isReached && !(milestoneID != nil && collectionManager.claimedMilestones.contains(milestoneID!)) ? 1.1 : 1.0)
                 .animation(.spring(response: 0.3), value: milestone_local.isReached || (milestoneID != nil && collectionManager.claimedMilestones.contains(milestoneID!)))
                 .overlay(
                     Group {
@@ -884,7 +928,7 @@ struct ContentView: View {
                     }
                 )
             }
-            .position(x: UIScreen.main.bounds.width * 0.7 * CGFloat(milestone_local.progress), y: 12) 
+            .position(x: UIScreen.main.bounds.width * 0.7 * CGFloat(milestone_local.progress), y: 12)
             .onChange(of: collectionManager.cards.count) { _, newCount in
                 // Mettre à jour l'état local `isReached` pour l'UI du marqueur
                 let progress = Double(newCount) / 250.0
@@ -902,8 +946,6 @@ struct ContentView: View {
         let totalProgress = baseProgress + (breathingProgress * 0.05) // Même amplitude que plus haut
         return maxWidth * totalProgress
     }
-
-    // private func checkMilestoneReward(at index: Int, currentProgress: Double) { ... }
 
     private func buttonView(icon: String, text: String, colors: [Color], textColor: Color) -> some View {
         ZStack {
@@ -941,6 +983,106 @@ struct ContentView: View {
         }
     }
     
+    @ViewBuilder
+    private func dailyQuestButtonView() -> some View {
+        let questReadyToClaim = (currentDailyQuestDisplayInfo?.canClaim ?? false) && !(currentDailyQuestDisplayInfo?.cooldownActive ?? true)
+        let questInProgress = !(currentDailyQuestDisplayInfo?.isCompleted ?? true) && !(currentDailyQuestDisplayInfo?.cooldownActive ?? true) && (currentDailyQuestDisplayInfo != nil)
+
+        Button(action: {
+            updateDailyQuestStatus() // Ensure info is fresh
+            showDailyQuestPopup = true
+            HapticManager.shared.impact(style: .medium)
+        }) {
+            ZStack {
+                Image(systemName: "list.star") // Example icon
+                    .font(.system(size: 20))
+                    .foregroundColor(questReadyToClaim ? .yellow : (questInProgress ? .blue : .gray))
+                
+                if questReadyToClaim {
+                    // Optional: Add a small indicator like a glowing dot or exclamation mark
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 8, height: 8)
+                        .offset(x: 10, y: -10)
+                        .opacity(isAnimating ? 1 : 0.5)
+                        .animation(Animation.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: isAnimating)
+                }
+            }
+            .padding(6)
+        }
+        .onAppear {
+             // To make the red dot blink if ready
+            if questReadyToClaim {
+                isAnimating = true
+            }
+        }
+        .onChange(of: currentDailyQuestDisplayInfo?.canClaim) { _, newValue in
+            if newValue == true && currentDailyQuestDisplayInfo?.cooldownActive == false {
+                isAnimating = true
+            } else {
+                isAnimating = false
+            }
+        }
+    }
+
+    private func updateDailyQuestStatus() {
+        let currentTime = Date()
+        let nextQuestDate = Date(timeIntervalSince1970: nextDailyQuestTime)
+        let requiredSpins = 3
+        var cooldownIsActive = false
+        var timeRemainingString: String? = nil
+
+        if currentTime < nextQuestDate && isCurrentDailyQuestRewardClaimed {
+            // Cooldown is active because reward was claimed and time hasn't passed
+            cooldownIsActive = true
+            let remaining = nextQuestDate.timeIntervalSince(currentTime)
+            timeRemainingString = formatTimeInterval(remaining)
+        } else if currentTime >= nextQuestDate && isCurrentDailyQuestRewardClaimed {
+            // New quest period can start, reset claimed status and spin count
+            isCurrentDailyQuestRewardClaimed = false
+            dailyQuestSpinsCount = 0
+            // No cooldown string needed as a new quest is available/in progress
+        }
+        // If !isCurrentDailyQuestRewardClaimed, it means either a new quest is active or in progress, or cooldown finished and we are ready for a new one.
+
+        let completed = dailyQuestSpinsCount >= requiredSpins
+        let canBeClaimed = completed && !isCurrentDailyQuestRewardClaimed && !cooldownIsActive
+
+        currentDailyQuestDisplayInfo = DailyQuestDisplayInfo(
+            progressText: "\(min(dailyQuestSpinsCount, requiredSpins))/\(requiredSpins) spins",
+            isCompleted: completed,
+            canClaim: canBeClaimed,
+            cooldownActive: cooldownIsActive,
+            timeRemainingForNextQuestFormatted: timeRemainingString,
+            nextQuestAvailableDate: nextQuestDate
+        )
+    }
+
+    private func claimDailyQuestReward() {
+        guard let info = currentDailyQuestDisplayInfo, info.canClaim else { return }
+
+        collectionManager.coins += info.rewardAmount
+        AudioManager.shared.playPurchaseSound() // Or a specific quest completion sound
+        HapticManager.shared.impact(style: .heavy)
+
+        isCurrentDailyQuestRewardClaimed = true
+        dailyQuestSpinsCount = 0 // Reset for the next quest period
+        let twelveHours: TimeInterval = 12 * 60 * 60
+        nextDailyQuestTime = Date().timeIntervalSince1970 + twelveHours
+        
+        updateDailyQuestStatus() // Refresh the display info
+        
+        // Post notification for coins update if other views need to react
+        NotificationCenter.default.post(name: .coinsDidUpdate, object: nil)
+    }
+
+    private func formatTimeInterval(_ interval: TimeInterval) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.hour, .minute, .second]
+        formatter.unitsStyle = .abbreviated
+        return formatter.string(from: interval) ?? ""
+    }
+
     private func startBreathingAnimation() {
         guard isAnimating == false else { return }
         
@@ -973,8 +1115,129 @@ struct ContentView: View {
     }
 }
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
+struct DailyQuestPopupView: View {
+    let questInfo: ContentView.DailyQuestDisplayInfo // Use ContentView.DailyQuestDisplayInfo
+    var onClaim: () -> Void
+    var onClose: () -> Void
+    
+    @State private var isAnimatingGlow = false
+    @State private var showContent = false
+    
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+                .onTapGesture { onClose() } // Close on tap outside
+            
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Text(questInfo.title)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(Color(hex: "333333"))
+                    Spacer()
+                    Button(action: onClose) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.gray.opacity(0.8))
+                    }
+                }
+                .padding()
+                .background(Color.white.opacity(0.8)) // Slight transparency for effect
+                
+                Divider()
+                
+                // Content
+                VStack(spacing: 15) {
+                    Image(systemName: "list.star.fill") // Placeholder icon
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 60, height: 60)
+                        .foregroundColor(.orange)
+                        .padding(.top)
+                    
+                    Text(questInfo.description)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(Color(hex: "555555"))
+                        .multilineTextAlignment(.center)
+                    
+                    Text(questInfo.cooldownActive && questInfo.timeRemainingForNextQuestFormatted != nil ? "Next quest in: \(questInfo.timeRemainingForNextQuestFormatted!)" : questInfo.progressText)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(questInfo.isCompleted && !questInfo.cooldownActive ? .green : .orange)
+                    
+                    if questInfo.canClaim {
+                        Text("Reward: \(questInfo.rewardAmount) coins")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(Color(hex: "666666"))
+                    }
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        if questInfo.canClaim {
+                            onClaim()
+                        } else {
+                            onClose() // Or specific action if needed
+                        }
+                    }) {
+                        Text(questInfo.canClaim ? "Claim Reward!" : (questInfo.cooldownActive ? "Come Back Later" : "Awesome!"))
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 30)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: questInfo.canClaim ? [Color.green, Color.blue] : [Color.orange, Color.pink]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(15)
+                            .shadow(color: (questInfo.canClaim ? Color.blue : Color.pink).opacity(0.4), radius: 5, y: 3)
+                    }
+                    .disabled(!questInfo.canClaim && !questInfo.cooldownActive && !questInfo.isCompleted) // Disable if not claimable, not on cooldown, but completed
+                    .opacity( (questInfo.isCompleted && !questInfo.canClaim && !questInfo.cooldownActive) ? 0.7 : 1.0) // e.g. completed but already claimed for this cycle before cooldown UI shows
+                    
+                    
+                }
+                .padding()
+            }
+            .frame(width: UIScreen.main.bounds.width * 0.85, height: UIScreen.main.bounds.height * 0.45)
+            .background(Color.white)
+            .cornerRadius(25)
+            .shadow(color: .black.opacity(0.2), radius: 20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 25)
+                    .stroke(
+                        LinearGradient(
+                            gradient: Gradient(colors: [.purple.opacity(0.7), .blue.opacity(0.7), .green.opacity(0.7)]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: isAnimatingGlow ? 4 : 2
+                    )
+                    .blur(radius: isAnimatingGlow ? 3 : 0)
+                    .opacity(isAnimatingGlow ? 1 : 0.6)
+            )
+            .scaleEffect(showContent ? 1 : 0.95)
+            .opacity(showContent ? 1 : 0)
+            .offset(y: showContent ? 0 : 20)
+            .onAppear {
+                AudioManager.shared.playSound(named: "popup_appear.mp3") // Assuming you have this
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.1)) {
+                    showContent = true
+                }
+                withAnimation(Animation.easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(0.2)) {
+                    isAnimatingGlow = true
+                }
+            }
+        }
+        .zIndex(100) // High zIndex to be on top of everything
+    }
+    
+    struct ContentView_Previews: PreviewProvider {
+        static var previews: some View {
+            ContentView()
+        }
     }
 }
