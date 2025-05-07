@@ -41,8 +41,15 @@ struct BoosterTimerView: View {
             
             timeString = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
         } else {
-            storeManager.checkForFreeBooster()
+            // CHANGE: Call loadAndValidateBoosterTimer instead of checkForFreeBooster
+            storeManager.loadAndValidateBoosterTimer()
             timeString = "00:00:00"
+            // We might need to re-fetch the timeString after loadAndValidateBoosterTimer
+            // as it could start a new timer immediately.
+            // However, loadAndValidateBoosterTimer updates @Published properties,
+            // which should trigger a view update and a new call to updateTimeString.
+            // So, explicitly calling updateTimeString() again here might be redundant or cause a loop.
+            // Let's test without it first.
         }
     }
 }

@@ -54,7 +54,6 @@ struct ShakeEffect: GeometryEffect {
     }
 }
 
-// ADD: Deep link handling enum
 enum DeepLink {
     case legendaryCarPopup
     
@@ -103,9 +102,9 @@ struct ContentView: View {
     @State private var boosterAvailableIn: TimeInterval = 6 * 3600
     @State private var timer: Timer? = nil
     @State private var giftAvailableIn: TimeInterval = 1 * 6
-    @State private var glareOffset: CGFloat = -200
-    @State private var booster1GlareOffset: CGFloat = -200
-    @State private var booster2GlareOffset: CGFloat = -200
+    @State private var glareOffset: CGFloat = -250 // Ajusté pour un balayage plus large
+    @State private var booster1GlareOffset: CGFloat = -250 // Valeur de départ pour un balayage plus large
+    @State private var booster2GlareOffset: CGFloat = -250 // Valeur de départ pour un balayage plus large
     @State private var rotationAngle: Double = 0
     @State private var isCollectionPressed: Bool = false
     @State private var glowRotationAngle: Double = 45
@@ -138,6 +137,9 @@ struct ContentView: View {
     
     @State private var hasAppeared = false
     
+    @State private var showMilestoneRewardPopup = false
+    @State private var currentMilestoneForPopup: CollectionProgressView.MilestoneToDisplay? = nil
+    
     private var viewSize: ViewSize {
         horizontalSizeClass == .compact ? .compact : .regular
     }
@@ -158,21 +160,31 @@ struct ContentView: View {
         viewSize == .compact ? 12 : 32
     }
     
-    private struct Milestone {
+    private struct Milestone: Identifiable {
+        let id = UUID() // Add unique ID for Identifiable conformance
         let progress: Double
         let reward: Int
         let icon: String
         var isReached: Bool
+        // This could be set during initialization of the 'milestones' array.
+        // For example:
+        // let identifier: MilestoneIdentifier
     }
     
     @State private var milestones: [Milestone] = [
-        Milestone(progress: 0.25, reward: 200, icon: "coin", isReached: false),    // 62 cartes
-        Milestone(progress: 0.50, reward: 300, icon: "questionmark.circle.fill", isReached: false),    // 125 cartes
-        Milestone(progress: 0.75, reward: 400, icon: "coin", isReached: false),    // 187 cartes
-        Milestone(progress: 1.0, reward: 500, icon: "car_mystery", isReached: false)    // 250 cartes
+        // Example: if MilestoneIdentifier has a case like .tier1, .tier2, etc.
+        // Milestone(progress: 0.25, reward: 200, icon: "coin", isReached: false, identifier: .progress25),
+        // Milestone(progress: 0.50, reward: 300, icon: "questionmark.circle.fill", isReached: false, identifier: .progress50),
+        // ...
+        // For now, I'll keep the previous structure and assume mapping logic handles it
+        // If this `progressBarSection` is meant to *also* trigger claims,
+        // then it should call `collectionManager.claimMilestone(milestoneID)`
+        Milestone(progress: 0.25, reward: 200, icon: "coin", isReached: false),
+        Milestone(progress: 0.50, reward: 300, icon: "questionmark.circle.fill", isReached: false),
+        Milestone(progress: 0.75, reward: 400, icon: "coin", isReached: false),
+        Milestone(progress: 1.0, reward: 500, icon: "car_mystery", isReached: false)
     ]
 
-    // ADD: Static deep link handler with print for debugging
     static func handleDeepLink(_ url: URL) {
         print(" Handle deep link called with: \(url.absoluteString)")
         guard let deepLink = DeepLink(url: url) else {
@@ -274,14 +286,16 @@ struct ContentView: View {
                                                     node.addAnimation(rotation, forKey: "rotate")
                                                     
                                                     let material = SCNMaterial()
-                                                    material.diffuse.contents = UIImage(named: "texture_diffuse.png")
+                                                    material.diffuse.contents = UIImage(named: "texture_diffuse.png") // Assure la couleur de base
                                                     material.metalness.contents = UIImage(named: "texture_metallic.png")
                                                     material.normal.contents = UIImage(named: "texture_normal.png")
                                                     material.roughness.contents = UIImage(named: "texture_roughness.png")
+                                                    
                                                     material.emission.contents = UIColor.white
-                                                    material.emission.intensity = 0.2
-                                                    material.specular.contents = UIColor.white
-                                                    material.shininess = 0.7
+                                                    material.emission.intensity = 0.45 // Précédemment 0.6, essayons une valeur intermédiaire
+
+                                                    material.specular.contents = UIColor.white // Garder blanc pour des reflets neutres, ou teinter légèrement si désiré
+                                                    material.shininess = 0.8 // Augmenter pour des reflets plus nets et vifs (était 0.7)
                                                     
                                                     node.geometry?.materials = [material]
                                                     
@@ -290,6 +304,23 @@ struct ContentView: View {
                                                     cameraNode.position = SCNVector3(x: -1.6, y: 0, z: 14)
                                                     scnScene.rootNode.addChildNode(cameraNode)
                                                     
+                                                    // OPTIONNEL: Lumière ambiante (si toujours nécessaire)
+                                                    // let ambientLightNode = SCNNode()
+                                                    // ambientLightNode.light = SCNLight()
+                                                    // ambientLightNode.light!.type = .ambient
+                                                    // ambientLightNode.light!.color = UIColor(white: 0.3, alpha: 1.0) // Peut-être réduire son intensité si l'émission est déjà présente
+                                                    // scnScene.rootNode.addChildNode(ambientLightNode)
+
+                                                    // OPTIONNEL 2: Ajouter une lumière directionnelle pour plus de contraste et de profondeur
+                                                    // let directionalLight = SCNLight()
+                                                    // directionalLight.type = .directional
+                                                    // directionalLight.color = UIColor(white: 0.8, alpha: 1.0) // Lumière blanche assez forte
+                                                    // directionalLight.castsShadow = true // Optionnel, peut être coûteux
+                                                    // let directionalLightNode = SCNNode()
+                                                    // directionalLightNode.light = directionalLight
+                                                    // directionalLightNode.eulerAngles = SCNVector3(x: -Float.pi / 3, y: Float.pi / 6, z: 0) // Orienter la lumière
+                                                    // scnScene.rootNode.addChildNode(directionalLightNode)
+
                                                     return scnScene
                                                 }()
                                             
@@ -304,7 +335,7 @@ struct ContentView: View {
                                             Spacer()
                                             
                                             // Season availability text at the bottom
-                                            Text("0,001%")
+                                            Text("0,0001%")
                                                 .font(.system(size: 12, weight: .bold))
                                                 .foregroundColor(.white)
                                                 .padding(.horizontal, 12)
@@ -352,7 +383,7 @@ struct ContentView: View {
                                             )
                                         )
                                         .blur(radius: 15)
-                                        .opacity(0.25) // CHANGE: réduit davantage l'opacité
+                                        .opacity(0.25)
                                         .frame(height: viewSize == .compact ? 320 : 420)
                                         .scaleEffect(1.01)
                                     
@@ -365,7 +396,7 @@ struct ContentView: View {
 
                                     VStack {
                                         Spacer()
-                                        HStack(spacing: viewSize == .compact ? 30 : 50) {
+                                        HStack(spacing: viewSize == .compact ? -20 : -10) {
                                             // First booster with glare and 3D rotation
                                             Button(action: {
                                                 if StoreManager.shared.boosters == 0 {
@@ -385,16 +416,16 @@ struct ContentView: View {
                                                                 LinearGradient(
                                                                     gradient: Gradient(colors: [
                                                                         .clear,
-                                                                        .white.opacity(0.01),
-                                                                        .white.opacity(0.15),
-                                                                        .white.opacity(0.01),
+                                                                        .white.opacity(0.05), // Légèrement plus visible
+                                                                        .white.opacity(0.3),  // Légèrement plus visible
+                                                                        .white.opacity(0.05), // Légèrement plus visible
                                                                         .clear
                                                                     ]),
                                                                     startPoint: .topLeading,
                                                                     endPoint: .bottomTrailing
                                                                 )
                                                             )
-                                                            .frame(width: 100)
+                                                            .frame(width: 120) // Un peu plus large pour un meilleur effet
                                                             .rotationEffect(.degrees(-65))
                                                             .offset(x: booster1GlareOffset, y: booster1GlareOffset/3)
                                                             .blur(radius: 3)
@@ -429,16 +460,16 @@ struct ContentView: View {
                                                                 LinearGradient(
                                                                     gradient: Gradient(colors: [
                                                                         .clear,
-                                                                        .white.opacity(0.01),
-                                                                        .white.opacity(0.15),
-                                                                        .white.opacity(0.01),
+                                                                        .white.opacity(0.05), // Légèrement plus visible
+                                                                        .white.opacity(0.3),  // Légèrement plus visible
+                                                                        .white.opacity(0.05), // Légèrement plus visible
                                                                         .clear
                                                                     ]),
                                                                     startPoint: .topLeading,
                                                                     endPoint: .bottomTrailing
                                                                 )
                                                             )
-                                                            .frame(width: 100)
+                                                            .frame(width: 120) // Un peu plus large pour un meilleur effet
                                                             .rotationEffect(.degrees(-65))
                                                             .offset(x: booster2GlareOffset, y: booster2GlareOffset/3)
                                                             .blur(radius: 3)
@@ -510,13 +541,24 @@ struct ContentView: View {
                                                     .fill(Color.white)
                                             }
                                         )
-                                        .offset(y: 15) // Modifié de 25 à 15 pour remonter l'interface
-                                        .zIndex(1) // ADD: Ensure it appears above the booster interface
+                                        .offset(y: 0) // Rehaussé: Modifié de 15 à 10 pour remonter davantage
+                                        .zIndex(1)
                                     }
+                                    .padding(.top, 10)
                                 }
                                 .padding(.horizontal, horizontalPadding)
                                 .padding(.vertical, viewSize == .compact ? 8 : 15)
-
+                                .onAppear {
+                                    // Animation pour le reflet du booster 1 - plus lente et balayage plus large
+                                    withAnimation(Animation.linear(duration: 7.0).repeatForever(autoreverses: true)) { // Durée augmentée pour moins de fréquence
+                                        booster1GlareOffset = 250 // Cible positive pour un balayage de -250 à 250
+                                    }
+                                    // Animation pour le reflet du booster 2 - plus lente et balayage plus large
+                                    withAnimation(Animation.linear(duration: 7.0).delay(0.7).repeatForever(autoreverses: true)) { // Durée augmentée et délai ajusté
+                                        booster2GlareOffset = 250 // Cible positive pour un balayage de -250 à 250
+                                    }
+                                }
+ 
                                 // Collection and Shop buttons
                                 HStack(spacing: 15) {
                                     // Collection Button
@@ -580,6 +622,25 @@ struct ContentView: View {
                         .frame(maxWidth: viewSize == .compact ? .infinity : min(geometry.size.width * 0.8, 800))
                         .frame(maxWidth: .infinity)
                         .animation(hasAppeared ? .default : nil, value: hasAppeared)
+                        
+                        if showMilestoneRewardPopup, let milestonePopupInfo = currentMilestoneForPopup {
+                            MilestoneRewardPopup( // Assurez-vous que cette struct est accessible ici ou déplacez-la
+                                milestoneInfo: milestonePopupInfo,
+                                onClaim: {
+                                    collectionManager.claimMilestone(milestonePopupInfo.id)
+                                    // Mettre à jour l'état local des milestones si nécessaire pour refléter le changement immédiatement
+                                    updateLocalMilestoneStates()
+                                    showMilestoneRewardPopup = false
+                                    currentMilestoneForPopup = nil
+                                    AudioManager.shared.playPurchaseSound() // Son de récompense
+                                },
+                                onClose: {
+                                    showMilestoneRewardPopup = false
+                                    currentMilestoneForPopup = nil
+                                }
+                            )
+                            .zIndex(10) // S'assurer que la popup est au-dessus
+                        }
                     }
                 }
             }
@@ -615,17 +676,19 @@ struct ContentView: View {
                 print(" Set showExclusiveCarInfo to true")
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .milestoneClaimed)) { _ in
+            updateLocalMilestoneStates()
+        }
         .onAppear {
             // Delay setting hasAppeared to ensure view is fully laid out
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 hasAppeared = true
             }
-        }
-        .onAppear {
             // Delay breathing animation start
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 startBreathingAnimation()
             }
+            updateLocalMilestoneStates()
         }
     }
     
@@ -698,64 +761,7 @@ struct ContentView: View {
                         }
                     }
                     
-                    // Milestones
-                    ForEach(milestones.indices, id: \.self) { index in
-                        let milestone = milestones[index]
-                        Button(action: {
-                            if milestone.isReached {
-                                selectedMilestone = MilestoneIdentifier(index)
-                                HapticManager.shared.impact(style: .medium)
-                            }
-                        }) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.white)
-                                    .frame(width: 24, height: 24)
-                                    .shadow(color: .black.opacity(0.1), radius: 2)
-                                
-                                Image(milestone.icon)
-                                    .resizable()
-                                    .frame(width: 14, height: 14)
-                                    .opacity(milestone.isReached ? 1.0 : 0.5)
-                            }
-                            .overlay(
-                                Circle()
-                                    .stroke(
-                                        LinearGradient(
-                                            colors: [Color.yellow, Color.orange],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        ),
-                                        lineWidth: 1.5
-                                    )
-                            )
-                            .overlay(
-                                Circle()
-                                    .stroke(
-                                        LinearGradient(
-                                            colors: [Color.yellow, Color.orange],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        ),
-                                        lineWidth: milestone.isReached ? 2 : 0
-                                    )
-                                    .blur(radius: 2)
-                                    .opacity(milestone.isReached ? 0.7 : 0)
-                            )
-                            .scaleEffect(milestone.isReached ? 1.1 : 1.0)
-                            .animation(.spring(response: 0.3), value: milestone.isReached)
-                        }
-                        .position(x: UIScreen.main.bounds.width * 0.7 * milestone.progress, y: 12)
-                        .onChange(of: collectionManager.cards.count) { _, newCount in
-                            let progress = Double(newCount) / 250.0
-                            if !milestone.isReached && progress >= milestone.progress {
-                                milestones[index].isReached = true
-                                collectionManager.coins += milestone.reward
-                                HapticManager.shared.impact(style: .medium)
-                                NotificationCenter.default.post(name: .coinsDidUpdate, object: nil)
-                            }
-                        }
-                    }
+                    milestoneMarkersView()
                 }
                 .frame(height: 35)
             }
@@ -787,6 +793,108 @@ struct ContentView: View {
         .padding(.bottom, 20)
     }
 
+    @ViewBuilder
+    private func milestoneMarkersView() -> some View {
+        // Milestones
+        ForEach($milestones) { $milestone_local in 
+            let milestoneID: MilestoneIdentifier? = {
+                if let index = milestones.firstIndex(where: { $0.id == milestone_local.id }) {
+                    if index < MilestoneIdentifier.allCases.count {
+                        return MilestoneIdentifier.allCases[index]
+                    }
+                }
+                return nil
+            }()
+
+            Button(action: {
+                guard let id = milestoneID else { return }
+                
+                // Vérifier si le palier est atteint ET non réclamé
+                let progressPercentage = Double(collectionManager.cards.count) / 250.0 * 100
+                let milestoneTargetProgress = milestones.first(where: { $0.id == milestone_local.id })?.progress ?? 0
+                let isReachable = progressPercentage >= (milestoneTargetProgress * 100)
+
+                if isReachable && !collectionManager.claimedMilestones.contains(id) {
+                    // Préparer et afficher la popup
+                    currentMilestoneForPopup = CollectionProgressView.MilestoneToDisplay(
+                        id: id,
+                        title: "Récompense débloquée !",
+                        rewardDescription: "Vous avez gagné \(id.rewardCoins) pièces !",
+                        iconName: "coin" // ou une autre icône appropriée
+                    )
+                    showMilestoneRewardPopup = true
+                    HapticManager.shared.impact(style: .medium)
+                } else if collectionManager.claimedMilestones.contains(id) {
+                    // Optionnel : indiquer que c'est déjà réclamé, peut-être avec un petit message ou un haptic différent
+                    print("Palier \(id.rawValue) déjà réclamé.")
+                    HapticManager.shared.impact(style: .light)
+                } else {
+                    // Optionnel : indiquer que le palier n'est pas encore atteint
+                    print("Palier \(id.rawValue) pas encore atteint.")
+                    HapticManager.shared.impact(style: .soft)
+                }
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 24, height: 24)
+                        .shadow(color: .black.opacity(0.1), radius: 2)
+                    
+                    Image(milestone_local.icon) 
+                        .resizable()
+                        .frame(width: 14, height: 14)
+                        .opacity(milestone_local.isReached ? 1.0 : 0.5) 
+                }
+                .overlay(
+                    Circle()
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color.yellow, Color.orange],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            lineWidth: 1.5
+                        )
+                )
+                .overlay(
+                    Circle()
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color.yellow, Color.orange],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            lineWidth: milestone_local.isReached ? 2 : 0 
+                        )
+                        .blur(radius: 2)
+                        .opacity(milestone_local.isReached ? 0.7 : 0) 
+                )
+                .scaleEffect(milestone_local.isReached && !(milestoneID != nil && collectionManager.claimedMilestones.contains(milestoneID!)) ? 1.1 : 1.0) 
+                .animation(.spring(response: 0.3), value: milestone_local.isReached || (milestoneID != nil && collectionManager.claimedMilestones.contains(milestoneID!)))
+                .overlay(
+                    Group {
+                        if let id = milestoneID, collectionManager.claimedMilestones.contains(id) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                                .font(.system(size: 10))
+                                .padding(1)
+                                .background(Color.white.clipShape(Circle()))
+                                .offset(x: 8, y: -8)
+                        }
+                    }
+                )
+            }
+            .position(x: UIScreen.main.bounds.width * 0.7 * CGFloat(milestone_local.progress), y: 12) 
+            .onChange(of: collectionManager.cards.count) { _, newCount in
+                // Mettre à jour l'état local `isReached` pour l'UI du marqueur
+                let progress = Double(newCount) / 250.0
+                if !milestone_local.isReached && progress >= milestone_local.progress {
+                    milestone_local.isReached = true
+                }
+            }
+        }
+    }
+
     // MODIFY: Calculate progress width function
     private func calculateProgressWidth() -> CGFloat {
         let maxWidth = UIScreen.main.bounds.width * 0.7
@@ -795,15 +903,8 @@ struct ContentView: View {
         return maxWidth * totalProgress
     }
 
-    private func checkMilestoneReward(at index: Int, currentProgress: Double) {
-        let milestone = milestones[index]
-        if !milestone.isReached && currentProgress >= milestone.progress {
-            milestones[index].isReached = true
-            collectionManager.coins += milestone.reward
-            HapticManager.shared.impact(style: .medium)
-        }
-    }
-    
+    // private func checkMilestoneReward(at index: Int, currentProgress: Double) { ... }
+
     private func buttonView(icon: String, text: String, colors: [Color], textColor: Color) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 20)
@@ -853,15 +954,22 @@ struct ContentView: View {
         }
     }
 
-    // Rest of the methods remain the same...
-}
-
-private struct MilestoneIdentifier: Identifiable {
-    let id = UUID()
-    let index: Int
-    
-    init(_ index: Int) {
-        self.index = index
+    private func updateLocalMilestoneStates() {
+        let currentCardCount = collectionManager.cards.count
+        let totalCardsForProgress = 250.0 // Assurez-vous que c'est le bon total
+        
+        for i in milestones.indices {
+            let milestoneTargetProgress = milestones[i].progress
+            if Double(currentCardCount) / totalCardsForProgress >= milestoneTargetProgress {
+                if !milestones[i].isReached {
+                    milestones[i].isReached = true
+                }
+            } else {
+                 if milestones[i].isReached { // Si le nombre de cartes diminue et qu'un palier n'est plus atteint
+                    milestones[i].isReached = false
+                 }
+            }
+        }
     }
 }
 

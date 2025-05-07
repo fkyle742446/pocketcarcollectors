@@ -406,7 +406,8 @@ struct BoosterOpeningView: View {
     @State private var drawnCards: [BoosterCard] = []
     @State private var showSummary = false
     @State private var showGestureHint = true
-    
+    @State private var hasConsumedBoosterForThisOpening = false
+
     private let allCards: [BoosterCard] = [
         // Common (70%) - Cards 1-100
         BoosterCard(name: "Renault Clio", rarity: .common, number: 1),
@@ -454,7 +455,7 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Volvo V60", rarity: .common, number: 43),
         BoosterCard(name: "Skoda Superb Combi", rarity: .common, number: 44),
         BoosterCard(name: "Audi A4 Avant", rarity: .common, number: 45),
-        BoosterCard(name: "BMW Série 5 Touring", rarity: .common, number: 46),
+        BoosterCard(name: "BMW M8 Competition", rarity: .common, number: 46),
         BoosterCard(name: "Mercedes Classe E Break", rarity: .common, number: 47),
         BoosterCard(name: "Peugeot 508 SW", rarity: .common, number: 48),
         BoosterCard(name: "Volkswagen Passat Variant", rarity: .common, number: 49),
@@ -613,7 +614,7 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Koenigsegg One:1", rarity: .epic, number: 198),
         BoosterCard(name: "Pagani Zonda Cinque Roadster", rarity: .epic, number: 199),
         BoosterCard(name: "McLaren Speedtail", rarity: .epic, number: 200),
-        BoosterCard(name: "Ferrari P80/C", rarity: .epic, number: 201),
+        BoosterCard(name: "Ferrari P80C", rarity: .epic, number: 201),
         BoosterCard(name: "Aston Martin Victor", rarity: .epic, number: 202),
         BoosterCard(name: "Lamborghini Essenza SCV12", rarity: .epic, number: 203),
         BoosterCard(name: "Bugatti Centodieci", rarity: .epic, number: 204),
@@ -627,57 +628,52 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Koenigsegg CC850", rarity: .epic, number: 212),
         BoosterCard(name: "Pagani Utopia", rarity: .epic, number: 213),
         BoosterCard(name: "McLaren Artura", rarity: .epic, number: 214),
-        BoosterCard(name: "Ferrari 296 GTB", rarity: .epic, number: 215),
-        BoosterCard(name: "Aston Martin Valhalla AMR", rarity: .epic, number: 216),
-        BoosterCard(name: "Bugatti Chiron Pur Sport", rarity: .epic, number: 217),
-        BoosterCard(name: "Koenigsegg Jesko Attack", rarity: .epic, number: 218),
-        BoosterCard(name: "Pagani Huayra R", rarity: .epic, number: 219),
-        BoosterCard(name: "McLaren 720S Spider", rarity: .epic, number: 220),
-        BoosterCard(name: "Ferrari 812 Competizione", rarity: .epic, number: 221),
-        BoosterCard(name: "Aston Martin V12 Speedster", rarity: .epic, number: 222),
-        BoosterCard(name: "Lamborghini Aventador Ultimate", rarity: .epic, number: 223),
-        BoosterCard(name: "Bugatti Chiron Super Sport", rarity: .epic, number: 224),
+        BoosterCard(name: "Aston Martin Valhalla AMR", rarity: .epic, number: 215),
+        BoosterCard(name: "Aston Martin Valhalla", rarity: .epic, number: 216),
+        BoosterCard(name: "Bugatti Divo", rarity: .epic, number: 217),
+        BoosterCard(name: "Koenigsegg Regera", rarity: .epic, number: 218),
+        BoosterCard(name: "Pagani Huayra BC", rarity: .epic, number: 219),
+        BoosterCard(name: "McLaren Senna", rarity: .epic, number: 220),
+        BoosterCard(name: "Ferrari Monza SP2", rarity: .epic, number: 221),
+        BoosterCard(name: "Aston Martin Vulcan", rarity: .epic, number: 222),
+        BoosterCard(name: "Lamborghini Centenario", rarity: .epic, number: 223),
+        BoosterCard(name: "Bugatti La Voiture Noire", rarity: .epic, number: 224),
         BoosterCard(name: "Koenigsegg Regera Final Edition", rarity: .epic, number: 225),
 
-        // Legendary (0,1%) - Cards 226-250
-        BoosterCard(name: "Koenigsegg Jesko Absolut", rarity: .legendary, number: 226),
-        BoosterCard(name: "Pagani Zonda Cinque", rarity: .legendary, number: 227),
-        BoosterCard(name: "Lamborghini Sesto Elemento", rarity: .legendary, number: 228),
+        // Legendary (0.1%) - Cards 226-250
+        BoosterCard(name: "Bugatti La Voiture Noire", rarity: .legendary, number: 226),
+        BoosterCard(name: "Koenigsegg Regera Final Edition", rarity: .legendary, number: 227),
+        BoosterCard(name: "Pagani Huayra BC", rarity: .legendary, number: 228),
         BoosterCard(name: "Bugatti Bolide", rarity: .legendary, number: 229),
-        BoosterCard(name: "McLaren F1 GTR Longtail", rarity: .legendary, number: 230),
-        BoosterCard(name: "Ferrari F40 LM", rarity: .legendary, number: 231),
-        BoosterCard(name: "Koenigsegg One:1", rarity: .legendary, number: 232),
-        BoosterCard(name: "Aston Martin Valkyrie Pro", rarity: .legendary, number: 233),
-        BoosterCard(name: "Pagani Huayra BC Roadster", rarity: .legendary, number: 234),
-        BoosterCard(name: "Lamborghini Centenario Roadster", rarity: .legendary, number: 235),
-        BoosterCard(name: "Bugatti Divo Lady Bug", rarity: .legendary, number: 236),
-        BoosterCard(name: "McLaren P1 GTR", rarity: .legendary, number: 237),
-        BoosterCard(name: "Ferrari Monza SP1", rarity: .legendary, number: 238),
+        BoosterCard(name: "Koenigsegg One:1", rarity: .legendary, number: 230),
+        BoosterCard(name: "Pagani Zonda Revolucion", rarity: .legendary, number: 231),
+        BoosterCard(name: "McLaren P1 GTR", rarity: .legendary, number: 232),
+        BoosterCard(name: "Ferrari FXX-K", rarity: .legendary, number: 233),
+        BoosterCard(name: "Aston Martin Valkyrie AMR Pro", rarity: .legendary, number: 234),
+        BoosterCard(name: "Lamborghini Sian Roadster", rarity: .legendary, number: 235),
+        BoosterCard(name: "Bugatti Divo", rarity: .legendary, number: 236),
+        BoosterCard(name: "Koenigsegg Agera RSR", rarity: .legendary, number: 237),
+        BoosterCard(name: "Pagani Imola", rarity: .legendary, number: 238),
         BoosterCard(name: "Koenigsegg Regera Final Edition", rarity: .legendary, number: 239),
-        BoosterCard(name: "Aston Martin Valkyrie Spider", rarity: .legendary, number: 240),
-        BoosterCard(name: "Pagani Zonda R", rarity: .legendary, number: 241),
-        BoosterCard(name: "Lamborghini SC20", rarity: .legendary, number: 242),
+        BoosterCard(name: "McLaren Speedtail", rarity: .legendary, number: 240),
+        BoosterCard(name: "Ferrari SF90 Spider", rarity: .legendary, number: 241),
+        BoosterCard(name: "Aston Martin Victor", rarity: .legendary, number: 242),
         BoosterCard(name: "Bugatti La Voiture Noire", rarity: .legendary, number: 243),
-        BoosterCard(name: "McLaren Senna LM", rarity: .legendary, number: 244),
-        BoosterCard(name: "Ferrari 250 GT California Spyder", rarity: .legendary, number: 245),
-        BoosterCard(name: "Koenigsegg CCXR Special Edition", rarity: .legendary, number: 246),
-        BoosterCard(name: "Aston Martin DB5", rarity: .legendary, number: 247),
-        BoosterCard(name: "Pagani Zonda F", rarity: .legendary, number: 248),
-        BoosterCard(name: "Lamborghini Miura SV", rarity: .legendary, number: 249),
-        BoosterCard(name: "Bugatti Chiron Super Sport 300+", rarity: .legendary, number: 250)
-        ,
-        
-        // HolyT (0,01%) - Cards 251-253
-    
-        BoosterCard(name: "McLaren P1 Holy Trinity", rarity: .HolyT, number: 251),
-        BoosterCard(name: "Ferrari LaFerrari Holy Trinity", rarity: .HolyT, number: 252),
-        BoosterCard(name: "Porsche 918 Spyder Holy Trinity", rarity: .HolyT, number: 253)
-        ,
-        
-        // HolyT (0,01%) - Cards 254-255
-    
-        BoosterCard(name: "Formula 1", rarity: .Season1, number: 254),
-   
+        BoosterCard(name: "Koenigsegg CCXR Edition", rarity: .legendary, number: 244),
+        BoosterCard(name: "Pagani Huayra Tricolore", rarity: .legendary, number: 245),
+        BoosterCard(name: "McLaren 600LT Spider", rarity: .legendary, number: 246),
+        BoosterCard(name: "Ferrari 488 Pista Spider", rarity: .legendary, number: 247),
+        BoosterCard(name: "Aston Martin DBS Superleggera", rarity: .legendary, number: 248),
+        BoosterCard(name: "Lamborghini Huracan Performante", rarity: .legendary, number: 249),
+        BoosterCard(name: "Bugatti Mistral", rarity: .legendary, number: 250),
+
+        // HolyT (0.01%) - Cards 251-252
+        BoosterCard(name: "Bugatti La Voiture Noire", rarity: .HolyT, number: 251),
+        BoosterCard(name: "Koenigsegg Regera Final Edition", rarity: .HolyT, number: 252),
+
+        // Season1 (0.001%) - Cards 253-254
+        BoosterCard(name: "Formula 1", rarity: .Season1, number: 253),
+        BoosterCard(name: "Formula 1", rarity: .Season1, number: 254)
     ]
     
     init(collectionManager: CollectionManager, boosterNumber: Int) {
@@ -688,13 +684,12 @@ struct BoosterOpeningView: View {
     
     var body: some View {
         ZStack {
-            // CHANGE: Conditional background color based on isOpening
             Color(isOpening ? .white : .black).opacity(0.9)
                 .ignoresSafeArea()
             
             if showSummary {
                 BoosterSummaryView(drawnCards: drawnCards)
-            } else if storeManager.boosters > 0 || !isOpening {
+            } else if (storeManager.boosters > 0 || !hasConsumedBoosterForThisOpening) || !isOpening {
                 VStack {
                     if isOpening {
                         VStack(spacing: 30) {
@@ -713,14 +708,14 @@ struct BoosterOpeningView: View {
                                 .onTapGesture {
                                     openBooster()
                                 }
-                                .padding(.top, 80) // Ajout d'un padding pour descendre le booster
+                                .padding(.top, 80)
                             
                             Spacer()
                             
                             AnimatedButton(title: "OPEN") {
                                 openBooster()
                             }
-                            .padding(.bottom, 50) // Même padding que le bouton "NEXT CARD"
+                            .padding(.bottom, 50)
                         }
                     } else if let selectedCard = currentCard {
                         cardRevealView(for: selectedCard)
@@ -749,18 +744,48 @@ struct BoosterOpeningView: View {
     }
     
     private func openBooster() {
+        guard !hasConsumedBoosterForThisOpening else {
+            print("BoosterOpeningView: openBooster() called, but booster already consumed for this session.")
+            return
+        }
+
+        // Bien que l'UI doive déjà gérer ça, c'est une double sécurité.
+        guard storeManager.boosters > 0 else {
+            print("BoosterOpeningView: openBooster() called, but no boosters available (StoreManager count is 0 or less).")
+            // Optionnel: Gérer ce cas, par exemple en fermant la vue si elle ne devrait pas être ouverte.
+            // dismiss()
+            return
+        }
+
         print("🔊 Playing button press sound...")
         AudioManager.shared.playButtonPress()
+
+        // Cela empêche les appels multiples à cette fonction de passer le garde ci-dessus.
+        hasConsumedBoosterForThisOpening = true
+
         withAnimation(.easeInOut(duration: 0.5)) {
             boosterScale = 1.2
             boosterOpacity = 0
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            isOpening = false
+            isOpening = false // Change l'état de l'UI pour montrer les cartes
             currentCard = randomCard()
+            
+            // La consommation réelle du booster dans le StoreManager.
+            // Le flag hasConsumedBoosterForThisOpening et le guard storeManager.boosters > 0
+            // au début de la fonction protègent contre les appels multiples qui mèneraient
+            // à plusieurs exécutions de ce bloc asyncAfter et donc à plusieurs useBooster().
             storeManager.useBooster()
-            SoundManager.shared.playSound(for: currentCard!.rarity)
+            
+            // S'assurer que currentCard n'est pas nil avant d'accéder à sa rareté.
+            // randomCard() est conçu pour ne jamais retourner nil, mais c'est une bonne pratique.
+            if let cardToPlaySoundFor = currentCard {
+                SoundManager.shared.playSound(for: cardToPlaySoundFor.rarity)
+            } else {
+                print("BoosterOpeningView: Error - currentCard is nil after randomCard() call. Cannot play sound.")
+                // Gérer l'erreur si nécessaire, par exemple, fermer la vue ou afficher un message.
+            }
         }
     }
 
@@ -784,7 +809,9 @@ struct BoosterOpeningView: View {
                             .gesture(
                                 DragGesture(minimumDistance: 0)
                                     .onChanged { gesture in
+                                        print("HolographicCard DragGesture: onChanged")
                                         dragOffset = gesture.translation.height
+                                        
                                     }
                                     .onEnded { _ in
                                         withAnimation(.spring()) {
@@ -792,6 +819,11 @@ struct BoosterOpeningView: View {
                                         }
                                     }
                             )
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                    cardScale = cardScale == 1.3 ? 2.0 : 1.3
+                                }
+                            }
                             
                             if collectionManager.isNewCard(selectedCard) {
                                 NewCardBadge()
@@ -820,17 +852,33 @@ struct BoosterOpeningView: View {
                 
                 Spacer()
                 
-                // Remplace le bouton Next Card par un AnimatedButton
                 AnimatedButton(title: "NEXT CARD") {
                     handleCardReveal(selectedCard)
                 }
                 .padding(.bottom, 50)
             }
         }
+        .contentShape(Rectangle()) // Rend toute la ZStack tappable
+        .simultaneousGesture(
+            TapGesture()
+                .onEnded { _ in
+                    if cardScale == 2.0 {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            cardScale = 1.3
+                        }
+                    } else {
+                        handleCardReveal(selectedCard)
+                    }
+                }
+        )
     }
 
     private func handleCardReveal(_ selectedCard: BoosterCard) {
-        if isTransitioning { return }
+        print("BoosterOpeningView - handleCardReveal: Called. isTransitioning: \(isTransitioning)")
+        if isTransitioning {
+            print("BoosterOpeningView - handleCardReveal: Already transitioning, returning.")
+            return
+        }
         isTransitioning = true
         
         print("🔊 Playing next card sound...")
@@ -863,7 +911,6 @@ struct BoosterOpeningView: View {
             isTransitioning = false
         }
         
-        // Ajouter la carte à la collection après avoir montré l'animation
         collectionManager.addCard(selectedCard)
     }
     
@@ -877,13 +924,21 @@ struct BoosterOpeningView: View {
             .Season1: 0.0001 / 1
         ]
 
-        let weightedCards = allCards.flatMap { card -> [BoosterCard] in
-            let weight = probabilities[card.rarity] ?? 0
-            let count = Int(weight * 10000)
+        let weightedCards = self.allCards.flatMap { card -> [BoosterCard] in
+            guard let weightPerCardInRarity = probabilities[card.rarity] else {
+                print("Warning: Rarity \(card.rarity) not found in probabilities for card \(card.name). Skipping.")
+                return []
+            }
+            let count = Int(weightPerCardInRarity * 100000)
             return Array(repeating: card, count: count)
         }
 
-        return weightedCards.randomElement() ?? allCards.first!
+        guard !weightedCards.isEmpty else {
+            print("Error: weightedCards array is empty. This likely means probabilities are misconfigured or allCards is empty. Returning first card from allCards as fallback.")
+            return self.allCards.first ?? BoosterCard(name: "Fallback Card", rarity: .common, number: 0)
+        }
+
+        return weightedCards.randomElement()!
     }
     
     private func haloColor(for rarity: CardRarity) -> Color {
@@ -935,7 +990,7 @@ struct AnimatedButton: View {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                 isPressed = true
             }
-            AudioManager.shared.playButtonPress() // Ajout de l'effet sonore
+            AudioManager.shared.playButtonPress()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                     isPressed = false

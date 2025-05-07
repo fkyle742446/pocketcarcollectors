@@ -85,25 +85,12 @@ struct ShopView: View {
                             // Boosters section
                             HStack(spacing: 15) {
                                 // Single Booster
-                                boosterCard(
-                                    image: "booster_closed_1",
-                                    title: "Single x1 Booster",
-                                    price: 100,
-                                    count: 1,
-                                    type: .single
-                                )
-                                .frame(maxWidth: .infinity)
+                                boosterCard(image: "booster_closed_1", price: 100, count: 1, type: .single)
+                                    .frame(maxWidth: .infinity)
                                 
                                 // Bundle Pack
-                                boosterCard(
-                                    image: "booster_closed_2",
-                                    title: "Bundle Pack x5",
-                                    price: 400,
-                                    count: 5,
-                                    type: .bundle,
-                                    isBundle: true
-                                )
-                                .frame(maxWidth: .infinity)
+                                boosterCard(image: "booster_closed_2", price: 400, count: 5, type: .bundle, isBundle: true)
+                                    .frame(maxWidth: .infinity)
                             }
                             .padding(.horizontal)
                             
@@ -274,11 +261,13 @@ struct ShopView: View {
                         print("💰 Purchase successful")
                         
                         await MainActor.run {
-                            if product.id == "com.pocketcarcollectors.goldenpackstarter100coins" {
+                            if product.id == "com.pocketcarcollectors.pack100coins" {
                                 collectionManager.coins += 100
-                            } else if product.id == "com.pocketcarcollectors.goldenpackpremium500coins" {
+                            } else if product.id == "com.pocketcarcollectors.pack500coins" {
                                 collectionManager.coins += 500
                             }
+                            // NOTE: You might want to add a general save function for collectionManager here if needed
+                            // e.g., collectionManager.saveCollection()
                         }
                     }
                 } catch {
@@ -334,7 +323,7 @@ struct ShopView: View {
     }
     
     @ViewBuilder
-    private func boosterCard(image: String, title: String, price: Int, count: Int, type: BoosterType, isBundle: Bool = false) -> some View {
+    private func boosterCard(image: String, price: Int, count: Int, type: BoosterType, isBundle: Bool = false) -> some View {
         Button(action: {
             selectedBoosterType = type
             if collectionManager.coins >= type.price {
@@ -343,27 +332,41 @@ struct ShopView: View {
                 showingInsufficientCoinsAlert = true
             }
         }) {
-            ZStack {
+            ZStack { // Arrière-plan de la carte
                 RoundedRectangle(cornerRadius: 25)
                     .fill(Color.white)
                     .frame(height: 180)
                     .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                 
-                VStack(spacing: 15) {
-                    ZStack {
+                VStack(spacing: 15) { // Contenu principal de la carte
+                    ZStack { // Conteneur pour les images de boosters
                         if isBundle {
-                            // Bundle de 5 boosters
+                            // Affichage des 5 boosters avec décalages
                             ZStack {
                                 ForEach(0..<5) { index in
+                                    // Index normalisé de -2 (gauche) à +2 (droite), 0 au centre
+                                    let normalizedIndex = index - 2
+                                    
+                                    // Décalage horizontal pour les espacer ou les faire se chevaucher
+                                    // Un facteur plus petit les rapproche (chevauchement si < largeur image)
+                                    // Un facteur plus grand les espace davantage
+                                    let xOffset = CGFloat(normalizedIndex) * 35.0 // Ajustez 35.0 pour l'espacement désiré
+                                    
+                                    // Léger décalage vertical pour les boosters extérieurs pour un effet de profondeur ou d'arc très subtil
+                                    // Mettre à 0 si vous voulez un alignement vertical parfait.
+                                    let yOffset = abs(normalizedIndex) == 2 ? CGFloat(5.0) : (abs(normalizedIndex) == 1 ? CGFloat(2.0) : CGFloat(0.0))
+                                                                        
                                     Image(index % 2 == 0 ? "booster_closed_1" : "booster_closed_2")
                                         .resizable()
                                         .aspectRatio(contentMode: .fit)
-                                        .frame(height: 80)
-                                        .offset(x: CGFloat(index - 2) * 15)
-                                        .zIndex(Double(-index))
+                                        .frame(height: 80) // Hauteur de chaque image de booster
+                                        .offset(x: xOffset, y: yOffset)
+                                        // zIndex pour que le booster central (index 2) soit au-dessus
+                                        .zIndex(Double(-abs(normalizedIndex)))
                                 }
                             }
-                            .shadow(radius: 5)
+                            .frame(height: 90) // Hauteur du conteneur des boosters, ajustez si besoin
+                            .shadow(color: .black.opacity(0.15), radius: 3, y: 1)
                             
                             // Badge "1 FREE"
                             Text("1 FREE")
@@ -373,24 +376,25 @@ struct ShopView: View {
                                 .padding(.vertical, 4)
                                 .background(
                                     ZStack {
-                                        Capsule()
-                                            .fill(Color.red)
-                                        Capsule()
-                                            .stroke(Color.white, lineWidth: 1.5)
+                                        Capsule().fill(Color.red)
+                                        Capsule().stroke(Color.white, lineWidth: 1.5)
                                     }
                                 )
-                                .rotationEffect(.degrees(-10))
-                                .offset(x: 40, y: -25)
+                                .rotationEffect(.degrees(-10)) // Garder une petite rotation pour le style du badge
+                                // Ajuster l'offset du badge
+                                .offset(x: 50, y: -30) // Ajustez selon la nouvelle disposition des boosters
                                 .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
                         } else {
+                            // Affichage pour un booster unique
                             Image(image)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
                                 .frame(height: 80)
                                 .shadow(radius: 5)
                         }
-                    }
-                    
+                    } // Fin ZStack images boosters
+
+                    // VStack pour le texte (nombre de boosters et prix)
                     VStack(spacing: 4) {
                         Text(isBundle ? "5 boosters" : "1 booster")
                             .font(.system(size: 14, weight: .medium))
@@ -398,14 +402,15 @@ struct ShopView: View {
                         
                         HStack(spacing: 6) {
                             if isBundle {
-                                Text("500")
+                                Text("500") // Prix barré
                                     .strikethrough()
                                     .foregroundColor(.gray)
                                     .font(.system(size: 12))
                             }
-                            HStack(spacing: 4) {
+                            HStack(spacing: 4) { // Prix actuel
                                 Text("\(price)")
                                     .fontWeight(.semibold)
+                                    .foregroundColor(Color.primary)
                                 Image("coin")
                                     .resizable()
                                     .scaledToFit()
@@ -420,10 +425,10 @@ struct ShopView: View {
                             .fill(Color.white)
                             .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                     )
-                }
+                } // Fin VStack contenu principal
                 .padding(.vertical, 15)
-            }
-        }
+            } // Fin ZStack arrière-plan carte
+        } // Fin Button
         .buttonStyle(ScaleButtonStyle())
     }
 
