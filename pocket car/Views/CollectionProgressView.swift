@@ -17,7 +17,9 @@ struct CollectionProgressView: View {
         var id: MilestoneIdentifier
         var title: String
         var rewardDescription: String
-        var iconName: String 
+        var iconName: String
+        var rewardCard: BoosterCard? = nil
+        var rewardBoosters: Int? = nil
     }
 
     private var viewSize: ViewSize {
@@ -53,10 +55,10 @@ struct CollectionProgressView: View {
                             title: "Total Collection",
                             subtitle: nil,
                             count: collectionManager.cards.count,
-                            total: 250, 
+                            total: 250,
                             colors: [.yellow, .orange],
-                            progress: totalProgress, 
-                            milestoneIdentifier: nil, 
+                            progress: totalProgress,
+                            milestoneIdentifier: nil,
                             isClaimed: false,
                             canClaim: false,
                             claimAction: {}
@@ -160,7 +162,7 @@ struct CollectionProgressView: View {
             }
         }
         .onAppear {
-            totalProgress = 0 
+            totalProgress = 0
 
             withAnimation(.easeOut(duration: 2.0)) {
                 totalProgress = Double(collectionManager.cards.count)
@@ -205,7 +207,7 @@ struct ProgressCard: View {
     let milestoneIdentifier: MilestoneIdentifier?
     let isClaimed: Bool
     let canClaim: Bool
-    let claimAction: () -> Void 
+    let claimAction: () -> Void
 
     var percentage: Double {
         guard total > 0 else { return 0 }
@@ -230,7 +232,7 @@ struct ProgressCard: View {
                 
                 Spacer()
 
-                if let _ = milestoneIdentifier, canClaim { 
+                if let _ = milestoneIdentifier, canClaim {
                      Button(action: claimAction) {
                         Text("Réclamer !")
                             .font(.system(size: 12, weight: .bold))
@@ -240,7 +242,7 @@ struct ProgressCard: View {
                             .background(Color.blue)
                             .cornerRadius(10)
                      }
-                } else if let _ = milestoneIdentifier, isClaimed { 
+                } else if let _ = milestoneIdentifier, isClaimed {
                     Text("Réclamé ✔")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(.green)
@@ -249,7 +251,7 @@ struct ProgressCard: View {
                         .background(Color.green.opacity(0.1))
                         .cornerRadius(8)
                 }
-                 else { 
+                 else {
                     Text(String(format: "%.1f%%", percentage))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.gray)
@@ -265,7 +267,7 @@ struct ProgressCard: View {
             
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 3)
-                    .fill(Color(UIColor.systemGray5)) 
+                    .fill(Color(UIColor.systemGray5))
                     .frame(height: 6)
                 
                 RoundedRectangle(cornerRadius: 3)
@@ -300,13 +302,13 @@ struct MilestoneRewardPopup: View {
     var body: some View {
         ZStack {
             Color.black.opacity(0.4).edgesIgnoringSafeArea(.all)
-                .onTapGesture { onClose() } 
+                .onTapGesture { onClose() }
 
-            VStack(spacing: 0) { 
+            VStack(spacing: 0) {
                 ZStack {
                     Text(milestoneInfo.title)
                         .font(.system(size: 22, weight: .bold))
-                        .foregroundColor(Color(UIColor.label)) 
+                        .foregroundColor(Color(UIColor.label))
                         .padding(.vertical, 20)
                     
                     HStack {
@@ -320,18 +322,42 @@ struct MilestoneRewardPopup: View {
                     .padding(.trailing, 20)
                 }
                 .frame(maxWidth: .infinity)
-                .background(Color(UIColor.systemGray6).opacity(0.8)) 
+                .background(Color(UIColor.systemGray6).opacity(0.8))
                 
                 Divider()
 
                 VStack(spacing: 20) {
-                    Image(milestoneInfo.iconName)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 90, height: 90)
+                    if let card = milestoneInfo.rewardCard {
+                        MilestoneRewardCardView(card: card)
+                            .frame(height: 350 * 0.75)
+                            .scaleEffect(0.75)
+                            .padding(.top, 10)
+                    } else if let boosterCount = milestoneInfo.rewardBoosters, boosterCount > 0 {
+                        ZStack {
+                            ForEach(0..<boosterCount.clamp(to: 0...5)) { index in
+                                let normalizedIndex = index - (boosterCount.clamp(to: 1...5) - 1) / 2
+                                let xOffset = CGFloat(normalizedIndex) * 30.0
+                                let yOffset = abs(normalizedIndex) == 2 ? CGFloat(5.0) : (abs(normalizedIndex) == 1 ? CGFloat(2.0) : CGFloat(0.0))
+                                                        
+                                Image(index % 2 == 0 ? "booster_closed_1" : "booster_closed_2")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(height: 100)
+                                    .offset(x: xOffset, y: yOffset)
+                                    .zIndex(Double(-abs(normalizedIndex)))
+                            }
+                        }
+                        .frame(height: 120)
                         .padding(.top, 20)
-                        .shadow(color: .yellow.opacity(milestoneInfo.iconName == "coin" ? 0.6 : 0), radius: 10, y: 5)
-
+                        
+                    } else {
+                        Image(milestoneInfo.iconName)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 90, height: 90)
+                            .padding(.top, 20)
+                            .shadow(color: .yellow.opacity(milestoneInfo.iconName == "coin" ? 0.6 : 0), radius: 10, y: 5)
+                    }
 
                     Text(milestoneInfo.rewardDescription)
                         .font(.system(size: 18, weight: .medium))
@@ -342,7 +368,7 @@ struct MilestoneRewardPopup: View {
                     Button(action: {
                         onClaim()
                     }) {
-                        Text("Génial !")
+                        Text("Awesome!")
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white)
                             .padding(.vertical, 15)
@@ -365,7 +391,7 @@ struct MilestoneRewardPopup: View {
             .background(
                 ZStack {
                     RoundedRectangle(cornerRadius: 25)
-                        .fill(Color(UIColor.systemBackground)) 
+                        .fill(Color(UIColor.systemBackground))
                         .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
 
                     RoundedRectangle(cornerRadius: 25)
@@ -382,12 +408,12 @@ struct MilestoneRewardPopup: View {
                         .opacity(0.6)
                 }
             )
-            .cornerRadius(25) 
+            .cornerRadius(25)
             .scaleEffect(appears ? 1 : 0.9)
             .opacity(appears ? 1 : 0)
             .animation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.1), value: appears)
             .onAppear {
-                AudioManager.shared.playSound(named: "popup_appear", volume: 0.5) 
+                AudioManager.shared.playSound(named: "popup_appear", volume: 0.5)
                 
                 withAnimation {
                     appears = true
@@ -397,7 +423,13 @@ struct MilestoneRewardPopup: View {
                 }
             }
         }
-        .zIndex(10) 
+        .zIndex(10)
+    }
+}
+
+extension Int {
+    func clamp(to range: ClosedRange<Int>) -> Int {
+        return Swift.min(Swift.max(self, range.lowerBound), range.upperBound)
     }
 }
 

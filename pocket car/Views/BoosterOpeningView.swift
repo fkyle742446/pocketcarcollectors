@@ -668,11 +668,10 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Bugatti Mistral", rarity: .legendary, number: 250),
 
         // HolyT (0.01%) - Cards 251-252
-        BoosterCard(name: "Bugatti La Voiture Noire", rarity: .HolyT, number: 251),
-        BoosterCard(name: "Koenigsegg Regera Final Edition", rarity: .HolyT, number: 252),
-
+        BoosterCard(name: "McLaren P1 Holy Trinity", rarity: .HolyT, number: 251),
+        BoosterCard(name: "Porsche 918 Spyder Holy Trinity", rarity: .HolyT, number: 252),
+        BoosterCard(name: "Ferrari LaFerrari Holy Trinity", rarity: .Season1, number: 253),
         // Season1 (0.001%) - Cards 253-254
-        BoosterCard(name: "Formula 1", rarity: .Season1, number: 253),
         BoosterCard(name: "Formula 1", rarity: .Season1, number: 254)
     ]
     

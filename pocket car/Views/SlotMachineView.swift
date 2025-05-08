@@ -12,15 +12,15 @@ struct SlotMachineView: View {
     private let maxVolume: Float = 0.15 // Réduit le volume maximum à 15%
     
     private let symbols = ["red_light", "grey_car", "green_car", "blue_car"]
-    private let rewards = [35, 80, 250, 600]
+    private let rewards = [50, 150, 300, 1000] // Remains the same from previous change
     private let spinCost = 20
     
     private let probabilities = [
-        40, // red_light (plus fréquent)
-        30, // grey_car
-        20, // green_car
-        10  // blue_car
-    ]
+        84, // red_light (50 coins)
+        10, // grey_car (150 coins)
+        5,  // green_car (300 coins)
+        1   // blue_car (1000 coins) - still very rare
+    ] // Old proposal: [87, 7, 5, 1]
     
     @State private var isSpinning: Bool = false
     @State private var selectedSymbols: [String] = ["red_light", "red_light", "red_light"]
@@ -451,42 +451,45 @@ struct SlotMachineView: View {
     }
     
     private func calculateReward() {
-        // Vérifions que les symboles sont alignés verticalement
-        let symbols = selectedSymbols.map { $0 }
+        // It's good practice to avoid shadowing instance variables if possible.
+        // `selectedSymbols` is an @State property.
+        let currentReelOutcome = selectedSymbols
         
-        // Pour qu'il y ait gain, il faut avoir exactement les mêmes symboles
-        let uniqueSymbols = Set(symbols)
-        if uniqueSymbols.count == 1 {
-            // Un seul symbole unique = gain
-            if let winningSymbol = symbols.first {
-                switch winningSymbol {
-                case "red_light": reward = 35
-                case "grey_car": reward = 80
-                case "green_car": reward = 250
-                case "blue_car": reward = 600
-                default: reward = 0
+        let uniqueOutcomeSymbols = Set(currentReelOutcome)
+        if uniqueOutcomeSymbols.count == 1 {
+            if let winningSymbolString = currentReelOutcome.first {
+                if let symbolIndex = self.symbols.firstIndex(of: winningSymbolString) {
+                    self.reward = self.rewards[symbolIndex]
+                } else {
+                    // This case should ideally not be reached if symbols are managed correctly
+                    self.reward = 0
                 }
                 
-                if reward > 0 {
-                    collectionManager.coins += reward
-                    AudioServicesPlaySystemSound(1326)
+                if self.reward > 0 {
+                    collectionManager.coins += self.reward
+                    AudioServicesPlaySystemSound(1326) // Success sound
                     HapticManager.shared.impact(style: .heavy)
+                    
+                    // Trigger coin animation for winnings
                     isPositiveChange = true
-                    coinsChangeAmount = reward
+                    coinsChangeAmount = self.reward // Show the actual reward amount
                     withAnimation(.spring()) {
                         showingCoinsAnimation = true
                     }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    // Hide animation after a delay
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { // Increased delay for reward visibility
                         withAnimation {
                             showingCoinsAnimation = false
                         }
                     }
-                    // Ajout de l'animation des gains
-                    winningAmount = reward
+                    
+                    // The `showingWinnings` animation might be redundant if `showingCoinsAnimation`
+                    // now correctly shows positive changes for rewards.
+                    // If you want to keep it separate:
+                    winningAmount = self.reward
                     withAnimation(.spring()) {
                         showingWinnings = true
                     }
-                    // Cache l'animation après 2 secondes
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                         withAnimation {
                             showingWinnings = false
@@ -495,9 +498,10 @@ struct SlotMachineView: View {
                 }
             }
         } else {
-            reward = -1
+            self.reward = -1 // Indicates a loss or no specific reward value
             HapticManager.shared.impact(style: .rigid)
-            showingCoinsAnimation = false
+            // Ensure animations for previous wins are cleared if it's a loss
+            // showingCoinsAnimation = false // This might hide the cost animation too quickly
             showingWinnings = false
         }
     }

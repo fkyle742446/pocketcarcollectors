@@ -168,20 +168,50 @@ struct ContentView: View {
     }
     
     private struct Milestone: Identifiable {
-        let id = UUID()
-        let progress: Double
-        let reward: Int
-        let icon: String
+        let id = UUID() // Keep UUID for ForEach
+        let identifier: MilestoneIdentifier // Store the enum case directly
         var isReached: Bool
+
+        // Computed property for progress based on the identifier
+        var progress: Double {
+            switch identifier {
+            case .progress04: return 0.04
+            case .progress25: return 0.25
+            case .progress50: return 0.50
+            case .progress75: return 0.75
+            case .progress100: return 1.00
+            }
+        }
+        
+        // Computed property for icon based on the identifier
+        var icon: String {
+            // This centralizes icon logic for local milestones
+            switch identifier {
+            case .progress04: return "gift.stack.fill" // For 5 boosters
+            case .progress25: return "coin"
+            case .progress50: return "car_fill_badge_plus" // For Ferrari FXX-K
+            case .progress75: return "coin" // For 500 coins (previously 100% reward)
+            case .progress100: return "star.circle.fill" // For LaFerrari Holy Trinity (previously 75% reward)
+            }
+        }
     }
     
-    @State private var milestones: [Milestone] = [
-        Milestone(progress: 0.25, reward: 200, icon: "coin", isReached: false),
-        Milestone(progress: 0.50, reward: 300, icon: "questionmark.circle.fill", isReached: false),
-        Milestone(progress: 0.75, reward: 400, icon: "coin", isReached: false),
-        Milestone(progress: 1.0, reward: 500, icon: "car_mystery", isReached: false)
-    ]
-
+    // This ensures order and direct mapping.
+    @State private var milestones: [Milestone] = MilestoneIdentifier.allCases
+        .sorted { difficultéÀCalculerGauche, difficultéÀCalculerDroite in // Ensure the order matches the visual progress bar
+            // We need to access the progress value for sorting, which MilestoneIdentifier doesn't have directly.
+            // Let's define progress on MilestoneIdentifier temporarily for sorting here or sort by rawValue if it makes sense.
+            // A better way: define progress on MilestoneIdentifier itself for reliable sorting.
+            // Or, ensure MilestoneIdentifier.allCases returns them in the desired visual order of progression (04, 25, 50, 75, 100)
+            // If not, we'll need to sort MilestoneIdentifier.allCases by their intended progress.
+            // For now, assuming .allCases is already in the correct visual order of progression (04, 25, 50, 75, 100)
+            // If MilestoneIdentifier rawValues were "0.04", "0.25" etc., we could sort by rawValue.
+            // Given the current structure, we map then sort the Milestone array by its computed progress.
+            return true // Placeholder, will sort after map
+        }
+        .map { Milestone(identifier: $0, isReached: false) }
+        .sorted { $0.progress < $1.progress } // Sort the resulting [Milestone] array by their progress
+    
     // DailyQuestDisplayInfo is defined inside ContentView for namespacing
     struct DailyQuestDisplayInfo {
         let id = "dailySlotSpinQuest"
@@ -446,11 +476,11 @@ struct ContentView: View {
                                         Spacer()
                                         
                                         // Booster Info and Daily Quest Capsules
-                                        HStack(spacing: 15) { // Increased spacing for separation
+                                        HStack(spacing: 8) { 
                                             styledCapsuleBackground {
                                                 boosterStatusContentView()
                                             }
-                                            .frame(maxWidth: UIScreen.main.bounds.width * 0.55) // Allow booster info to take more space
+                                            .frame(maxWidth: UIScreen.main.bounds.width * 0.58) 
                                             
                                             styledCapsuleBackground {
                                                 dailyQuestButtonView()
@@ -721,35 +751,46 @@ struct ContentView: View {
     @ViewBuilder
     private func milestoneMarkersView() -> some View {
         ForEach($milestones) { $milestone_local in
-            let milestoneID: MilestoneIdentifier? = {
-                if let index = milestones.firstIndex(where: { $0.id == milestone_local.id }) {
-                    if index < MilestoneIdentifier.allCases.count {
-                        return MilestoneIdentifier.allCases[index]
-                    }
-                }
-                return nil
-            }()
+            let milestoneID = milestone_local.identifier
 
             Button(action: {
-                guard let id = milestoneID else { return }
-                let progressPercentage = Double(collectionManager.cards.count) / 250.0 * 100
-                let milestoneTargetProgress = milestones.first(where: { $0.id == milestone_local.id })?.progress ?? 0
-                let isReachable = progressPercentage >= (milestoneTargetProgress * 100)
+                // ... action du bouton reste inchangée ...
+                let progressPercentage = Double(collectionManager.cards.count) / 250.0 * 100.0
+                let milestoneTargetProgressDecimal = milestone_local.progress // Use computed progress
+                let isReachable = (Double(collectionManager.cards.count) / 250.0) >= milestoneTargetProgressDecimal
 
-                if isReachable && !collectionManager.claimedMilestones.contains(id) {
+                if isReachable && !collectionManager.claimedMilestones.contains(milestoneID) {
+                    var rewardDesc = ""
+                    var rewardCardForPopup: BoosterCard? = nil
+                    var rewardBoostersForPopup: Int? = nil
+                    
+                    if let card = milestoneID.rewardCard {
+                        rewardDesc = "You've unlocked the \(card.name)!"
+                        rewardCardForPopup = card
+                    } else if milestoneID.rewardBoosters > 0 {
+                        rewardDesc = "You've earned \(milestoneID.rewardBoosters) boosters!"
+                        rewardBoostersForPopup = milestoneID.rewardBoosters
+                    } else if milestoneID.rewardCoins > 0 {
+                         rewardDesc = "You've earned \(milestoneID.rewardCoins) coins!"
+                    } else {
+                        rewardDesc = "You've reached a new milestone!"
+                    }
+
                     currentMilestoneForPopup = CollectionProgressView.MilestoneToDisplay(
-                        id: id,
+                        id: milestoneID,
                         title: "Reward Unlocked!",
-                        rewardDescription: "You've earned \(id.rewardCoins) coins!",
-                        iconName: "coin"
+                        rewardDescription: rewardDesc,
+                        iconName: milestone_local.icon, // Use computed icon
+                        rewardCard: rewardCardForPopup,
+                        rewardBoosters: rewardBoostersForPopup
                     )
                     showMilestoneRewardPopup = true
                     HapticManager.shared.impact(style: .medium)
-                } else if collectionManager.claimedMilestones.contains(id) {
-                    print("Milestone \(id.rawValue) already claimed.")
+                } else if collectionManager.claimedMilestones.contains(milestoneID) {
+                    print("Milestone \(milestoneID.rawValue) already claimed.")
                     HapticManager.shared.impact(style: .light)
                 } else {
-                    print("Milestone \(id.rawValue) not yet reached.")
+                    print("Milestone \(milestoneID.rawValue) not yet reached. Current progress: \(Double(collectionManager.cards.count) / 250.0), Target: \(milestoneTargetProgressDecimal)")
                     HapticManager.shared.impact(style: .soft)
                 }
             }) {
@@ -758,10 +799,25 @@ struct ContentView: View {
                         .fill(Color.white)
                         .frame(width: 24, height: 24)
                         .shadow(color: .black.opacity(0.1), radius: 2)
-                    Image(milestone_local.icon)
-                        .resizable()
-                        .frame(width: 14, height: 14)
-                        .opacity(milestone_local.isReached ? 1.0 : 0.5)
+                    
+                    if milestoneID == .progress04 { // Assuming .progress04 uses your custom PNG
+                        Image(milestone_local.icon) // This is your "nom_de_votre_image_png"
+                            .resizable() // Permet à l'image d'être redimensionnée
+                            .scaledToFill() // S'assure que l'image remplit le cadre, peut couper des parties si le ratio ne correspond pas
+                                            // ou .scaledToFit() si vous voulez voir toute l'image et accepter des espaces vides.
+                                            // Pour "étirer au max" sans déformer mais en remplissant, .scaledToFill() est souvent ce qu'on veut dans un cercle.
+                            .frame(width: 14, height: 14) // Le cadre dans lequel l'image doit s'adapter
+                            .clipShape(Circle()) // Important si .scaledToFill() est utilisé et que l'image n'est pas carrée
+                                                 // pour qu'elle ne dépasse pas le cercle implicite de l'icône.
+                            .opacity(milestone_local.isReached ? 1.0 : 0.5)
+                    } else { // For other icons (SF Symbols or other assets)
+                        Image(milestone_local.icon)
+                            .resizable()
+                            .renderingMode(.template)
+                            .foregroundColor(milestone_local.isReached ? (milestoneID.rewardCard != nil || milestoneID.rewardBoosters > 0 ? .orange : .yellow) : .gray)
+                            .frame(width: 14, height: 14)
+                            .opacity(milestone_local.isReached ? 1.0 : 0.5)
+                    }
                 }
                 .overlay(
                     Circle()
@@ -773,11 +829,11 @@ struct ContentView: View {
                         .blur(radius: 2)
                         .opacity(milestone_local.isReached ? 0.7 : 0)
                 )
-                .scaleEffect(milestone_local.isReached && !(milestoneID != nil && collectionManager.claimedMilestones.contains(milestoneID!)) ? 1.1 : 1.0)
-                .animation(.spring(response: 0.3), value: milestone_local.isReached || (milestoneID != nil && collectionManager.claimedMilestones.contains(milestoneID!)))
+                .scaleEffect(milestone_local.isReached && !collectionManager.claimedMilestones.contains(milestoneID) ? 1.1 : 1.0)
+                .animation(.spring(response: 0.3), value: milestone_local.isReached || collectionManager.claimedMilestones.contains(milestoneID))
                 .overlay(
                     Group {
-                        if let id = milestoneID, collectionManager.claimedMilestones.contains(id) {
+                        if collectionManager.claimedMilestones.contains(milestoneID) {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(.green)
                                 .font(.system(size: 10))
@@ -790,8 +846,8 @@ struct ContentView: View {
             }
             .position(x: UIScreen.main.bounds.width * 0.7 * CGFloat(milestone_local.progress), y: 12)
             .onChange(of: collectionManager.cards.count) { _, newCount in
-                let progress = Double(newCount) / 250.0
-                if !milestone_local.isReached && progress >= milestone_local.progress {
+                let currentProgress = Double(newCount) / 250.0
+                if !milestone_local.isReached && currentProgress >= milestone_local.progress {
                     milestone_local.isReached = true
                 }
             }
@@ -1030,7 +1086,7 @@ struct ContentView: View {
             }
         }
     }
-} // FIN DE LA STRUCT ContentView - ASSUREZ-VOUS QUE CETTE ACCOLADE EST LA DERNIÈRE POUR ContentView
+} // FIN DE LA STRUCT ContentView
 
 // DailyQuestPopupView est une struct SÉPARÉE
 struct DailyQuestPopupView: View {
@@ -1111,7 +1167,7 @@ struct DailyQuestPopupView: View {
                             .shadow(color: (questInfo.canClaim ? Color.blue : Color.pink).opacity(0.4), radius: 5, y: 3)
                     }
                     // The button's action already handles different states for closing.
-                    // .disabled(!questInfo.canClaim && !questInfo.cooldownActive && !questInfo.isCompleted) 
+                    // .disabled(!questInfo.canClaim && !questInfo.cooldownActive && !questInfo.isCompleted)
                     // .opacity( (questInfo.isCompleted && !questInfo.canClaim && !questInfo.cooldownActive) ? 0.7 : 1.0)
                     
                 }

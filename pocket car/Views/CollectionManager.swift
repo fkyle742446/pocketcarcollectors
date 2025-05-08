@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum MilestoneIdentifier: String, CaseIterable, Codable {
+    case progress04 = "progress04"
     case progress25 = "progress25"
     case progress50 = "progress50"
     case progress75 = "progress75"
@@ -9,20 +10,33 @@ enum MilestoneIdentifier: String, CaseIterable, Codable {
 
     var rewardCoins: Int {
         switch self {
+        case .progress04: return 0
         case .progress25: return 200
-        case .progress50: return 300 // Or a special item/booster
-        case .progress75: return 400
-        case .progress100: return 500 // Or a special item/booster
+        case .progress50: return 0 // No coins if a card is given
+        case .progress75: return 500 // Was 0, now gets coins from old progress100
+        case .progress100: return 0  // Was 500, now gets 0 as card is the reward
         }
     }
 
-    // You can add other reward types here, e.g., boosters
-    // var rewardBoosters: Int {
-    //     switch self {
-    //     case .progress50: return 1
-    //     default: return 0
-    //     }
-    // }
+    var rewardCard: BoosterCard? {
+        switch self {
+        case .progress50:
+            return BoosterCard(name: "Ferrari FXX-K", rarity: .legendary, number: 233)
+        case .progress75:
+            return nil // Was Ferrari LaFerrari, now no card
+        case .progress100:
+            return BoosterCard(name: "Ferrari LaFerrari Holy Trinity", rarity: .Season1, number: 253) // Was nil, now gets Ferrari LaFerrari
+        default:
+            return nil
+        }
+    }
+
+    var rewardBoosters: Int {
+        switch self {
+        case .progress04: return 5
+        default: return 0
+        }
+    }
 }
 
 class CollectionManager: ObservableObject {
@@ -208,21 +222,16 @@ class CollectionManager: ObservableObject {
         }
     }
     
-    // Add function to check if card is new
     func isNewCard(_ card: BoosterCard) -> Bool {
         !cards.contains { $0.card.name == card.name && $0.card.rarity == card.rarity }
     }
 
-    // Ajoute une carte à la collection
-    @discardableResult
     func addCard(_ card: BoosterCard) -> Bool {
         let isNew = isNewCard(card)
         
         if let index = cards.firstIndex(where: { $0.card.name == card.name && $0.card.rarity == card.rarity }) {
-            // Si la carte existe déjà, incrémentez la quantité
             cards[index].count += 1
         } else {
-            // Sinon, ajoutez une nouvelle entrée
             cards.append((card: card, count: 1))
         }
         
@@ -272,18 +281,26 @@ class CollectionManager: ObservableObject {
             return
         }
 
-        // Add coins or other rewards
-        coins += milestone.rewardCoins
-        // if milestone.rewardBoosters > 0 {
-        //     StoreManager.shared.boosters += milestone.rewardBoosters
-        // }
+        if milestone.rewardCoins > 0 {
+            coins += milestone.rewardCoins
+        }
+        
+        if let cardToReward = milestone.rewardCard {
+            addCard(cardToReward)
+            print("Milestone \(milestone.rawValue) awarded card: \(cardToReward.name).")
+        }
+        
+        if milestone.rewardBoosters > 0 {
+            StoreManager.shared.boosters += milestone.rewardBoosters
+            print("Milestone \(milestone.rawValue) awarded \(milestone.rewardBoosters) boosters.")
+            // Assuming StoreManager handles saving its own state for boosters
+        }
         
         claimedMilestones.insert(milestone)
-        // saveClaimedMilestones() // Called by didSet of claimedMilestones
         
-        print("Milestone \(milestone.rawValue) claimed. Coins awarded: \(milestone.rewardCoins). New coin total: \(coins).")
-        NotificationCenter.default.post(name: .coinsDidUpdate, object: nil) // Notify UI about coin change
-        NotificationCenter.default.post(name: .milestoneClaimed, object: milestone) // Notify UI a milestone was claimed
+        print("Milestone \(milestone.rawValue) claimed. New coin total: \(coins).")
+        NotificationCenter.default.post(name: .coinsDidUpdate, object: nil)
+        NotificationCenter.default.post(name: .milestoneClaimed, object: milestone)
     }
 }
 
