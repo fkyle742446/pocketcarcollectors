@@ -102,9 +102,9 @@ struct ContentView: View {
     @State private var boosterAvailableIn: TimeInterval = 6 * 3600
     @State private var timer: Timer? = nil
     @State private var giftAvailableIn: TimeInterval = 1 * 6
-    @State private var glareOffset: CGFloat = -250 // Ajusté pour un balayage plus large
-    @State private var booster1GlareOffset: CGFloat = -250 // Valeur de départ pour un balayage plus large
-    @State private var booster2GlareOffset: CGFloat = -250 // Valeur de départ pour un balayage plus large
+    @State private var glareOffset: CGFloat = -250
+    @State private var booster1GlareOffset: CGFloat = -250
+    @State private var booster2GlareOffset: CGFloat = -250
     @State private var rotationAngle: Double = 0
     @State private var isCollectionPressed: Bool = false
     @State private var glowRotationAngle: Double = 45
@@ -125,7 +125,7 @@ struct ContentView: View {
     @AppStorage("lastBoosterOpenTime") private var lastBoosterOpenTime: Double = Date().timeIntervalSince1970
     @AppStorage("nextBoosterAvailableTime") private var nextBoosterAvailableTime: Double = Date().timeIntervalSince1970
     
-    @AppStorage("nextDailyQuestTime") private var nextDailyQuestTime: Double = Date().timeIntervalSince1970 // Quest available immediately on first launch
+    @AppStorage("nextDailyQuestTime") private var nextDailyQuestTime: Double = Date().timeIntervalSince1970
     @AppStorage("dailyQuestSpinsCount") private var dailyQuestSpinsCount: Int = 0
     @AppStorage("isCurrentDailyQuestRewardClaimed") private var isCurrentDailyQuestRewardClaimed: Bool = false
     
@@ -137,7 +137,7 @@ struct ContentView: View {
     @State private var waveAnimation = false
     
     @State private var breathingProgress: Double = 0
-    @State private var isAnimating = false
+    @State private var isAnimating = false // Used for quest button glow and progress bar breathing
     
     @State private var hasAppeared = false
     
@@ -145,7 +145,7 @@ struct ContentView: View {
     @State private var currentMilestoneForPopup: CollectionProgressView.MilestoneToDisplay? = nil
     
     @State private var showDailyQuestPopup = false
-    @State private var currentDailyQuestDisplayInfo: DailyQuestDisplayInfo? = nil // Renamed for clarity
+    @State private var currentDailyQuestDisplayInfo: DailyQuestDisplayInfo? = nil
     
     private var viewSize: ViewSize {
         horizontalSizeClass == .compact ? .compact : .regular
@@ -168,38 +168,29 @@ struct ContentView: View {
     }
     
     private struct Milestone: Identifiable {
-        let id = UUID() // Add unique ID for Identifiable conformance
+        let id = UUID()
         let progress: Double
         let reward: Int
         let icon: String
         var isReached: Bool
-        // This could be set during initialization of the 'milestones' array.
-        // For example:
-        // let identifier: MilestoneIdentifier
     }
     
     @State private var milestones: [Milestone] = [
-        // Example: if MilestoneIdentifier has a case like .tier1, .tier2, etc.
-        // Milestone(progress: 0.25, reward: 200, icon: "coin", isReached: false, identifier: .progress25),
-        // Milestone(progress: 0.50, reward: 300, icon: "questionmark.circle.fill", isReached: false, identifier: .progress50),
-        // ...
-        // For now, I'll keep the previous structure and assume mapping logic handles it
-        // If this `progressBarSection` is meant to *also* trigger claims,
-        // then it should call `collectionManager.claimMilestone(milestoneID)`
         Milestone(progress: 0.25, reward: 200, icon: "coin", isReached: false),
         Milestone(progress: 0.50, reward: 300, icon: "questionmark.circle.fill", isReached: false),
         Milestone(progress: 0.75, reward: 400, icon: "coin", isReached: false),
         Milestone(progress: 1.0, reward: 500, icon: "car_mystery", isReached: false)
     ]
 
+    // DailyQuestDisplayInfo is defined inside ContentView for namespacing
     struct DailyQuestDisplayInfo {
-        let id = "dailySlotSpinQuest" // For now, we only have one type of daily quest
+        let id = "dailySlotSpinQuest"
         var title: String = "Daily Quest"
         var description: String = "Spin the Slot Machine 3 times."
         var progressText: String
         var rewardAmount: Int = 250
         var isCompleted: Bool
-        var canClaim: Bool // Completed and not yet claimed for this cycle
+        var canClaim: Bool
         var cooldownActive: Bool
         var timeRemainingForNextQuestFormatted: String?
         var nextQuestAvailableDate: Date
@@ -228,7 +219,6 @@ struct ContentView: View {
         NavigationView {
             GeometryReader { geometry in
                 HStack(spacing: 0) {
-                    // Main content
                     ZStack {
                         LinearGradient(
                             gradient: Gradient(colors: [.white, Color(.systemGray5)]),
@@ -241,7 +231,6 @@ struct ContentView: View {
                             // Top logo section
                             VStack(spacing: -20) {
                                 ZStack {
-                                    // Base rectangle with softer glow
                                     RoundedRectangle(cornerRadius: 25)
                                         .fill(
                                             .angularGradient(
@@ -257,7 +246,6 @@ struct ContentView: View {
                                         .scaleEffect(1.01)
                                         .offset(y: 30)
                                     
-                                    // Surface rectangle
                                     RoundedRectangle(cornerRadius: 25)
                                         .fill(Color.white.opacity(1))
                                         .frame(height: 170)
@@ -265,7 +253,6 @@ struct ContentView: View {
                                         .scaleEffect(0.99)
                                         .offset(y: 30)
 
-                                    // Season 1 content and 3D model
                                     VStack {
                                         HStack {
                                             Spacer()
@@ -285,114 +272,80 @@ struct ContentView: View {
                                         HapticManager.shared.impact(style: .medium)
                                     }) {
                                         ZStack {
-                                            // 3D Model View
                                             SpriteView(scene: { () -> SKScene in
                                                 let scene = SKScene()
                                                 scene.backgroundColor = UIColor.clear
-                                                
                                                 let model = SK3DNode(viewportSize: .init(width: 12, height: 12))
                                                 model.scnScene = {
                                                     let scnScene = SCNScene(named: "car.obj")!
                                                     scnScene.background.contents = UIColor.clear
-                                                    
                                                     let node = scnScene.rootNode.childNodes.first!
-                                                    
-                                                    // Add rotation animation
                                                     let rotation = CABasicAnimation(keyPath: "rotation")
                                                     rotation.fromValue = NSValue(scnVector4: SCNVector4(0, 1, 0, 0))
                                                     rotation.toValue = NSValue(scnVector4: SCNVector4(0, 1, 0, Float.pi * 2))
                                                     rotation.duration = 15
                                                     rotation.repeatCount = .infinity
                                                     node.addAnimation(rotation, forKey: "rotate")
-                                                    
                                                     let material = SCNMaterial()
-                                                    material.diffuse.contents = UIImage(named: "texture_diffuse.png") // Assure la couleur de base
+                                                    material.diffuse.contents = UIImage(named: "texture_diffuse.png")
                                                     material.metalness.contents = UIImage(named: "texture_metallic.png")
                                                     material.normal.contents = UIImage(named: "texture_normal.png")
                                                     material.roughness.contents = UIImage(named: "texture_roughness.png")
-                                                    
                                                     material.emission.contents = UIColor.white
-                                                    material.emission.intensity = 0.45 // Précédemment 0.6, essayons une valeur intermédiaire
-
-                                                    material.specular.contents = UIColor.white // Garder blanc pour des reflets neutres, ou teinter légèrement si désiré
-                                                    material.shininess = 0.8 // Augmenter pour des reflets plus nets et vifs (était 0.7)
-                                                    
+                                                    material.emission.intensity = 0.45
+                                                    material.specular.contents = UIColor.white
+                                                    material.shininess = 0.8
                                                     node.geometry?.materials = [material]
-                                                    
                                                     let cameraNode = SCNNode()
                                                     cameraNode.camera = SCNCamera()
                                                     cameraNode.position = SCNVector3(x: -1.6, y: 0, z: 14)
                                                     scnScene.rootNode.addChildNode(cameraNode)
-                                                    
-                                                    // OPTIONNEL: Lumière ambiante (si toujours nécessaire)
-                                                    // let ambientLightNode = SCNNode()
-                                                    // ambientLightNode.light = SCNLight()
-                                                    // ambientLightNode.light!.type = .ambient
-                                                    // ambientLightNode.light!.color = UIColor(white: 0.3, alpha: 1.0) // Peut-être réduire son intensité si l'émission est déjà présente
-                                                    // scnScene.rootNode.addChildNode(ambientLightNode)
-
-                                                    // OPTIONNEL 2: Ajouter une lumière directionnelle pour plus de contraste et de profondeur
-                                                    // let directionalLight = SCNLight()
-                                                    // directionalLight.type = .directional
-                                                    // directionalLight.color = UIColor(white: 0.8, alpha: 1.0) // Lumière blanche assez forte
-                                                    // directionalLight.castsShadow = true // Optionnel, peut être coûteux
-                                                    // let directionalLightNode = SCNNode()
-                                                    // directionalLightNode.light = directionalLight
-                                                    // directionalLightNode.eulerAngles = SCNVector3(x: -Float.pi / 3, y: Float.pi / 6, z: 0) // Orienter la lumière
-                                                    // scnScene.rootNode.addChildNode(directionalLightNode)
-
                                                     return scnScene
                                                 }()
-                                            
-                                            scene.addChild(model)
-                                            return scene
-                                        }(), options: [.allowsTransparency])
-                                        .frame(height: 150)
-                                        .background(Color.clear)
-                                        .offset(y: -20)
+                                                scene.addChild(model)
+                                                return scene
+                                            }(), options: [.allowsTransparency])
+                                            .frame(height: 150)
+                                            .background(Color.clear)
+                                            .offset(y: -20)
                                         
-                                        VStack {
-                                            Spacer()
-                                            
-                                            // Season availability text at the bottom
-                                            Text("0,0001%")
-                                                .font(.system(size: 12, weight: .bold))
-                                                .foregroundColor(.white)
-                                                .padding(.horizontal, 12)
-                                                .padding(.vertical, 4)
-                                                .background(
-                                                    Capsule()
-                                                        .fill(
-                                                            LinearGradient(
-                                                                colors: [Color(hex: "FFB800"), Color(hex: "FF8A00")],
-                                                                startPoint: .leading,
-                                                                endPoint: .trailing
+                                            VStack {
+                                                Spacer()
+                                                Text("0,0001%")
+                                                    .font(.system(size: 12, weight: .bold))
+                                                    .foregroundColor(.white)
+                                                    .padding(.horizontal, 12)
+                                                    .padding(.vertical, 4)
+                                                    .background(
+                                                        Capsule()
+                                                            .fill(
+                                                                LinearGradient(
+                                                                    colors: [Color(hex: "FFB800"), Color(hex: "FF8A00")],
+                                                                    startPoint: .leading,
+                                                                    endPoint: .trailing
+                                                                )
                                                             )
-                                                        )
-                                                        .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 1)
-                                                )
-                                                .overlay(
-                                                    Capsule()
-                                                        .strokeBorder(Color.white.opacity(0.3), lineWidth: 0.5)
-                                                )
-                                                .padding(.bottom, -15) // Increased bottom padding to move badge down
-                                        }
-                                        .zIndex(3)
+                                                            .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 1)
+                                                    )
+                                                    .overlay(
+                                                        Capsule()
+                                                            .strokeBorder(Color.white.opacity(0.3), lineWidth: 0.5)
+                                                    )
+                                                    .padding(.bottom, -15)
+                                            }
+                                            .zIndex(3)
                                         }
                                     }
                                 }
                                 .padding(.horizontal)
-
                             }
                             .padding(.top, 10)
                             
-                            Spacer()
-                            .frame(height: 15)
+                            Spacer().frame(height: 15)
 
                             VStack(spacing: viewSize == .compact ? 15 : 25) {
-                                // Boosters section - Adjust for iPad
+                                // Boosters section
                                 ZStack {
-                                    // Base rectangle with softer glow
                                     RoundedRectangle(cornerRadius: 25)
                                         .fill(
                                             .angularGradient(
@@ -407,7 +360,6 @@ struct ContentView: View {
                                         .frame(height: viewSize == .compact ? 320 : 420)
                                         .scaleEffect(1.01)
                                     
-                                    // Surface rectangle
                                     RoundedRectangle(cornerRadius: 25)
                                         .fill(Color.white.opacity(1))
                                         .frame(height: viewSize == .compact ? 320 : 420)
@@ -417,7 +369,7 @@ struct ContentView: View {
                                     VStack {
                                         Spacer()
                                         HStack(spacing: viewSize == .compact ? -20 : -10) {
-                                            // First booster with glare and 3D rotation
+                                            // First booster
                                             Button(action: {
                                                 if StoreManager.shared.boosters == 0 {
                                                     showLockedBoosterInfo = true
@@ -430,22 +382,15 @@ struct ContentView: View {
                                                             .resizable()
                                                             .scaledToFit()
                                                             .frame(height: boosterHeight)
-                                                        
                                                         Rectangle()
                                                             .fill(
                                                                 LinearGradient(
-                                                                    gradient: Gradient(colors: [
-                                                                        .clear,
-                                                                        .white.opacity(0.05), // Légèrement plus visible
-                                                                        .white.opacity(0.3),  // Légèrement plus visible
-                                                                        .white.opacity(0.05), // Légèrement plus visible
-                                                                        .clear
-                                                                    ]),
+                                                                    gradient: Gradient(colors: [.clear, .white.opacity(0.05), .white.opacity(0.3), .white.opacity(0.05), .clear]),
                                                                     startPoint: .topLeading,
                                                                     endPoint: .bottomTrailing
                                                                 )
                                                             )
-                                                            .frame(width: 120) // Un peu plus large pour un meilleur effet
+                                                            .frame(width: 120)
                                                             .rotationEffect(.degrees(-65))
                                                             .offset(x: booster1GlareOffset, y: booster1GlareOffset/3)
                                                             .blur(radius: 3)
@@ -461,7 +406,7 @@ struct ContentView: View {
                                             }
                                             .opacity(StoreManager.shared.boosters == 0 ? 0.5 : 1)
 
-                                            // Second booster with 3D rotation
+                                            // Second booster
                                             Button(action: {
                                                 if StoreManager.shared.boosters == 0 {
                                                     showLockedBoosterInfo = true
@@ -474,22 +419,15 @@ struct ContentView: View {
                                                             .resizable()
                                                             .scaledToFit()
                                                             .frame(height: boosterHeight)
-                                                        
                                                         Rectangle()
                                                             .fill(
                                                                 LinearGradient(
-                                                                    gradient: Gradient(colors: [
-                                                                        .clear,
-                                                                        .white.opacity(0.05), // Légèrement plus visible
-                                                                        .white.opacity(0.3),  // Légèrement plus visible
-                                                                        .white.opacity(0.05), // Légèrement plus visible
-                                                                        .clear
-                                                                    ]),
+                                                                    gradient: Gradient(colors: [.clear, .white.opacity(0.05), .white.opacity(0.3), .white.opacity(0.05), .clear]),
                                                                     startPoint: .topLeading,
                                                                     endPoint: .bottomTrailing
                                                                 )
                                                             )
-                                                            .frame(width: 120) // Un peu plus large pour un meilleur effet
+                                                            .frame(width: 120)
                                                             .rotationEffect(.degrees(-65))
                                                             .offset(x: booster2GlareOffset, y: booster2GlareOffset/3)
                                                             .blur(radius: 3)
@@ -507,63 +445,20 @@ struct ContentView: View {
                                         }
                                         Spacer()
                                         
-                                        // Timer display or instruction text
-                                        HStack {
-                                            if StoreManager.shared.boosters > 0 {
-                                                Image("gift")
-                                                    .resizable()
-                                                    .scaledToFit()
-                                                    .frame(width: 30, height: 30)
-                                                    .modifier(ShakeEffect(animatableData: Double(shakeOffset)))
-                                                    .onAppear {
-                                                        withAnimation(
-                                                            .easeInOut(duration: 0.6)
-                                                            .repeatForever()
-                                                        ) {
-                                                            shakeOffset = 1
-                                                        }
-                                                    }
-                                                HStack(spacing: 4) {
-                                                    Text("\(StoreManager.shared.boosters)")
-                                                        .foregroundColor(.gray)
-                                                    Text("booster to open")
-                                                }
-                                                .font(.system(size: 14, weight: .medium))
-                                                .foregroundColor(.gray)
-                                            } else if StoreManager.shared.nextFreeBoosterDate != nil {
-                                                BoosterTimerView(storeManager: StoreManager.shared)
-                                            } else {
-                                                Image(systemName: "hand.tap")
-                                                    .foregroundColor(.gray)
-                                                Text("Click on a booster")
-                                                    .font(.system(size: 14, weight: .medium))
-                                                    .foregroundColor(.gray)
+                                        // Booster Info and Daily Quest Capsules
+                                        HStack(spacing: 15) { // Increased spacing for separation
+                                            styledCapsuleBackground {
+                                                boosterStatusContentView()
                                             }
-                                            Spacer() // Pushes quest button to the right if there's space
-                                            dailyQuestButtonView()
+                                            .frame(maxWidth: UIScreen.main.bounds.width * 0.55) // Allow booster info to take more space
+                                            
+                                            styledCapsuleBackground {
+                                                dailyQuestButtonView()
+                                            }
+                                            .frame(width: 60) // Fixed width for quest button capsule
                                         }
-                                        .padding(.vertical, 8)
-                                        .padding(.horizontal, 15)
-                                        .background(
-                                            ZStack {
-                                                Capsule()
-                                                    .glow(
-                                                        fill: .angularGradient(
-                                                            colors: [.blue, .purple, .red, .orange, .yellow, .blue],
-                                                            center: .center,
-                                                            startAngle: .degrees(45),
-                                                            endAngle: .degrees(405)
-                                                        ),
-                                                        lineWidth: 2.0,
-                                                        blurRadius: 4.0
-                                                    )
-                                                    .opacity(0.6)
-                                                
-                                                Capsule()
-                                                    .fill(Color.white)
-                                            }
-                                        )
-                                        .offset(y: 0) // Rehaussé: Modifié de 15 à 10 pour remonter davantage
+                                        .padding(.horizontal) // Add horizontal padding to the HStack containing the capsules
+                                        .offset(y: 0)
                                         .zIndex(1)
                                     }
                                     .padding(.top, 10)
@@ -571,22 +466,17 @@ struct ContentView: View {
                                 .padding(.horizontal, horizontalPadding)
                                 .padding(.vertical, viewSize == .compact ? 8 : 15)
                                 .onAppear {
-                                    // Animation pour le reflet du booster 1 - plus lente et balayage plus large
-                                    withAnimation(Animation.linear(duration: 7.0).repeatForever(autoreverses: true)) { // Durée augmentée pour moins de fréquence
-                                        booster1GlareOffset = 250 // Cible positive pour un balayage de -250 à 250
+                                    withAnimation(Animation.linear(duration: 7.0).repeatForever(autoreverses: true)) {
+                                        booster1GlareOffset = 250
                                     }
-                                    // Animation pour le reflet du booster 2 - plus lente et balayage plus large
-                                    withAnimation(Animation.linear(duration: 7.0).delay(0.7).repeatForever(autoreverses: true)) { // Durée augmentée et délai ajusté
-                                        booster2GlareOffset = 250 // Cible positive pour un balayage de -250 à 250
+                                    withAnimation(Animation.linear(duration: 7.0).delay(0.7).repeatForever(autoreverses: true)) {
+                                        booster2GlareOffset = 250
                                     }
                                 }
  
                                 // Collection and Shop buttons
                                 HStack(spacing: 15) {
-                                    // Collection Button
-                                    NavigationLink(destination: CollectionView(collectionManager: collectionManager)
-                                        .navigationBarTitleDisplayMode(.inline)
-                                    ) {
+                                    NavigationLink(destination: CollectionView(collectionManager: collectionManager).navigationBarTitleDisplayMode(.inline)) {
                                         buttonView(icon: "", text: "", colors: [.gray.opacity(0.3)], textColor: .gray)
                                             .overlay(
                                                 VStack(spacing: 4) {
@@ -604,7 +494,6 @@ struct ContentView: View {
                                         HapticManager.shared.impact(style: .medium)
                                     })
                                     
-                                    // Shop Button
                                     NavigationLink(destination: ShopView(collectionManager: collectionManager, storeManager: StoreManager.shared)) {
                                         buttonView(icon: "", text: "", colors: [.gray.opacity(0.3)], textColor: .gray)
                                             .overlay(
@@ -637,8 +526,6 @@ struct ContentView: View {
 
                                 progressBarSection
                                     .padding(.bottom, 15)
-                                
-                                // ... rest of the view ...
                             }
                         }
                         .frame(maxWidth: viewSize == .compact ? .infinity : min(geometry.size.width * 0.8, 800))
@@ -646,28 +533,27 @@ struct ContentView: View {
                         .animation(hasAppeared ? .default : nil, value: hasAppeared)
                         
                         if showMilestoneRewardPopup, let milestonePopupInfo = currentMilestoneForPopup {
-                            MilestoneRewardPopup( // Assurez-vous que cette struct est accessible ici ou déplacez-la
+                            MilestoneRewardPopup(
                                 milestoneInfo: milestonePopupInfo,
                                 onClaim: {
                                     collectionManager.claimMilestone(milestonePopupInfo.id)
-                                    // Mettre à jour l'état local des milestones si nécessaire pour refléter le changement immédiatement
-                                    updateLocalMilestoneStates()
+                                    updateLocalMilestoneStates() // CALLING METHOD
                                     showMilestoneRewardPopup = false
                                     currentMilestoneForPopup = nil
-                                    AudioManager.shared.playPurchaseSound() // Son de récompense
+                                    AudioManager.shared.playPurchaseSound()
                                 },
                                 onClose: {
                                     showMilestoneRewardPopup = false
                                     currentMilestoneForPopup = nil
                                 }
                             )
-                            .zIndex(10) // S'assurer que la popup est au-dessus
+                            .zIndex(10)
                         }
                         if showDailyQuestPopup, let questInfo = currentDailyQuestDisplayInfo {
                             DailyQuestPopupView(
                                 questInfo: questInfo,
                                 onClaim: {
-                                    claimDailyQuestReward()
+                                    claimDailyQuestReward() // CALLING METHOD
                                     showDailyQuestPopup = false
                                     currentDailyQuestDisplayInfo = nil
                                 },
@@ -676,7 +562,7 @@ struct ContentView: View {
                                     currentDailyQuestDisplayInfo = nil
                                 }
                             )
-                            .zIndex(11) // Ensure it's above other popups if any overlap
+                            .zIndex(11)
                         }
                     }
                 }
@@ -714,27 +600,27 @@ struct ContentView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .milestoneClaimed)) { _ in
-            updateLocalMilestoneStates()
+            updateLocalMilestoneStates() // CALLING METHOD
         }
         .onAppear {
-            // Delay setting hasAppeared to ensure view is fully laid out
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 hasAppeared = true
             }
-            // Delay breathing animation start
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                startBreathingAnimation()
+                startBreathingAnimation() // CALLING METHOD
             }
-            updateLocalMilestoneStates()
-            updateDailyQuestStatus()
+            updateLocalMilestoneStates() // CALLING METHOD
+            updateDailyQuestStatus()     // CALLING METHOD
         }
         .onChange(of: dailyQuestSpinsCount) { _, _ in
-            updateDailyQuestStatus()
+            updateDailyQuestStatus()     // CALLING METHOD
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-            updateDailyQuestStatus()
+            updateDailyQuestStatus()     // CALLING METHOD
         }
     }
+    
+    // MARK: - Subviews
     
     var progressBarSection: some View {
         NavigationLink(destination: CollectionProgressView(collectionManager: collectionManager)) {
@@ -750,14 +636,11 @@ struct ContentView: View {
                 }
                 
                 ZStack(alignment: .leading) {
-                    // Background track
                     Capsule()
                         .fill(Color.gray.opacity(0.2))
                         .frame(height: 8)
                     
-                    // Progress bar avec effet de vague
                     ZStack {
-                        // Barre de progression principale
                         Capsule()
                             .fill(
                                 LinearGradient(
@@ -767,11 +650,10 @@ struct ContentView: View {
                                 )
                             )
                         
-                        // Effet de vague
                         GeometryReader { geometry in
                             let width = geometry.size.width
                             let baseProgress = Double(collectionManager.cards.count) / 250.0
-                            let totalProgress = baseProgress + (breathingProgress * 0.05) // Ajuste l'amplitude ici
+                            let totalProgress = baseProgress + (breathingProgress * 0.05)
                             
                             Rectangle()
                                 .fill(
@@ -793,10 +675,10 @@ struct ContentView: View {
                                 )
                         }
                     }
-                    .frame(width: calculateProgressWidth(), height: 8)
+                    .frame(width: calculateProgressWidth(), height: 8) // CALLING METHOD
                     .animation(.spring(dampingFraction: 0.8), value: breathingProgress)
                     .onAppear {
-                        startBreathingAnimation()
+                        // startBreathingAnimation() is called in main onAppear
                         withAnimation(
                             .linear(duration: 2)
                             .repeatForever(autoreverses: false)
@@ -804,8 +686,7 @@ struct ContentView: View {
                             waveOffset = 1
                         }
                     }
-                    
-                    milestoneMarkersView()
+                    milestoneMarkersView() // CALLING METHOD
                 }
                 .frame(height: 35)
             }
@@ -839,7 +720,6 @@ struct ContentView: View {
 
     @ViewBuilder
     private func milestoneMarkersView() -> some View {
-        // Milestones
         ForEach($milestones) { $milestone_local in
             let milestoneID: MilestoneIdentifier? = {
                 if let index = milestones.firstIndex(where: { $0.id == milestone_local.id }) {
@@ -852,28 +732,23 @@ struct ContentView: View {
 
             Button(action: {
                 guard let id = milestoneID else { return }
-                
-                // Vérifier si le palier est atteint ET non réclamé
                 let progressPercentage = Double(collectionManager.cards.count) / 250.0 * 100
                 let milestoneTargetProgress = milestones.first(where: { $0.id == milestone_local.id })?.progress ?? 0
                 let isReachable = progressPercentage >= (milestoneTargetProgress * 100)
 
                 if isReachable && !collectionManager.claimedMilestones.contains(id) {
-                    // Préparer et afficher la popup
                     currentMilestoneForPopup = CollectionProgressView.MilestoneToDisplay(
                         id: id,
                         title: "Reward Unlocked!",
                         rewardDescription: "You've earned \(id.rewardCoins) coins!",
-                        iconName: "coin" // ou une autre icône appropriée
+                        iconName: "coin"
                     )
                     showMilestoneRewardPopup = true
                     HapticManager.shared.impact(style: .medium)
                 } else if collectionManager.claimedMilestones.contains(id) {
-                    // Optionnel : indiquer que c'est déjà réclamé, peut-être avec un petit message ou un haptic différent
                     print("Milestone \(id.rawValue) already claimed.")
                     HapticManager.shared.impact(style: .light)
                 } else {
-                    // Optionnel : indiquer que le palier n'est pas encore atteint
                     print("Milestone \(id.rawValue) not yet reached.")
                     HapticManager.shared.impact(style: .soft)
                 }
@@ -883,7 +758,6 @@ struct ContentView: View {
                         .fill(Color.white)
                         .frame(width: 24, height: 24)
                         .shadow(color: .black.opacity(0.1), radius: 2)
-                    
                     Image(milestone_local.icon)
                         .resizable()
                         .frame(width: 14, height: 14)
@@ -891,25 +765,11 @@ struct ContentView: View {
                 }
                 .overlay(
                     Circle()
-                        .stroke(
-                            LinearGradient(
-                                colors: [Color.yellow, Color.orange],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            ),
-                            lineWidth: 1.5
-                        )
+                        .stroke(LinearGradient(colors: [Color.yellow, Color.orange], startPoint: .leading, endPoint: .trailing), lineWidth: 1.5)
                 )
                 .overlay(
                     Circle()
-                        .stroke(
-                            LinearGradient(
-                                colors: [Color.yellow, Color.orange],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            ),
-                            lineWidth: milestone_local.isReached ? 2 : 0
-                        )
+                        .stroke(LinearGradient(colors: [Color.yellow, Color.orange], startPoint: .leading, endPoint: .trailing), lineWidth: milestone_local.isReached ? 2 : 0)
                         .blur(radius: 2)
                         .opacity(milestone_local.isReached ? 0.7 : 0)
                 )
@@ -930,7 +790,6 @@ struct ContentView: View {
             }
             .position(x: UIScreen.main.bounds.width * 0.7 * CGFloat(milestone_local.progress), y: 12)
             .onChange(of: collectionManager.cards.count) { _, newCount in
-                // Mettre à jour l'état local `isReached` pour l'UI du marqueur
                 let progress = Double(newCount) / 250.0
                 if !milestone_local.isReached && progress >= milestone_local.progress {
                     milestone_local.isReached = true
@@ -939,11 +798,12 @@ struct ContentView: View {
         }
     }
 
-    // MODIFY: Calculate progress width function
+    // MARK: - Helper Functions for View Logic
+
     private func calculateProgressWidth() -> CGFloat {
         let maxWidth = UIScreen.main.bounds.width * 0.7
         let baseProgress = Double(collectionManager.cards.count) / 250.0
-        let totalProgress = baseProgress + (breathingProgress * 0.05) // Même amplitude que plus haut
+        let totalProgress = baseProgress + (breathingProgress * 0.05)
         return maxWidth * totalProgress
     }
 
@@ -984,37 +844,97 @@ struct ContentView: View {
     }
     
     @ViewBuilder
+    private func styledCapsuleBackground<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .background(
+                ZStack {
+                    Capsule()
+                        .glow(
+                            fill: .angularGradient(
+                                colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                                center: .center,
+                                startAngle: .degrees(45),
+                                endAngle: .degrees(405)
+                            ),
+                            lineWidth: 2.0,
+                            blurRadius: 4.0
+                        )
+                        .opacity(0.6)
+                    
+                    Capsule()
+                        .fill(Color.white)
+                }
+            )
+    }
+
+    @ViewBuilder
+    private func boosterStatusContentView() -> some View {
+        HStack {
+            if StoreManager.shared.boosters > 0 {
+                Image("gift")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
+                    .modifier(ShakeEffect(animatableData: Double(shakeOffset)))
+                    .onAppear {
+                        withAnimation(
+                            .easeInOut(duration: 0.6)
+                            .repeatForever()
+                        ) {
+                            shakeOffset = 1
+                        }
+                    }
+                HStack(spacing: 4) {
+                    Text("\(StoreManager.shared.boosters)")
+                        .foregroundColor(.gray)
+                    Text("booster")
+                }
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.gray)
+            } else if StoreManager.shared.nextFreeBoosterDate != nil {
+                BoosterTimerView(storeManager: StoreManager.shared)
+            } else {
+                Image(systemName: "hand.tap")
+                    .foregroundColor(.gray)
+                    .font(.system(size: 12))
+                Text("Click booster")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.gray)
+            }
+        }
+    }
+
+    @ViewBuilder
     private func dailyQuestButtonView() -> some View {
         let questReadyToClaim = (currentDailyQuestDisplayInfo?.canClaim ?? false) && !(currentDailyQuestDisplayInfo?.cooldownActive ?? true)
         let questInProgress = !(currentDailyQuestDisplayInfo?.isCompleted ?? true) && !(currentDailyQuestDisplayInfo?.cooldownActive ?? true) && (currentDailyQuestDisplayInfo != nil)
 
         Button(action: {
-            updateDailyQuestStatus() // Ensure info is fresh
+            updateDailyQuestStatus() // CALLING METHOD
             showDailyQuestPopup = true
             HapticManager.shared.impact(style: .medium)
         }) {
-            ZStack {
-                Image(systemName: "list.star") // Example icon
-                    .font(.system(size: 20))
-                    .foregroundColor(questReadyToClaim ? .yellow : (questInProgress ? .blue : .gray))
-                
-                if questReadyToClaim {
-                    // Optional: Add a small indicator like a glowing dot or exclamation mark
-                    Circle()
-                        .fill(Color.red)
-                        .frame(width: 8, height: 8)
-                        .offset(x: 10, y: -10)
-                        .opacity(isAnimating ? 1 : 0.5)
-                        .animation(Animation.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: isAnimating)
+            HStack {
+                ZStack {
+                    Image(systemName: "list.star")
+                        .font(.system(size: 18))
+                        .foregroundColor(questReadyToClaim ? .yellow : (questInProgress ? .blue : .gray))
+                    
+                    if questReadyToClaim {
+                        Circle()
+                            .fill(Color.red)
+                            .frame(width: 8, height: 8)
+                            .offset(x: 10, y: -10)
+                            .opacity(isAnimating ? 1 : 0.5)
+                            .animation(Animation.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: isAnimating)
+                    }
                 }
             }
-            .padding(6)
         }
         .onAppear {
-             // To make the red dot blink if ready
-            if questReadyToClaim {
-                isAnimating = true
-            }
+            if questReadyToClaim { isAnimating = true }
         }
         .onChange(of: currentDailyQuestDisplayInfo?.canClaim) { _, newValue in
             if newValue == true && currentDailyQuestDisplayInfo?.cooldownActive == false {
@@ -1033,17 +953,13 @@ struct ContentView: View {
         var timeRemainingString: String? = nil
 
         if currentTime < nextQuestDate && isCurrentDailyQuestRewardClaimed {
-            // Cooldown is active because reward was claimed and time hasn't passed
             cooldownIsActive = true
             let remaining = nextQuestDate.timeIntervalSince(currentTime)
-            timeRemainingString = formatTimeInterval(remaining)
+            timeRemainingString = formatTimeInterval(remaining) // CALLING METHOD
         } else if currentTime >= nextQuestDate && isCurrentDailyQuestRewardClaimed {
-            // New quest period can start, reset claimed status and spin count
             isCurrentDailyQuestRewardClaimed = false
             dailyQuestSpinsCount = 0
-            // No cooldown string needed as a new quest is available/in progress
         }
-        // If !isCurrentDailyQuestRewardClaimed, it means either a new quest is active or in progress, or cooldown finished and we are ready for a new one.
 
         let completed = dailyQuestSpinsCount >= requiredSpins
         let canBeClaimed = completed && !isCurrentDailyQuestRewardClaimed && !cooldownIsActive
@@ -1062,17 +978,16 @@ struct ContentView: View {
         guard let info = currentDailyQuestDisplayInfo, info.canClaim else { return }
 
         collectionManager.coins += info.rewardAmount
-        AudioManager.shared.playPurchaseSound() // Or a specific quest completion sound
+        AudioManager.shared.playPurchaseSound()
         HapticManager.shared.impact(style: .heavy)
 
         isCurrentDailyQuestRewardClaimed = true
-        dailyQuestSpinsCount = 0 // Reset for the next quest period
+        dailyQuestSpinsCount = 0
         let twelveHours: TimeInterval = 12 * 60 * 60
         nextDailyQuestTime = Date().timeIntervalSince1970 + twelveHours
         
-        updateDailyQuestStatus() // Refresh the display info
+        updateDailyQuestStatus() // CALLING METHOD
         
-        // Post notification for coins update if other views need to react
         NotificationCenter.default.post(name: .coinsDidUpdate, object: nil)
     }
 
@@ -1084,11 +999,13 @@ struct ContentView: View {
     }
 
     private func startBreathingAnimation() {
-        guard isAnimating == false else { return }
+        // Guard against starting multiple animations if isAnimating is already true
+        // or if hasAppeared is false to prevent animation before view is ready.
+        guard !isAnimating, hasAppeared else { return }
         
         isAnimating = true
         let animation = Animation
-            .easeInOut(duration: 2) // Fixed duration instead of random
+            .easeInOut(duration: 2)
             .repeatForever(autoreverses: true)
         
         withAnimation(animation) {
@@ -1098,7 +1015,7 @@ struct ContentView: View {
 
     private func updateLocalMilestoneStates() {
         let currentCardCount = collectionManager.cards.count
-        let totalCardsForProgress = 250.0 // Assurez-vous que c'est le bon total
+        let totalCardsForProgress = 250.0
         
         for i in milestones.indices {
             let milestoneTargetProgress = milestones[i].progress
@@ -1107,16 +1024,17 @@ struct ContentView: View {
                     milestones[i].isReached = true
                 }
             } else {
-                 if milestones[i].isReached { // Si le nombre de cartes diminue et qu'un palier n'est plus atteint
+                 if milestones[i].isReached {
                     milestones[i].isReached = false
                  }
             }
         }
     }
-}
+} // FIN DE LA STRUCT ContentView - ASSUREZ-VOUS QUE CETTE ACCOLADE EST LA DERNIÈRE POUR ContentView
 
+// DailyQuestPopupView est une struct SÉPARÉE
 struct DailyQuestPopupView: View {
-    let questInfo: ContentView.DailyQuestDisplayInfo // Use ContentView.DailyQuestDisplayInfo
+    let questInfo: ContentView.DailyQuestDisplayInfo
     var onClaim: () -> Void
     var onClose: () -> Void
     
@@ -1127,10 +1045,9 @@ struct DailyQuestPopupView: View {
         ZStack {
             Color.black.opacity(0.6)
                 .ignoresSafeArea()
-                .onTapGesture { onClose() } // Close on tap outside
+                .onTapGesture { onClose() }
             
             VStack(spacing: 0) {
-                // Header
                 HStack {
                     Text(questInfo.title)
                         .font(.system(size: 22, weight: .bold))
@@ -1143,17 +1060,15 @@ struct DailyQuestPopupView: View {
                     }
                 }
                 .padding()
-                .background(Color.white.opacity(0.8)) // Slight transparency for effect
+                .background(Color.white.opacity(0.8))
                 
                 Divider()
                 
-                // Content
                 VStack(spacing: 15) {
-                    Image(systemName: "list.star.fill") // Placeholder icon
+                    Image("Slot") // Assuming "Slot.png" is in your assets
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 60, height: 60)
-                        .foregroundColor(.orange)
+                        .frame(width: 80, height: 80) // Adjusted size slightly for potentially more detailed image
                         .padding(.top)
                     
                     Text(questInfo.description)
@@ -1177,7 +1092,7 @@ struct DailyQuestPopupView: View {
                         if questInfo.canClaim {
                             onClaim()
                         } else {
-                            onClose() // Or specific action if needed
+                            onClose()
                         }
                     }) {
                         Text(questInfo.canClaim ? "Claim Reward!" : (questInfo.cooldownActive ? "Come Back Later" : "Awesome!"))
@@ -1195,9 +1110,9 @@ struct DailyQuestPopupView: View {
                             .cornerRadius(15)
                             .shadow(color: (questInfo.canClaim ? Color.blue : Color.pink).opacity(0.4), radius: 5, y: 3)
                     }
-                    .disabled(!questInfo.canClaim && !questInfo.cooldownActive && !questInfo.isCompleted) // Disable if not claimable, not on cooldown, but completed
-                    .opacity( (questInfo.isCompleted && !questInfo.canClaim && !questInfo.cooldownActive) ? 0.7 : 1.0) // e.g. completed but already claimed for this cycle before cooldown UI shows
-                    
+                    // The button's action already handles different states for closing.
+                    // .disabled(!questInfo.canClaim && !questInfo.cooldownActive && !questInfo.isCompleted) 
+                    // .opacity( (questInfo.isCompleted && !questInfo.canClaim && !questInfo.cooldownActive) ? 0.7 : 1.0)
                     
                 }
                 .padding()
@@ -1223,7 +1138,7 @@ struct DailyQuestPopupView: View {
             .opacity(showContent ? 1 : 0)
             .offset(y: showContent ? 0 : 20)
             .onAppear {
-                AudioManager.shared.playSound(named: "popup_appear.mp3") // Assuming you have this
+                AudioManager.shared.playSound(named: "popup_appear.mp3")
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.1)) {
                     showContent = true
                 }
@@ -1232,12 +1147,13 @@ struct DailyQuestPopupView: View {
                 }
             }
         }
-        .zIndex(100) // High zIndex to be on top of everything
+        .zIndex(100)
     }
-    
-    struct ContentView_Previews: PreviewProvider {
-        static var previews: some View {
-            ContentView()
-        }
+} // FIN DE DailyQuestPopupView
+
+// ContentView_Previews est une struct SÉPARÉE
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
     }
 }
