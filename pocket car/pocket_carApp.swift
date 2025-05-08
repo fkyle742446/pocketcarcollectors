@@ -41,7 +41,9 @@ struct pocket_carApp: App {
     
     var body: some Scene {
         WindowGroup {
-            pocket_car.SplashScreenView()
+            
+        
+        pocket_car.SplashScreenView()
                 .preferredColorScheme(.light)
                 .task {
                     // CHANGE: Ensure products are loaded at launch
