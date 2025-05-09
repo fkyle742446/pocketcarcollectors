@@ -30,8 +30,15 @@ struct HolographicCard: View {
             return "EX"
         default:
             // For other rarities, you might want to keep it uppercase or apply other specific formatting
-            return rarity.rawValue.uppercased() 
+            return rarity.rawValue.uppercased()
         }
+    }
+
+    private var actualDisplayImageName: String {
+        if rarity == .holographicEX && cardImage.hasSuffix(" EX") {
+            return String(cardImage.dropLast(3)) // Remove " EX" suffix
+        }
+        return cardImage
     }
     
     private func cardThemeColor(for rarity: CardRarity) -> Color {
@@ -182,7 +189,7 @@ struct HolographicCard: View {
                         )
                         .padding(4)
                     
-                    Image(cardImage)
+                    Image(actualDisplayImageName)
                         .resizable()
                         .scaledToFill()
                         .frame(width: 220, height: 240)
@@ -200,7 +207,7 @@ struct HolographicCard: View {
                     
                     Spacer()
                     
-                    Text("№ \(cardNumber)/250")
+                    Text("№ \(cardNumber)/505")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.white)
                         .padding(.horizontal, 10)

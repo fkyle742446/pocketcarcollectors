@@ -39,6 +39,18 @@ enum MilestoneIdentifier: String, CaseIterable, Codable {
     }
 }
 
+// You should populate this with the actual EX cards definition.
+// This helps in finding the EX equivalent.
+// If your EX cards don't follow a strict naming/numbering convention
+// related to their base cards, this list is crucial.
+let allGameEXCards: [BoosterCard] = [
+    // Example:
+    // BoosterCard(name: "Porsche 911 Carrera", rarity: .holographicEX, number: 1),
+    // BoosterCard(name: "Ferrari F40", rarity: .holographicEX, number: 2),
+    // ... add all your EX cards here
+    // For now, if this list is empty, findEXEquivalent will try a convention.
+]
+
 class CollectionManager: ObservableObject {
     static let shared = CollectionManager()
     
@@ -53,6 +65,7 @@ class CollectionManager: ObservableObject {
     @Published var cards: [(card: BoosterCard, count: Int)] = [] {
         didSet {
             saveCollection()
+            NotificationCenter.default.post(name: .collectionDidChange, object: nil)
         }
     }
     
@@ -219,7 +232,7 @@ class CollectionManager: ObservableObject {
         case .legendary: return 75
         case .HolyT: return 200
         case .Season1: return 1000
-        case .holographicEX: return 150 // Exemple: entre Legendary et HolyT, à ajuster
+        case .holographicEX: return 150
         }
     }
     
@@ -253,6 +266,89 @@ class CollectionManager: ObservableObject {
         }
         
         return true
+    }
+
+    // IMPORTANT: This function makes assumptions. Adjust it based on how your EX cards are defined.
+    // Option 1: Check against a predefined list of EX cards.
+    // Option 2: Assume EX card has same name and number, just .holographicEX rarity.
+    func findEXEquivalent(for baseCard: BoosterCard) -> BoosterCard? {
+        // Prioritize checking the explicit list if populated
+        if !allGameEXCards.isEmpty {
+            // This assumes EX cards might have a modified name (e.g., "My Car EX") or a different number.
+            // You'll need a more robust way to link baseCard to its EX version if names/numbers change significantly.
+            // For now, let's assume if an EX card shares the *base name part* and is EX.
+            // This is a naive example, you'll need to refine this matching logic.
+            return allGameEXCards.first { exCard in
+                // Example: If base is "Porsche 911" and EX is "Porsche 911 EX"
+                // or if they share a common root identifier not directly in BoosterCard struct (e.g. a car model ID)
+                // For simplicity, let's assume for now the EX version has the same name and number.
+                exCard.name == baseCard.name && exCard.number == baseCard.number && exCard.rarity == .holographicEX
+            }
+        } else {
+            // Fallback: Assume EX card has the same name and number, just .holographicEX rarity.
+            // This is a strong assumption.
+            print("Warning: `allGameEXCards` is empty. Falling back to name/number convention for EX card identification.")
+            return BoosterCard(name: baseCard.name, rarity: .holographicEX, number: baseCard.number)
+        }
+        // If you have a more structured way to define EX cards (e.g. they are listed in Card.allCards or similar)
+        // you should use that to find the EX version.
+    }
+
+    enum CombinationResult {
+        case success(BoosterCard) // The EX card obtained
+        case failure
+        case notEnoughCards
+        case alreadyEX
+        case noEXEquivalent
+    }
+
+    func combineCards(for baseCard: BoosterCard, numberOfCardsToSacrifice: Int) -> CombinationResult {
+        guard baseCard.rarity != .holographicEX else {
+            return .alreadyEX
+        }
+
+        guard let cardInCollection = cards.first(where: { $0.card == baseCard }),
+              cardInCollection.count > numberOfCardsToSacrifice, // Must have more than sacrificed to keep one
+              numberOfCardsToSacrifice > 0 else {
+            return .notEnoughCards
+        }
+
+        guard let exEquivalent = findEXEquivalent(for: baseCard) else {
+            // If you have a list like `allGameCards` that includes EX cards,
+            // you can check here if `BoosterCard(name: baseCard.name, rarity: .holographicEX, number: baseCard.number)`
+            // actually exists in that list.
+            // For now, we assume if findEXEquivalent returns nil, it means no mapping defined.
+            print("No EX equivalent defined or found for \(baseCard.name)")
+            return .noEXEquivalent
+        }
+
+        // Remove sacrificed cards
+        if let index = cards.firstIndex(where: { $0.card == baseCard }) {
+            cards[index].count -= numberOfCardsToSacrifice
+            if cards[index].count == 0 { // Should not happen if logic is correct (always keep 1)
+                cards.remove(at: index)
+                 print("Error: Combined last card, should always keep one. Card: \(baseCard.name)")
+            }
+        } else {
+            // Should not happen if cardInCollection was found
+            print("Error: Base card not found in collection during sacrifice. Card: \(baseCard.name)")
+            return .notEnoughCards // Or a more specific error
+        }
+
+        // Calculate success chance (10% per card sacrificed, max 100% for 10 cards)
+        let successChance = min(Double(numberOfCardsToSacrifice) * 0.1, 1.0)
+        let randomRoll = Double.random(in: 0.0...1.0)
+
+        if randomRoll <= successChance {
+            _ = addCard(exEquivalent) // Add the new EX card
+            print("Combination SUCCESS for \(baseCard.name) -> \(exEquivalent.name) (\(exEquivalent.rarity))")
+            NotificationCenter.default.post(name: .cardCombinationSuccess, object: exEquivalent)
+            return .success(exEquivalent)
+        } else {
+            print("Combination FAILED for \(baseCard.name)")
+            NotificationCenter.default.post(name: .cardCombinationFailure, object: baseCard)
+            return .failure
+        }
     }
     
     private func loadClaimedMilestones() {
@@ -300,11 +396,13 @@ class CollectionManager: ObservableObject {
         claimedMilestones.insert(milestone)
         
         print("Milestone \(milestone.rawValue) claimed. New coin total: \(coins).")
-        NotificationCenter.default.post(name: .coinsDidUpdate, object: nil)
         NotificationCenter.default.post(name: .milestoneClaimed, object: milestone)
     }
 }
 
 extension Notification.Name {
     static let milestoneClaimed = Notification.Name("milestoneClaimed")
+    static let collectionDidChange = Notification.Name("collectionDidChange")
+    static let cardCombinationSuccess = Notification.Name("cardCombinationSuccess")
+    static let cardCombinationFailure = Notification.Name("cardCombinationFailure")
 }

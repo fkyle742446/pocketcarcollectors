@@ -31,8 +31,8 @@ class SoundManager {
             soundName = "legendary_reveal"
             volume = 1
         case .holographicEX:
-            soundName = "legendary_reveal" 
-            volume = 0.8 
+            soundName = "legendary_reveal"
+            volume = 0.8
         }
         
         guard let path = Bundle.main.path(forResource: soundName, ofType: "mp3") else {
@@ -192,7 +192,7 @@ struct ParticleSystem: View {
         case .Season1:
             return .red
         case .holographicEX:
-            return Color.cyan 
+            return Color.cyan
         }
     }
 }
@@ -209,14 +209,14 @@ struct EnhancedRarityButton: View {
         case .epic:
             return "8%"
         case .legendary:
-            return "0.1%"
+            return "1%"
         case .HolyT:
-            return "0.01%"
+            return "0.1%"
             
         case .Season1:
-            return "0.001%"
+            return "0.01%"
         case .holographicEX:
-            return "0.05%" 
+            return "0.1%"
         }
     }
     
@@ -235,7 +235,7 @@ struct EnhancedRarityButton: View {
         case .Season1:
             return [Color(red: 0.1, green: 0.1, blue: 0.1), Color(red: 0.2, green: 0.2, blue: 0.2)]
         case .holographicEX:
-            return [Color.cyan.opacity(0.7), Color.purple.opacity(0.7)] 
+            return [Color.cyan.opacity(0.7), Color.purple.opacity(0.7)]
         }
     }
     
@@ -530,26 +530,169 @@ struct BoosterOpeningView: View {
 
         // Rare (25%) - Cards 101-175
         BoosterCard(name: "Porsche 911", rarity: .rare, number: 101),
-        // ... many rare cards ...
-        BoosterCard(name: "Mercedes-AMG CLA 45", rarity: .rare, number: 175),
+              BoosterCard(name: "Mercedes-AMG GT", rarity: .rare, number: 102),
+              BoosterCard(name: "Audi RS6", rarity: .rare, number: 103),
+              BoosterCard(name: "BMW M5", rarity: .rare, number: 104),
+              BoosterCard(name: "Lexus LC", rarity: .rare, number: 105),
+              BoosterCard(name: "Acura NSX", rarity: .rare, number: 106),
+              BoosterCard(name: "Jaguar F-Type", rarity: .rare, number: 107),
+              BoosterCard(name: "Maserati Quattroporte", rarity: .rare, number: 108),
+              BoosterCard(name: "Alfa Romeo Giulia Quadrifoglio", rarity: .rare, number: 109),
+              BoosterCard(name: "Cadillac CT6-V", rarity: .rare, number: 110),
+              BoosterCard(name: "Dodge Challenger SRT Hellcat", rarity: .rare, number: 111),
+              BoosterCard(name: "Ford Mustang Shelby GT500", rarity: .rare, number: 112),
+              BoosterCard(name: "Chevrolet Corvette Z06", rarity: .rare, number: 113),
+              BoosterCard(name: "Nissan 370Z", rarity: .rare, number: 114),
+              BoosterCard(name: "Aston Martin DBX", rarity: .rare, number: 115),
+              BoosterCard(name: "Bentley Bentayga", rarity: .rare, number: 116),
+              BoosterCard(name: "Rolls-Royce Ghost", rarity: .rare, number: 117),
+              BoosterCard(name: "Lamborghini Urus", rarity: .rare, number: 118),
+              BoosterCard(name: "Ferrari Roma", rarity: .rare, number: 119),
+              BoosterCard(name: "McLaren GT", rarity: .rare, number: 120),
+              BoosterCard(name: "Porsche Panamera", rarity: .rare, number: 121),
+              BoosterCard(name: "BMW 8 Series", rarity: .rare, number: 122),
+              BoosterCard(name: "Mercedes-Benz S-Class Coupe", rarity: .rare, number: 123),
+              BoosterCard(name: "Audi RS7", rarity: .rare, number: 124),
+              BoosterCard(name: "Tesla Model S Plaid", rarity: .rare, number: 125),
+              BoosterCard(name: "Polestar 1", rarity: .rare, number: 126),
+              BoosterCard(name: "Rimac C_Two", rarity: .rare, number: 127),
+              BoosterCard(name: "Lotus Evija", rarity: .rare, number: 128),
+              BoosterCard(name: "Pininfarina Battista", rarity: .rare, number: 129),
+              BoosterCard(name: "Aston Martin Valhalla", rarity: .rare, number: 130),
+              BoosterCard(name: "Bugatti Divo", rarity: .rare, number: 131),
+              BoosterCard(name: "Koenigsegg Gemera", rarity: .rare, number: 132),
+              BoosterCard(name: "Pagani Huayra", rarity: .rare, number: 133),
+              BoosterCard(name: "Ferrari SF90 Stradale", rarity: .rare, number: 134),
+              BoosterCard(name: "McLaren 765LT", rarity: .rare, number: 135),
+              BoosterCard(name: "Lamborghini Huracan STO", rarity: .rare, number: 136),
+              BoosterCard(name: "Porsche 911 GT3", rarity: .rare, number: 137),
+              BoosterCard(name: "Mercedes-AMG GT Black Series", rarity: .rare, number: 138),
+              BoosterCard(name: "Audi R8 V10 Performance", rarity: .rare, number: 139),
+              BoosterCard(name: "BMW M8 Competition", rarity: .rare, number: 140),
+              BoosterCard(name: "Lexus LFA", rarity: .rare, number: 141),
+              BoosterCard(name: "Acura NSX Type S", rarity: .rare, number: 142),
+              BoosterCard(name: "Jaguar XJR-575", rarity: .rare, number: 143),
+              BoosterCard(name: "Maserati MC20", rarity: .rare, number: 144),
+              BoosterCard(name: "Alfa Romeo 4C Spider", rarity: .rare, number: 145),
+              BoosterCard(name: "Cadillac CT5-V Blackwing", rarity: .rare, number: 146),
+              BoosterCard(name: "Dodge Viper ACR", rarity: .rare, number: 147),
+              BoosterCard(name: "Ford GT", rarity: .rare, number: 148),
+              BoosterCard(name: "Chevrolet Camaro ZL1", rarity: .rare, number: 149),
+              BoosterCard(name: "Nissan GT-R Nismo", rarity: .rare, number: 150),
+              BoosterCard(name: "Aston Martin Vantage", rarity: .rare, number: 151),
+              BoosterCard(name: "Bentley Continental GT Speed", rarity: .rare, number: 152),
+              BoosterCard(name: "Rolls-Royce Wraith", rarity: .rare, number: 153),
+              BoosterCard(name: "Lamborghini Aventador SVJ Roadster", rarity: .rare, number: 154),
+              BoosterCard(name: "Ferrari 812 GTS", rarity: .rare, number: 155),
+              BoosterCard(name: "Porsche 911 Turbo S", rarity: .rare, number: 156),
+              BoosterCard(name: "Mercedes-AMG GT R", rarity: .rare, number: 157),
+              BoosterCard(name: "Audi RS Q8", rarity: .rare, number: 158),
+              BoosterCard(name: "BMW X8 M", rarity: .rare, number: 159),
+              BoosterCard(name: "Lexus LC Convertible", rarity: .rare, number: 160),
+              BoosterCard(name: "Jaguar F-Type R", rarity: .rare, number: 161),
+              BoosterCard(name: "Maserati Levante Trofeo", rarity: .rare, number: 162),
+              BoosterCard(name: "Alfa Romeo Stelvio Quadrifoglio", rarity: .rare, number: 163),
+              BoosterCard(name: "Cadillac CT4-V Blackwing", rarity: .rare, number: 164),
+              BoosterCard(name: "Dodge Charger SRT Hellcat Redeye", rarity: .rare, number: 165),
+              BoosterCard(name: "Ford Mustang Mach 1", rarity: .rare, number: 166),
+              BoosterCard(name: "Chevrolet Camaro SS", rarity: .rare, number: 167),
+              BoosterCard(name: "Nissan 370Z Nismo", rarity: .rare, number: 168),
+              BoosterCard(name: "Aston Martin DB11 AMR", rarity: .rare, number: 169),
+              BoosterCard(name: "Bentley Flying Spur", rarity: .rare, number: 170),
+              BoosterCard(name: "Rolls-Royce Ghost Extended", rarity: .rare, number: 171),
+              BoosterCard(name: "Lamborghini Huracan Performante Spyder", rarity: .rare, number: 172),
+              BoosterCard(name: "Ferrari Portofino M", rarity: .rare, number: 173),
+              BoosterCard(name: "Porsche 718 Cayman GT4", rarity: .rare, number: 174),
+              BoosterCard(name: "Mercedes-AMG CLA 45", rarity: .rare, number: 175),
 
         // Epic (8%) - Cards 176-225
         BoosterCard(name: "Bugatti Chiron", rarity: .epic, number: 176),
-        // ... many epic cards ...
-        BoosterCard(name: "Koenigsegg Regera Final Edition", rarity: .epic, number: 225), // Note: "Koenigsegg Regera Final Edition" also Legendary. OK.
+              BoosterCard(name: "Koenigsegg Jesko", rarity: .epic, number: 177),
+              BoosterCard(name: "Pagani Huayra BC", rarity: .epic, number: 178),
+              BoosterCard(name: "McLaren Senna", rarity: .epic, number: 179),
+              BoosterCard(name: "Ferrari Monza SP2", rarity: .epic, number: 180),
+              BoosterCard(name: "Aston Martin Vulcan", rarity: .epic, number: 181),
+              BoosterCard(name: "Lamborghini Centenario", rarity: .epic, number: 182),
+              BoosterCard(name: "Bugatti Divo", rarity: .epic, number: 183),
+              BoosterCard(name: "Koenigsegg Regera", rarity: .epic, number: 184),
+              BoosterCard(name: "Pagani Zonda Revolucion", rarity: .epic, number: 185),
+              BoosterCard(name: "McLaren P1 GTR", rarity: .epic, number: 186),
+              BoosterCard(name: "Ferrari FXX-K", rarity: .epic, number: 187),
+              BoosterCard(name: "Aston Martin Valkyrie AMR Pro", rarity: .epic, number: 188),
+              BoosterCard(name: "Lamborghini Sian Roadster", rarity: .epic, number: 189),
+              BoosterCard(name: "Bugatti La Voiture Noire", rarity: .epic, number: 190),
+              BoosterCard(name: "Koenigsegg Agera RSR", rarity: .epic, number: 191),
+              BoosterCard(name: "Pagani Imola", rarity: .epic, number: 192),
+              BoosterCard(name: "McLaren Elva", rarity: .epic, number: 193),
+              BoosterCard(name: "Ferrari SF90 Spider", rarity: .epic, number: 194),
+              BoosterCard(name: "Aston Martin DB10", rarity: .epic, number: 195),
+              BoosterCard(name: "Lamborghini SC18 Alston", rarity: .epic, number: 196),
+              BoosterCard(name: "Bugatti Bolide", rarity: .epic, number: 197),
+              BoosterCard(name: "Koenigsegg One:1", rarity: .epic, number: 198),
+              BoosterCard(name: "Pagani Zonda Cinque Roadster", rarity: .epic, number: 199),
+              BoosterCard(name: "McLaren Speedtail", rarity: .epic, number: 200),
+              BoosterCard(name: "Ferrari P80/C", rarity: .epic, number: 201),
+              BoosterCard(name: "Aston Martin Victor", rarity: .epic, number: 202),
+              BoosterCard(name: "Lamborghini Essenza SCV12", rarity: .epic, number: 203),
+              BoosterCard(name: "Bugatti Centodieci", rarity: .epic, number: 204),
+              BoosterCard(name: "Koenigsegg CCXR Edition", rarity: .epic, number: 205),
+              BoosterCard(name: "Pagani Huayra Tricolore", rarity: .epic, number: 206),
+              BoosterCard(name: "McLaren 600LT Spider", rarity: .epic, number: 207),
+              BoosterCard(name: "Ferrari 488 Pista Spider", rarity: .epic, number: 208),
+              BoosterCard(name: "Aston Martin DBS Superleggera", rarity: .epic, number: 209),
+              BoosterCard(name: "Lamborghini Huracan Performante", rarity: .epic, number: 210),
+              BoosterCard(name: "Bugatti Mistral", rarity: .epic, number: 211),
+              BoosterCard(name: "Koenigsegg CC850", rarity: .epic, number: 212),
+              BoosterCard(name: "Pagani Utopia", rarity: .epic, number: 213),
+              BoosterCard(name: "McLaren Artura", rarity: .epic, number: 214),
+              BoosterCard(name: "Ferrari 296 GTB", rarity: .epic, number: 215),
+              BoosterCard(name: "Aston Martin Valhalla AMR", rarity: .epic, number: 216),
+              BoosterCard(name: "Bugatti Chiron Pur Sport", rarity: .epic, number: 217),
+              BoosterCard(name: "Koenigsegg Jesko Attack", rarity: .epic, number: 218),
+              BoosterCard(name: "Pagani Huayra R", rarity: .epic, number: 219),
+              BoosterCard(name: "McLaren 720S Spider", rarity: .epic, number: 220),
+              BoosterCard(name: "Ferrari 812 Competizione", rarity: .epic, number: 221),
+              BoosterCard(name: "Aston Martin V12 Speedster", rarity: .epic, number: 222),
+              BoosterCard(name: "Lamborghini Aventador Ultimate", rarity: .epic, number: 223),
+              BoosterCard(name: "Bugatti Chiron Super Sport", rarity: .epic, number: 224),
+              BoosterCard(name: "Koenigsegg Regera Final Edition", rarity: .epic, number: 225),
 
         // Legendary (0.1%) - Cards 226-250
-        BoosterCard(name: "Bugatti La Voiture Noire", rarity: .legendary, number: 226), // Note: Also Epic. OK.
-        // ... many legendary cards ...
-        BoosterCard(name: "Bugatti Mistral", rarity: .legendary, number: 250), // Note: Also Epic. OK.
+        BoosterCard(name: "Koenigsegg Jesko Absolut", rarity: .legendary, number: 226),
+               BoosterCard(name: "Pagani Zonda Cinque", rarity: .legendary, number: 227),
+               BoosterCard(name: "Lamborghini Sesto Elemento", rarity: .legendary, number: 228),
+               BoosterCard(name: "Bugatti Bolide", rarity: .legendary, number: 229),
+               BoosterCard(name: "McLaren F1 GTR Longtail", rarity: .legendary, number: 230),
+               BoosterCard(name: "Ferrari F40 LM", rarity: .legendary, number: 231),
+               BoosterCard(name: "Koenigsegg One:1", rarity: .legendary, number: 232),
+               BoosterCard(name: "Aston Martin Valkyrie Pro", rarity: .legendary, number: 233),
+               BoosterCard(name: "Pagani Huayra BC Roadster", rarity: .legendary, number: 234),
+               BoosterCard(name: "Lamborghini Centenario Roadster", rarity: .legendary, number: 235),
+               BoosterCard(name: "Bugatti Divo Lady Bug", rarity: .legendary, number: 236),
+               BoosterCard(name: "McLaren P1 GTR", rarity: .legendary, number: 237),
+               BoosterCard(name: "Ferrari Monza SP1", rarity: .legendary, number: 238),
+               BoosterCard(name: "Koenigsegg Regera Final Edition", rarity: .legendary, number: 239),
+               BoosterCard(name: "Aston Martin Valkyrie Spider", rarity: .legendary, number: 240),
+               BoosterCard(name: "Pagani Zonda R", rarity: .legendary, number: 241),
+               BoosterCard(name: "Lamborghini SC20", rarity: .legendary, number: 242),
+               BoosterCard(name: "Bugatti La Voiture Noire", rarity: .legendary, number: 243),
+               BoosterCard(name: "McLaren Senna LM", rarity: .legendary, number: 244),
+               BoosterCard(name: "Ferrari 250 GT California Spyder", rarity: .legendary, number: 245),
+               BoosterCard(name: "Koenigsegg CCXR Special Edition", rarity: .legendary, number: 246),
+               BoosterCard(name: "Aston Martin DB5", rarity: .legendary, number: 247),
+               BoosterCard(name: "Pagani Zonda F", rarity: .legendary, number: 248),
+               BoosterCard(name: "Lamborghini Miura SV", rarity: .legendary, number: 249),
+               BoosterCard(name: "Bugatti Chiron Super Sport 300+", rarity: .legendary, number: 250),
 
         // HolyT (0.01%) - Cards 251-252
         BoosterCard(name: "McLaren P1 Holy Trinity", rarity: .HolyT, number: 251),
         BoosterCard(name: "Porsche 918 Spyder Holy Trinity", rarity: .HolyT, number: 252),
         BoosterCard(name: "Ferrari LaFerrari Holy Trinity", rarity: .HolyT, number: 253),
+        
+        
         // Season1 (0.001%) - Cards 253-254 (Card 253 was Ferrari LaFerrari Holy Trinity)
-    
         BoosterCard(name: "Formula 1", rarity: .Season1, number: 254),
+      
         // holographicEX (0.05%) Card 255
         BoosterCard(name: "Cyber Truck EX", rarity: .holographicEX, number: 255),
     ]
@@ -809,58 +952,76 @@ struct BoosterOpeningView: View {
     }
     
     private func randomCard() -> BoosterCard {
-        let totalHolographicEXCards = self.allCards.filter { $0.rarity == .holographicEX }.count
-        let totalEXProbability = 0.005 
-
-        let probabilities: [CardRarity: Double] = [
-            .common: 0.7 / 100,      
-            .rare: 0.25 / 75,        
-            .epic: 0.08 / 50,        
-            .legendary: 0.01 / 25,   
-            .HolyT: 0.001 / 3,       
-            .Season1: 0.0001 / 1,    
-            .holographicEX: totalHolographicEXCards > 0 ? totalEXProbability / Double(totalHolographicEXCards) : 0
+        // Définir les probabilités de base POUR CHAQUE TIER de rareté
+        let tierProbabilities: [CardRarity: Double] = [
+            .common:        0.70,
+            .rare:          0.25,
+            .epic:          0.08,
+            .legendary:     0.01,
+            .HolyT:         0.001,
+            .Season1:       0.0001,
+            .holographicEX: 0.01
         ]
-        
-        print("--- Probabilities per card for randomCard() ---")
-        for (rarity, prob) in probabilities {
-            print("Rarity \(rarity): \(String(format: "%.8f", prob)) per card")
-        }
-        print("Total holographicEX cards: \(totalHolographicEXCards)")
-        print("Total EX probability tier: \(totalEXProbability)")
 
-        let weightedCards = self.allCards.flatMap { card -> [BoosterCard] in
-            guard let weightPerCardInRarity = probabilities[card.rarity] else {
-                print("Warning: Rarity \(card.rarity) not found in probabilities for card \(card.name). Skipping.")
-                return []
+        // --- Log Tier Probabilities (can be removed in production) ---
+        print("--- Tier Probabilities for randomCard() ---")
+        var totalTierProb: Double = 0
+        let sortedTierProbabilities = tierProbabilities.sorted { $0.key.sortOrder < $1.key.sortOrder }
+        for (rarity, prob) in sortedTierProbabilities {
+            print("Tier \(rarity.rawValue): \(String(format: "%.5f", prob*100))%")
+            totalTierProb += prob
+        }
+        print("Total Tier Probability Sum: \(String(format: "%.5f", totalTierProb))")
+        if abs(totalTierProb - 1.0) > 0.00001 {
+             print("WARNING: Total tier probability sum is \(totalTierProb), not 1.0. Please check tierProbabilities.")
+        }
+        // --- End Log ---
+
+        // 1. Select a Rarity Tier based on probabilities
+        let randomTarget = Double.random(in: 0.0..<totalTierProb) // Use totalTierProb for normalization
+        var cumulativeProbability: Double = 0.0
+        var selectedRarity: CardRarity = .common // Default, should be overwritten
+
+        for (rarity, probability) in sortedTierProbabilities {
+            cumulativeProbability += probability
+            if randomTarget < cumulativeProbability {
+                selectedRarity = rarity
+                break
             }
-            let count = Int(weightPerCardInRarity * 1_000_000)
-            return Array(repeating: card, count: max(1, count)) 
+        }
+        print("Selected Rarity Tier: \(selectedRarity.rawValue) (Target: \(String(format: "%.5f", randomTarget)) of \(String(format: "%.5f", totalTierProb)))")
+
+        // 2. Filter allCards to get only cards of the selectedRarity
+        let cardsInSelectedRarity = self.allCards.filter { $0.rarity == selectedRarity }
+        
+        print("Found \(cardsInSelectedRarity.count) cards for rarity \(selectedRarity.rawValue).")
+
+        // --- Detailed Log for cards in the selected pool (especially if count is small or for debugging) ---
+        if cardsInSelectedRarity.count < 10 || selectedRarity == .rare || selectedRarity == .epic { // Log for small pools or specific rarities you're testing
+            let cardNamesInPool = cardsInSelectedRarity.map { "\($0.name) (#\($0.number))" }.joined(separator: ", ")
+            print("Cards in pool for \(selectedRarity.rawValue): [\(cardNamesInPool)]")
+        }
+        // --- End Detailed Log ---
+
+
+        guard !cardsInSelectedRarity.isEmpty else {
+            print("Error: No cards found for selected rarity \(selectedRarity.rawValue). This should not happen if allCards is populated correctly and all rarities have cards.")
+            // Fallback: return a random card from allCards or a default card
+            return self.allCards.randomElement() ?? BoosterCard(name: "Fallback Card EX", rarity: .common, number: 0)
         }
 
-        print("Total items in weightedCards: \(weightedCards.count)")
-        var rarityCountsInWeighted: [CardRarity: Int] = [:]
-        for card in weightedCards {
-            rarityCountsInWeighted[card.rarity, default: 0] += 1
-        }
-        print("--- Rarity distribution in weightedCards ---")
-        for rarity in CardRarity.allCases { 
-            let count = rarityCountsInWeighted[rarity] ?? 0
-            let percentage = weightedCards.isEmpty ? 0 : (Double(count) / Double(weightedCards.count) * 100.0)
-            print("\(rarity): \(count) entries (\(String(format: "%.2f", percentage))%)")
-        }
-
-        guard !weightedCards.isEmpty else {
-            print("Error: weightedCards array is empty. This likely means probabilities are misconfigured or allCards is empty. Returning first card from allCards as fallback.")
-            return self.allCards.first ?? BoosterCard(name: "Fallback Card EX", rarity: .common, number: 0)
-        }
-
-        let drawnCard = weightedCards.randomElement()!
-        print("Card drawn: \(drawnCard.name) - Rarity: \(drawnCard.rarity)")
+        // 3. Randomly select one card from that filtered list
+        let drawnCard = cardsInSelectedRarity.randomElement()!
+        
+        print("Card drawn: \(drawnCard.name) (#\(drawnCard.number)) - Rarity: \(drawnCard.rarity.rawValue)")
         return drawnCard
     }
     
-    private func haloColor(for rarity: CardRarity) -> Color { 
+    private func countCards(for rarity: CardRarity) -> Int {
+        return allCards.filter { $0.rarity == rarity }.count
+    }
+
+    private func haloColor(for rarity: CardRarity) -> Color {
         switch rarity {
         case .common:
             return Color.white
@@ -875,7 +1036,7 @@ struct BoosterOpeningView: View {
         case .Season1:
             return Color.red
         case .holographicEX:
-            return Color.cyan.opacity(0.8) 
+            return Color.cyan.opacity(0.8)
         }
     }
 }

@@ -661,7 +661,7 @@ struct ContentView: View {
                         .font(.system(size: viewSize == .compact ? 12 : 16))
                         .foregroundColor(.gray)
                     Spacer()
-                    Text("\(collectionManager.cards.count)/250")
+                    Text("\(collectionManager.cards.count)/505")
                         .font(.system(size: viewSize == .compact ? 12 : 16))
                         .foregroundColor(.gray)
                 }
@@ -683,7 +683,7 @@ struct ContentView: View {
                         
                         GeometryReader { geometry in
                             let width = geometry.size.width
-                            let baseProgress = Double(collectionManager.cards.count) / 250.0
+                            let baseProgress = Double(collectionManager.cards.count) / 505.0
                             let totalProgress = baseProgress + (breathingProgress * 0.05)
                             
                             Rectangle()
@@ -755,10 +755,9 @@ struct ContentView: View {
             let milestoneID = milestone_local.identifier
 
             Button(action: {
-                // ... action du bouton reste inchangée ...
-                let progressPercentage = Double(collectionManager.cards.count) / 250.0 * 100.0
+                let progressPercentage = Double(collectionManager.cards.count) / 505.0 * 100.0
                 let milestoneTargetProgressDecimal = milestone_local.progress // Use computed progress
-                let isReachable = (Double(collectionManager.cards.count) / 250.0) >= milestoneTargetProgressDecimal
+                let isReachable = (Double(collectionManager.cards.count) / 505.0) >= milestoneTargetProgressDecimal
 
                 if isReachable && !collectionManager.claimedMilestones.contains(milestoneID) {
                     var rewardDesc = ""
@@ -791,7 +790,7 @@ struct ContentView: View {
                     print("Milestone \(milestoneID.rawValue) already claimed.")
                     HapticManager.shared.impact(style: .light)
                 } else {
-                    print("Milestone \(milestoneID.rawValue) not yet reached. Current progress: \(Double(collectionManager.cards.count) / 250.0), Target: \(milestoneTargetProgressDecimal)")
+                    print("Milestone \(milestoneID.rawValue) not yet reached. Current progress: \(Double(collectionManager.cards.count) / 505.0), Target: \(milestoneTargetProgressDecimal)")
                     HapticManager.shared.impact(style: .soft)
                 }
             }) {
@@ -845,9 +844,9 @@ struct ContentView: View {
                     }
                 )
             }
-            .position(x: UIScreen.main.bounds.width * 0.7 * CGFloat(milestone_local.progress), y: 12)
+            .position(x: (UIScreen.main.bounds.width * 0.85 - 30) * CGFloat(milestone_local.progress), y: 17.5) // Adjusted x position calculation
             .onChange(of: collectionManager.cards.count) { _, newCount in
-                let currentProgress = Double(newCount) / 250.0
+                let currentProgress = Double(newCount) / 505.0
                 if !milestone_local.isReached && currentProgress >= milestone_local.progress {
                     milestone_local.isReached = true
                 }
@@ -858,10 +857,13 @@ struct ContentView: View {
     // MARK: - Helper Functions for View Logic
 
     private func calculateProgressWidth() -> CGFloat {
-        let maxWidth = UIScreen.main.bounds.width * 0.7
-        let baseProgress = Double(collectionManager.cards.count) / 250.0
-        let totalProgress = baseProgress + (breathingProgress * 0.05)
-        return maxWidth * totalProgress
+        let availableWidth = UIScreen.main.bounds.width - (2 * horizontalPadding) - (2 * 15) // Approximate width after outer and inner paddings
+        
+        let baseProgress = Double(collectionManager.cards.count) / 505.0
+        
+        let cappedVisualProgress = min(baseProgress + (breathingProgress * 0.05), 1.0)
+
+        return availableWidth * cappedVisualProgress
     }
 
     private func buttonView(icon: String, text: String, colors: [Color], textColor: Color) -> some View {
@@ -1072,7 +1074,7 @@ struct ContentView: View {
 
     private func updateLocalMilestoneStates() {
         let currentCardCount = collectionManager.cards.count
-        let totalCardsForProgress = 250.0
+        let totalCardsForProgress = 505.0
         
         for i in milestones.indices {
             let milestoneTargetProgress = milestones[i].progress
