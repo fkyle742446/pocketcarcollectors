@@ -44,6 +44,10 @@ class StoreManager: ObservableObject {
         }
     }
     
+    private let lastValidatedTimestampKey = "lastValidatedTimestamp"
+    private let lastBackgroundTimestampKey = "lastBackgroundTimestamp" // Keep if used elsewhere, though new logic focuses on lastValidated
+    private let lastValidatedUptimeKey = "lastValidatedUptime"
+
     private init() {
         print("StoreManager: Initializing...")
         self.boosters = UserDefaults.standard.integer(forKey: "boosters")
@@ -55,7 +59,7 @@ class StoreManager: ObservableObject {
             print("StoreManager: Given initial 4 boosters.")
         }
         
-        loadAndValidateBoosterTimer()
+        validateAndRetrieveTimestamps() // This will now use the new logic
         
         // S'abonner aux notifications de cycle de vie de l'application
         NotificationCenter.default.addObserver(self, selector: #selector(appWillEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
@@ -66,110 +70,110 @@ class StoreManager: ObservableObject {
         NotificationCenter.default.removeObserver(self)
     }
 
-    @objc private func appWillEnterForeground() {
+    @objc func appWillEnterForeground() {
         print("StoreManager: App will enter foreground. Checking and validating booster timer.")
-        loadAndValidateBoosterTimer()
+        validateAndRetrieveTimestamps()
     }
 
-    func loadAndValidateBoosterTimer() {
-        print("StoreManager: loadAndValidateBoosterTimer called.")
+    func validateAndRetrieveTimestamps() {
         let currentTime = Date().timeIntervalSince1970
+        let currentUptime = ProcessInfo.processInfo.systemUptime
+
+        var validReferenceTimestamp = UserDefaults.standard.double(forKey: lastValidatedTimestampKey)
+        let previousUptime = UserDefaults.standard.double(forKey: lastValidatedUptimeKey)
         
-        guard let savedNextBoosterTimestamp = UserDefaults.standard.object(forKey: "nextBoosterTimestamp_v2") as? TimeInterval else {
-            // Pas de minuteur enregistré. Si 0 boosters, démarrer un nouveau.
-            if self.boosters == 0 {
-                print("StoreManager: No saved timer and 0 boosters. Starting new timer.")
-                startNewBoosterTimer(from: currentTime)
-            } else {
-                print("StoreManager: No saved timer, but has \(self.boosters) boosters. No timer needed.")
-                self.nextFreeBoosterDate = nil
-                self.referenceDeviceTimestampWhenTimerSet = nil
+        let lastBackgroundTime = UserDefaults.standard.double(forKey: lastBackgroundTimestampKey)
+
+
+        // --- Handling initialization or missing previous uptime data ---
+        if validReferenceTimestamp == 0 || previousUptime == 0 { // MODIFIED: Check previousUptime as well
+            print("StoreManager: Initializing timestamps. ValidRefTS: \(validReferenceTimestamp), PrevUptime: \(previousUptime)")
+            if nextFreeBoosterDate == nil {
+                // On first ever run, or if data was cleared, make booster available immediately.
+                nextFreeBoosterDate = Date(timeIntervalSince1970: currentTime)
+                print("StoreManager: Initialized nextFreeBoosterDate to current time: \(nextFreeBoosterDate!)")
             }
+            UserDefaults.standard.set(currentTime, forKey: lastValidatedTimestampKey)
+            UserDefaults.standard.set(currentUptime, forKey: lastValidatedUptimeKey)
             return
         }
 
-        var targetUnlockTimestamp = savedNextBoosterTimestamp
-        var currentReferenceDeviceTimestamp = self.referenceDeviceTimestampWhenTimerSet
-
-        // Si referenceDeviceTimestampWhenTimerSet n'existe pas (migration ou ancien état)
-        // On l'initialise de manière conservatrice.
-        if currentReferenceDeviceTimestamp == nil {
-            currentReferenceDeviceTimestamp = targetUnlockTimestamp - boosterCooldown
-            self.referenceDeviceTimestampWhenTimerSet = currentReferenceDeviceTimestamp
-            print("StoreManager: referenceDeviceTimestampWhenTimerSet was nil. Initialized to \(Date(timeIntervalSince1970: currentReferenceDeviceTimestamp!)).")
-        }
-        
-        guard let validReferenceTimestamp = currentReferenceDeviceTimestamp else {
-            // Devrait pas arriver si on l'a initialisé au-dessus, mais sécurité
-            print("StoreManager: Error - validReferenceTimestamp is nil after attempted initialization. Resetting timer.")
-            startNewBoosterTimer(from: currentTime)
-            return
-        }
-
-        print("StoreManager: Current time: \(Date(timeIntervalSince1970: currentTime)) (\(currentTime))")
-        print("StoreManager: Saved target unlock: \(Date(timeIntervalSince1970: targetUnlockTimestamp)) (\(targetUnlockTimestamp))")
-        print("StoreManager: Reference device time when timer set: \(Date(timeIntervalSince1970: validReferenceTimestamp)) (\(validReferenceTimestamp))")
-
-        // Détection et correction de triche par recul du temps
+        // --- Backward Time Cheat Detection (Clock moved backwards) ---
         if currentTime < validReferenceTimestamp - timeCheatTolerance {
             let timeShiftDetected = validReferenceTimestamp - currentTime
-            print("StoreManager: ⚠️ Time cheat detected (clock moved backwards by \(timeShiftDetected)s).")
-            targetUnlockTimestamp += timeShiftDetected // Repousser la cible d'autant
-            self.referenceDeviceTimestampWhenTimerSet = currentTime // Mettre à jour la référence à l'heure actuelle (trichée)
+            print("StoreManager: ⚠️ Time cheat detected (clock moved backwards by \(timeShiftDetected)s). Current: \(Date(timeIntervalSince1970:currentTime)), Ref: \(Date(timeIntervalSince1970:validReferenceTimestamp))")
             
-            // Sauvegarder la nouvelle date cible mise à jour à cause de la triche
-            self.nextFreeBoosterDate = Date(timeIntervalSince1970: targetUnlockTimestamp)
-            // La notification devra être replanifiée avec cette nouvelle date
-            NotificationManager.shared.scheduleBoosterNotification(for: Date(timeIntervalSince1970: targetUnlockTimestamp))
-            print("StoreManager: Adjusted target unlock to \(Date(timeIntervalSince1970: targetUnlockTimestamp)) due to time cheat.")
-            // Pas besoin de vérifier pour un booster gratuit maintenant, car le temps a été reculé.
-            return
-        }
-        
-        // MODIFIE: forward time cheat detection pour n'utiliser minAdvanceForPenalty
-        // (pénalité si l'utilisateur avance l'heure de plus de 30 minutes)
-        if currentTime > (validReferenceTimestamp + minAdvanceForPenalty + timeCheatTolerance) {
-            let skippedTimeBeyondNormalAdvance = currentTime - (validReferenceTimestamp + minAdvanceForPenalty)
+            // Penalize by setting the next booster unlock relative to the time it "should" have been
+            let newTargetUnlockTime = validReferenceTimestamp + boosterCooldown
+            self.nextFreeBoosterDate = Date(timeIntervalSince1970: newTargetUnlockTime)
             
-            print("StoreManager: ⚠️ Forward time cheat detected (more than 30 min ahead). Clock advanced by \(skippedTimeBeyondNormalAdvance + minAdvanceForPenalty)s (Current: \(currentTime), Ref: \(validReferenceTimestamp), MinAdvance: \(minAdvanceForPenalty), Tolerance: \(timeCheatTolerance)).")
-
-            // Appliquer la même pénalité proportionnelle que précédemment
-            let penaltyMultiplier = self.forwardTimeCheatPenaltyFactor > 1.0 ? (self.forwardTimeCheatPenaltyFactor - 1.0) : 0.0
-            let penaltyAmount = skippedTimeBeyondNormalAdvance * penaltyMultiplier
-
-            // Nouvel unlock : 6h à partir du moment triché + pénalité
-            let newTargetUnlockTimeWithPenalty = currentTime + self.boosterCooldown + penaltyAmount
-
-            self.nextFreeBoosterDate = Date(timeIntervalSince1970: newTargetUnlockTimeWithPenalty)
-            self.referenceDeviceTimestampWhenTimerSet = currentTime // On repart de la nouvelle "base"
-            NotificationManager.shared.scheduleBoosterNotification(for: self.nextFreeBoosterDate!)
-            print("StoreManager: Forward cheat penalized. Next booster at \(self.nextFreeBoosterDate!) (raw timestamp: \(newTargetUnlockTimeWithPenalty)). Cheated time: \(Date(timeIntervalSince1970: currentTime)), Cooldown: \(self.boosterCooldown)s, Additional Penalty: \(penaltyAmount)s.")
-            return
+            print("StoreManager: Adjusted target unlock to \(self.nextFreeBoosterDate!) due to time cheat.")
+            
+            UserDefaults.standard.set(currentTime, forKey: lastValidatedTimestampKey) // Update to current (though penalized) time
+            UserDefaults.standard.set(currentUptime, forKey: lastValidatedUptimeKey)
+            return // Exit after handling backward cheat
         }
 
-        // Mettre à jour la référence si le temps a avancé normalement (et pas de triche détectée)
-        // Ceci est important si l'application est restée fermée longtemps.
-        // On ne le fait que si on n'est pas en train de donner un booster,
-        // car donner un booster va démarrer un *nouveau* minuteur avec sa propre référence.
-        if currentTime < targetUnlockTimestamp {
-             self.referenceDeviceTimestampWhenTimerSet = currentTime
+        // --- New Forward Time Cheat Detection (Clock jumped forward unnaturally) ---
+        var didApplyForwardPenalty = false
+        // Only perform this check if uptime is progressing normally (no reboot detected)
+        if currentUptime >= previousUptime {
+            let wallTimeDelta = currentTime - validReferenceTimestamp // Time passed according to wall clock
+            let uptimeDelta = currentUptime - previousUptime     // Time passed according to device uptime
+
+            // This is the crucial part: how much more did the wall clock advance than the device's own uptime?
+            // A small positive value is normal (NTP syncs, system processing delays).
+            let detectedJump = wallTimeDelta - uptimeDelta
+
+            print("StoreManager: Forward check - WallTimeDelta: \(wallTimeDelta)s, UptimeDelta: \(uptimeDelta)s, DetectedJump: \(detectedJump)s")
+
+            // If the detected jump (beyond normal passage of time) is significant
+            if detectedJump > minAdvanceForPenalty + timeCheatTolerance {
+                print("StoreManager: ⚠️ Forward time cheat detected (Wall clock advanced \(wallTimeDelta)s, Uptime advanced \(uptimeDelta)s. Effective jump beyond uptime: \(detectedJump)s).")
+                print("StoreManager: Details - CurrentTime: \(Date(timeIntervalSince1970:currentTime)), PrevWallTime: \(Date(timeIntervalSince1970:validReferenceTimestamp)), CurrentUptime: \(currentUptime), PrevUptime: \(previousUptime)")
+                print("StoreManager: Details - minAdvanceForPenalty: \(minAdvanceForPenalty), timeCheatTolerance: \(timeCheatTolerance)")
+
+                let penaltyMultiplier = self.forwardTimeCheatPenaltyFactor > 1.0 ? (self.forwardTimeCheatPenaltyFactor - 1.0) : 0.0
+                let penaltyAmount = detectedJump * penaltyMultiplier // Penalty is on the actual "jumped" time
+
+                let newTargetUnlockTimeWithPenalty = currentTime + self.boosterCooldown + penaltyAmount
+                self.nextFreeBoosterDate = Date(timeIntervalSince1970: newTargetUnlockTimeWithPenalty)
+                
+                print("StoreManager: Forward cheat penalized. Jumped \(detectedJump)s. Penalty factor (\(penaltyMultiplier)) applied to jump -> \(penaltyAmount)s added. Next booster at \(self.nextFreeBoosterDate!) (Cooldown: \(self.boosterCooldown)s).")
+                
+                didApplyForwardPenalty = true
+            } else {
+                print("StoreManager: No forward time cheat detected or jump (\(detectedJump)s) is insignificant (threshold: \(minAdvanceForPenalty + timeCheatTolerance)s).")
+            }
+        } else { // Reboot detected (currentUptime < previousUptime)
+            print("StoreManager: Device reboot detected (currentUptime: \(currentUptime)s < previousUptime: \(previousUptime)s). Skipping forward time cheat detection for this session.")
+            // No forward penalty applied in this case. Timers will proceed based on currentTime.
         }
 
+        // --- Update Timestamps & Finalize Booster Date if no penalty applied ---
+        UserDefaults.standard.set(currentTime, forKey: lastValidatedTimestampKey)
+        UserDefaults.standard.set(currentUptime, forKey: lastValidatedUptimeKey)
 
-        // Vérification normale pour un booster gratuit
-        if currentTime >= targetUnlockTimestamp {
-            print("StoreManager: Free booster condition met. CurrentTime (\(currentTime)) >= TargetTime (\(targetUnlockTimestamp))")
-            self.boosters += 1
-            print("StoreManager: Booster added. Total boosters: \(self.boosters).")
-            // Démarrer un nouveau minuteur pour le prochain booster, à partir de MAINTENANT
-            startNewBoosterTimer(from: currentTime)
-        } else {
-            // Le minuteur est toujours en cours et aucune triche détectée, s'assurer que l'UI est à jour
-            self.nextFreeBoosterDate = Date(timeIntervalSince1970: targetUnlockTimestamp)
-            print("StoreManager: Timer still active. Next booster at \(self.nextFreeBoosterDate!).")
+        // If no penalty was applied by the forward cheat detection,
+        // and if the booster date was not set by init or backward cheat,
+        // ensure it's correctly reflecting availability.
+        if !didApplyForwardPenalty { // MODIFIED: Check this flag
+            if self.nextFreeBoosterDate == nil {
+                // This case should ideally be covered by init, but as a fallback.
+                self.nextFreeBoosterDate = Date(timeIntervalSince1970: currentTime) // Booster available immediately
+                print("StoreManager: Set nextFreeBoosterDate to current time as it was nil and no penalty applied.")
+            } else if currentTime >= self.nextFreeBoosterDate!.timeIntervalSince1970 {
+                // If current time is past the unlock date, it means the booster is available.
+                // The date is already in the past or now, indicating availability. No change needed to make it "more" available.
+                // Claiming the booster will then set the new cooldown.
+                print("StoreManager: Booster is available (current time \(Date(timeIntervalSince1970:currentTime)) is past nextFreeBoosterDate \(self.nextFreeBoosterDate!)).")
+            } else {
+                // Booster is still cooling down, and no cheat detected or penalty applied to change it.
+                print("StoreManager: Booster is still on cooldown until \(self.nextFreeBoosterDate!). No cheat detected impacting timer.")
+            }
         }
     }
-    
+
     func useBooster() {
         print("StoreManager: useBooster called. Current boosters: \(boosters)")
         if boosters > 0 {
@@ -197,6 +201,6 @@ class StoreManager: ObservableObject {
         self.referenceDeviceTimestampWhenTimerSet = startTime // L'heure actuelle est la nouvelle référence
         
         print("StoreManager: 🕒 Started new booster timer. Next at: \(self.nextFreeBoosterDate!), Reference time: \(Date(timeIntervalSince1970: startTime)).")
-        NotificationManager.shared.scheduleBoosterNotification(for: self.nextFreeBoosterDate!)
+        // NotificationManager.shared.scheduleBoosterNotification(for: self.nextFreeBoosterDate!)
     }
 }

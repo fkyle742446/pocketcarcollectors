@@ -232,6 +232,8 @@ struct PocketCardView: View {
             return Color(white: 0.8)
         case .Season1:
             return Color.red
+        case .holographicEX:
+            return Color.cyan 
         }
     }
 }

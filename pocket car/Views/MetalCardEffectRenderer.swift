@@ -1,4 +1,3 @@
-
 import MetalKit
 
 class MetalCardEffectRenderer: NSObject, MTKViewDelegate {
@@ -6,62 +5,109 @@ class MetalCardEffectRenderer: NSObject, MTKViewDelegate {
     let commandQueue: MTLCommandQueue
     var pipelineState: MTLRenderPipelineState?
     var vertexBuffer: MTLBuffer?
-    // Ajouter d'autres propriétés nécessaires (textures, etc.)
+    var indexBuffer: MTLBuffer?
+    private var currentTime: Float = 0.0
+    private var currentNormalizedTouchLocation: simd_float2 = simd_float2(0.5, 0.5)
+    var vertexDescriptor: MTLVertexDescriptor!
 
-    // Simple vertex data for a quad (rectangle)
     let vertices: [Float] = [
-        // Positions       // Texture Coords
-        -1.0,  1.0, 0.0,   0.0, 0.0, // Top-left
-         1.0,  1.0, 0.0,   1.0, 0.0, // Top-right
-        -1.0, -1.0, 0.0,   0.0, 1.0, // Bottom-left
-         1.0, -1.0, 0.0,   1.0, 1.0  // Bottom-right
+        -1.0,  1.0, 0.0,        0.0, 0.0,
+         1.0,  1.0, 0.0,        1.0, 0.0,
+        -1.0, -1.0, 0.0,        0.0, 1.0,
+         1.0, -1.0, 0.0,        1.0, 1.0
     ]
     
     let indices: [UInt16] = [
         0, 1, 2,
         1, 3, 2
     ]
-    var indexBuffer: MTLBuffer?
-
 
     init?(metalKitView: MTKView) {
-        self.device = metalKitView.device!
-        self.commandQueue = self.device.makeCommandQueue()!
-        metalKitView.colorPixelFormat = .bgra8Unorm_srgb // Standard pixel format
-        metalKitView.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0) // Transparent background
-
+        guard let device = metalKitView.device else {
+            print("‼️ MetalKitView does not have a Metal device. Renderer cannot be initialized.")
+            return nil 
+        }
+        self.device = device
+        
+        guard let commandQueue = self.device.makeCommandQueue() else {
+            print("‼️ Failed to create Metal command queue.")
+            return nil
+        }
+        self.commandQueue = commandQueue
+        
+        metalKitView.colorPixelFormat = .bgra8Unorm_srgb
+        metalKitView.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
+        metalKitView.isPaused = false 
+        metalKitView.enableSetNeedsDisplay = false 
+        
         super.init()
         
-        setupPipeline()
+        print("Renderer Init: Device and Command Queue OK.")
+        
+        setupVertexDescriptor()
+        setupPipeline(metalKitView: metalKitView) 
         setupBuffers()
+
+        if pipelineState == nil {
+            print("‼️ Pipeline state is nil after setup. Shaders might not have loaded or compiled correctly.")
+        }
+        print("✅ MetalCardEffectRenderer initialized.")
     }
 
-    private func setupPipeline() {
+    func updateNormalizedTouchLocation(_ location: CGPoint) {
+        self.currentNormalizedTouchLocation = simd_float2(Float(location.x), Float(location.y))
+    }
+
+    private func setupVertexDescriptor() {
+        vertexDescriptor = MTLVertexDescriptor()
+
+        vertexDescriptor.attributes[0].format = .float3 
+        vertexDescriptor.attributes[0].offset = 0 
+        vertexDescriptor.attributes[0].bufferIndex = 0 
+
+        vertexDescriptor.attributes[1].format = .float2 
+        vertexDescriptor.attributes[1].offset = MemoryLayout<Float>.stride * 3 
+        vertexDescriptor.attributes[1].bufferIndex = 0 
+
+        vertexDescriptor.layouts[0].stride = MemoryLayout<Float>.stride * 5 
+        vertexDescriptor.layouts[0].stepFunction = .perVertex
+        
+        print("Vertex Descriptor Configured OK.")
+    }
+
+    private func setupPipeline(metalKitView: MTKView) {
         guard let library = device.makeDefaultLibrary() else {
-            print("Could not load default Metal library")
-            return
+            print("‼️ Could not load default Metal library. Check if CardShaders.metal is compiled and linked.")
+            return 
         }
+        print("Shader Library Loaded OK.")
         
         let vertexFunction = library.makeFunction(name: "vertexShader")
-        let fragmentFunction = library.makeFunction(name: "fragmentShader_HolographicEX") // Nom spécifique pour notre shader
+        let fragmentFunction = library.makeFunction(name: "fragmentShader_HolographicEX")
+
+        if vertexFunction == nil {
+            print("‼️ Could not load VERTEX shader function 'vertexShader'. Check name and compilation.")
+        }
+        if fragmentFunction == nil {
+            print("‼️ Could not load FRAGMENT shader function 'fragmentShader_HolographicEX'. Check name and compilation.")
+        }
+        guard let vertFunc = vertexFunction, let fragFunc = fragmentFunction else {
+            return 
+        }
+        print("Shader Functions Loaded OK: Vertex & Fragment.")
 
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
-        pipelineDescriptor.vertexFunction = vertexFunction
-        pipelineDescriptor.fragmentFunction = fragmentFunction
-        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm_srgb
-        // pipelineDescriptor.colorAttachments[0].isBlendingEnabled = true
-        // pipelineDescriptor.colorAttachments[0].rgbBlendOperation = .add
-        // pipelineDescriptor.colorAttachments[0].alphaBlendOperation = .add
-        // pipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
-        // pipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = .sourceAlpha
-        // pipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
-        // pipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusSourceAlpha
-
+        pipelineDescriptor.vertexFunction = vertFunc
+        pipelineDescriptor.fragmentFunction = fragFunc
+        pipelineDescriptor.colorAttachments[0].pixelFormat = metalKitView.colorPixelFormat
+        
+        pipelineDescriptor.vertexDescriptor = vertexDescriptor
 
         do {
             pipelineState = try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
+            print("✅ Render pipeline state created successfully.")
         } catch {
-            print("Failed to create pipeline state: \(error)")
+            print("‼️ Failed to create render pipeline state: \(error)")
         }
     }
     
@@ -74,21 +120,23 @@ class MetalCardEffectRenderer: NSObject, MTKViewDelegate {
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
-        // Respond to view size changes if needed
+        print("MTKView size changing to: \(size)")
     }
 
     func draw(in view: MTKView) {
         guard let drawable = view.currentDrawable,
               let pipelineState = pipelineState,
-              let vertexBuffer = vertexBuffer,
-              let indexBuffer = indexBuffer,
+              let vertexBuffer = vertexBuffer, let indexBuffer = indexBuffer,
               let renderPassDescriptor = view.currentRenderPassDescriptor else {
             return
         }
 
-        // renderPassDescriptor.colorAttachments[0].loadAction = .clear // Clear each frame for opaque
-        // renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0) // Or another color for testing
-        renderPassDescriptor.colorAttachments[0].loadAction = .dontCare // If drawing over something and shaders handle full coverage
+        currentTime += 0.016 
+
+        renderPassDescriptor.colorAttachments[0].loadAction = .clear 
+        renderPassDescriptor.colorAttachments[0].storeAction = .store
+        renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0) 
+
 
         let commandBuffer = commandQueue.makeCommandBuffer()!
         let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
@@ -96,10 +144,8 @@ class MetalCardEffectRenderer: NSObject, MTKViewDelegate {
         renderEncoder.setRenderPipelineState(pipelineState)
         renderEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
         
-        // Uniforms can be passed here (e.g., time for animation, touch coordinates)
-        // var currentTime = Float(CACurrentMediaTime()) // Example
-        // renderEncoder.setFragmentBytes(&currentTime, length: MemoryLayout<Float>.size, index: 0)
-
+        renderEncoder.setFragmentBytes(&currentTime, length: MemoryLayout<Float>.size, index: 0)
+        renderEncoder.setFragmentBytes(&currentNormalizedTouchLocation, length: MemoryLayout<simd_float2>.size, index: 1)
 
         renderEncoder.drawIndexedPrimitives(type: .triangle,
                                             indexCount: indices.count,

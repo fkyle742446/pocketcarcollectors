@@ -2,11 +2,57 @@ import SwiftUI
 import AVFoundation
 import AudioToolbox
 
+// New struct for the Rainbow Toggle Button
+struct RainbowToggleButton: View {
+    @Binding var isOn: Bool
+    let label: String
+    let iconName: String?
+
+    var body: some View {
+        Button(action: {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                isOn.toggle()
+                HapticManager.shared.impact(style: .light)
+                AudioManager.shared.playToggleSound() // Assuming you have a generic toggle sound
+            }
+        }) {
+            HStack(spacing: 4) {
+                if let iconName = iconName {
+                    Image(systemName: iconName)
+                        .font(.system(size: 14)) // Adjusted icon size
+                }
+                Text(label)
+                    .font(.system(size: 12, weight: .semibold)) // Adjusted font weight
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 12) // Adjusted padding
+            .frame(height: 28) // Match CustomToggleButton height
+            .background(
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: isOn ? [Color.red, Color.orange, Color.yellow, Color.green, Color.blue, Color.purple] : [Color(.systemGray3)]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.white.opacity(isOn ? 0.5 : 0.2), lineWidth: 1)
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 struct CollectionView: View {
     @ObservedObject var collectionManager: CollectionManager
     @State private var selectedCard: BoosterCard? = nil
     @State private var showingRarityInfo = false
     @State private var showingCompleteView = true
+    @State private var showEXCards: Bool = false
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
     private var viewSize: ViewSize {
@@ -15,10 +61,6 @@ struct CollectionView: View {
     
     private var allSlots: [Int] {
         [254, 253, 252, 251] + Array((1...250).reversed())
-    }
-    
-    private var collectedCards: [(card: BoosterCard, count: Int)] {
-        collectionManager.cards.sorted { $0.card.number > $1.card.number }
     }
     
     private func getCard(for number: Int) -> (card: BoosterCard, count: Int)? {
@@ -36,9 +78,12 @@ struct CollectionView: View {
                 .ignoresSafeArea()
 
                 VStack(spacing: 16) {
-                    HStack {
+                    HStack(spacing: 8) { 
                         CustomToggleButton(isOn: $showingCompleteView)
-                            .padding(.leading, 16)
+                            .disabled(showEXCards)
+                            .opacity(showEXCards ? 0.5 : 1.0) 
+                        
+                        RainbowToggleButton(isOn: $showEXCards, label: "EX", iconName: "sparkles") 
                         
                         Spacer()
                         
@@ -55,8 +100,8 @@ struct CollectionView: View {
                                 .scaledToFit()
                                 .frame(width: 20, height: 20)
                         }
-                        .padding(.trailing, 16)
                     }
+                    .padding(.horizontal, 16) 
                     .padding(.top, 10)
                     .padding(.bottom, 8)
 
@@ -69,9 +114,10 @@ struct CollectionView: View {
                             ],
                             spacing: 8
                         ) {
-                            if showingCompleteView {
-                                ForEach(collectedCards, id: \.card.number) { cardData in
+                            if showEXCards {
+                                ForEach(collectionManager.cards.filter { $0.card.rarity == .holographicEX }.sorted(by: { $0.card.number > $1.card.number }), id: \.card.number) { cardData in
                                     CardView(card: cardData.card, count: cardData.count)
+                                        .contentShape(Rectangle())
                                         .onTapGesture {
                                             HapticManager.shared.impact(style: .light)
                                             AudioManager.shared.playCardTapSound()
@@ -81,9 +127,10 @@ struct CollectionView: View {
                                         }
                                 }
                             } else {
-                                ForEach(allSlots, id: \.self) { number in
-                                    if let cardData = getCard(for: number) {
+                                if showingCompleteView {
+                                    ForEach(collectionManager.cards.filter { $0.card.rarity != .holographicEX }.sorted(by: { $0.card.number > $1.card.number }), id: \.card.number) { cardData in
                                         CardView(card: cardData.card, count: cardData.count)
+                                            .contentShape(Rectangle())
                                             .onTapGesture {
                                                 HapticManager.shared.impact(style: .light)
                                                 AudioManager.shared.playCardTapSound()
@@ -91,8 +138,26 @@ struct CollectionView: View {
                                                     selectedCard = cardData.card
                                                 }
                                             }
-                                    } else {
-                                        EmptySlotView(number: number)
+                                    }
+                                } else {
+                                    ForEach(allSlots, id: \.self) { number in
+                                        if let cardData = getCard(for: number) {
+                                            if cardData.card.rarity == .holographicEX {
+                                                EmptySlotView(number: number) 
+                                            } else {
+                                                CardView(card: cardData.card, count: cardData.count)
+                                                    .contentShape(Rectangle())
+                                                    .onTapGesture {
+                                                        HapticManager.shared.impact(style: .light)
+                                                        AudioManager.shared.playCardTapSound()
+                                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                                            selectedCard = cardData.card
+                                                        }
+                                                    }
+                                            }
+                                        } else {
+                                            EmptySlotView(number: number)
+                                        }
                                     }
                                 }
                             }
@@ -117,7 +182,6 @@ struct EmptySlotView: View {
     
     var body: some View {
         ZStack {
-            // Base layer avec un effet plus premium
             RoundedRectangle(cornerRadius: 12)
                 .fill(
                     LinearGradient(
@@ -126,13 +190,12 @@ struct EmptySlotView: View {
                             Color(.systemGray5).opacity(0.8),
                             Color(.systemGray6)
                         ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: .top,
+                        endPoint: .bottom
                     )
                 )
                 .frame(width: 120, height: 180)
                 .overlay(
-                    // Effet de glassmorphism subtil
                     RoundedRectangle(cornerRadius: 12)
                         .fill(
                             LinearGradient(
@@ -142,8 +205,8 @@ struct EmptySlotView: View {
                                     .init(color: Color.white.opacity(0.05), location: 0.7),
                                     .init(color: Color.white.opacity(0.0), location: 1)
                                 ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                                startPoint: .top,
+                                endPoint: .bottom
                             )
                         )
                 )
@@ -155,15 +218,14 @@ struct EmptySlotView: View {
                                     Color.white.opacity(0.5),
                                     Color.white.opacity(0.2)
                                 ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                                startPoint: .top,
+                                endPoint: .bottom
                             ),
                             lineWidth: 0.5
                         )
                 )
                 .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
             
-            // Effet de profondeur supplémentaire
             RoundedRectangle(cornerRadius: 12)
                 .stroke(
                     LinearGradient(
@@ -171,8 +233,8 @@ struct EmptySlotView: View {
                             Color.white.opacity(0.2),
                             Color.black.opacity(0.05)
                         ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: .top,
+                        endPoint: .bottom
                     ),
                     lineWidth: 1
                 )
@@ -203,8 +265,8 @@ struct EmptySlotView: View {
                                     .init(color: .white, location: 0.3),
                                     .init(color: .clear, location: 1)
                                 ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                                startPoint: .top,
+                                endPoint: .bottom
                             )
                         )
                 )
@@ -226,144 +288,35 @@ struct EmptyCollectionView: View {
 
 struct CardView: View {
     let card: BoosterCard
-    let count: Int
-
-    private func rarityColor(for rarity: CardRarity) -> Color {
-        switch rarity {
-        case .common:
-            return Color.gray
-        case .rare:
-            return Color.blue
-        case .epic:
-            return Color.purple
-        case .legendary:
-            return Color(red: 1, green: 0.84, blue: 0)
-        case .HolyT:
-            return Color.black
-        case .Season1:
-            return Color.red
-        }
-    }
-    
-    private func rarityGradient(for rarity: CardRarity) -> LinearGradient {
-        switch rarity {
-        case .common:
-            return LinearGradient(
-                colors: [Color.gray.opacity(0.3), Color.gray.opacity(0.1)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case .rare:
-            return LinearGradient(
-                colors: [Color.blue.opacity(0.3), Color.blue.opacity(0.1)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case .epic:
-            return LinearGradient(
-                colors: [Color.purple.opacity(0.3), Color.purple.opacity(0.1)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case .legendary:
-            return LinearGradient(
-                colors: [Color(red: 1, green: 0.84, blue: 0).opacity(0.3),
-                        Color(red: 1, green: 0.84, blue: 0).opacity(0.1)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case .HolyT:
-            return LinearGradient(
-                colors: [Color.white.opacity(0.3), Color.white.opacity(0.1)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-                
-                )
-                
-                case .Season1:
-                    return LinearGradient(
-                        colors: [Color.red.opacity(0.3), Color.red.opacity(0.1)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-            )
-        }
-    }
-    
-    private func rarityBadge(for rarity: CardRarity) -> String {
-        switch rarity {
-        case .common: return "COMMON"
-        case .rare: return "RARE"
-        case .epic: return "EPIC"
-        case .legendary: return "LEGENDARY"
-        case .HolyT: return "HOLY"
-        case .Season1: return "SEASON"
-        }
-    }
+    let count: Int 
 
     var body: some View {
-        VStack(spacing: 8) {
-            ZStack(alignment: .topTrailing) {
-                Image(card.name)
-                    .resizable()
-                    .aspectRatio(3 / 4, contentMode: .fit)
-                    .frame(maxWidth: 100, maxHeight: 140)
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [
-                                        rarityColor(for: card.rarity).opacity(card.rarity == .HolyT ? 0.9 : 0.8),
-                                        rarityColor(for: card.rarity).opacity(card.rarity == .HolyT ? 0.7 : 0.4)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: card.rarity == .HolyT ? 2.5 : 2
-                            )
+        ZStack(alignment: .topTrailing) { 
+            HolographicCard(
+                cardImage: card.name,
+                rarity: card.rarity,
+                cardNumber: card.number,
+                isInteractive: false 
+            )
+            .scaleEffect(120 / 250) 
+            .frame(width: 120, height: 180)
+
+            if count > 1 {
+                Text("\(count)")
+                    .font(.system(size: 12, weight: .bold)) 
+                    .foregroundColor(.white)
+                    .padding(5) 
+                    .background(
+                        Circle()
+                            .fill(Color.red)
+                            .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
                     )
-                    .shadow(color: rarityColor(for: card.rarity).opacity(card.rarity == .HolyT ? 0.5 : 0.3), radius: card.rarity == .HolyT ? 8 : 5, x: 0, y: 4)
-
-                if count > 1 {
-                    Text("\(count)")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(6)
-                        .background(
-                            Circle()
-                                .fill(Color.red)
-                                .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 2)
-                        )
-                        .offset(x: -5, y: 5)
-                }
+                    .offset(x: -10, y: 10) 
+                    .alignmentGuide(.top) { d in d[.top] } 
+                    .alignmentGuide(.trailing) { d in d[.trailing] } 
             }
-
-            Text(rarityBadge(for: card.rarity))
-                .font(.system(size: 10, weight: .bold))
-                .foregroundColor(rarityColor(for: card.rarity))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.white)
-                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                )
-
-            Text(card.name)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundColor(.gray)
-                .lineLimit(1)
         }
-        .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(rarityGradient(for: card.rarity))
-                )
-                .shadow(color: rarityColor(for: card.rarity).opacity(card.rarity == .HolyT ? 0.4 : 0.2), radius: card.rarity == .HolyT ? 10 : 8, x: 0, y: 4)
-        )
+        .contentShape(Rectangle()) 
     }
 }
 
@@ -425,6 +378,7 @@ struct RarityInfoView: View {
         case .legendary: totalCards = 25
         case .HolyT: totalCards = 3
         case .Season1: totalCards = 1
+        case .holographicEX: totalCards = 5
         }
         return (collectedCards, totalCards)
     }
@@ -449,7 +403,7 @@ struct RarityInfoView: View {
                     .padding(.top, 20)
                     
                     VStack(spacing: 16) {
-                        ForEach([CardRarity.HolyT, .legendary, .epic, .rare, .common], id: \.self) { rarity in
+                        ForEach([CardRarity.holographicEX, CardRarity.HolyT, CardRarity.Season1, CardRarity.legendary, CardRarity.epic, CardRarity.rare, CardRarity.common], id: \.self) { rarity in
                             let counts = getCardCounts(for: rarity)
                             VStack(spacing: 10) {
                                 HStack {
@@ -504,17 +458,19 @@ struct RarityInfoView: View {
         case .legendary: return "crown.fill"
         case .HolyT: return "bolt.fill"
         case .Season1: return "bolt.fill"
+        case .holographicEX: return "burst.fill"
         }
     }
     
     private func rarityColor(for rarity: CardRarity) -> Color {
         switch rarity {
-        case .common: return .white
+        case .common: return .white.opacity(0.7)
         case .rare: return .blue
         case .epic: return .purple
         case .legendary: return Color(red: 1, green: 0.84, blue: 0)
-        case .HolyT: return Color(white: 0.8)
+        case .HolyT: return Color(white: 0.9)
         case .Season1: return .red
+        case .holographicEX: return .cyan
         }
     }
     
@@ -522,10 +478,11 @@ struct RarityInfoView: View {
         switch rarity {
         case .common: return "70%"
         case .rare: return "25%"
-        case .epic: return "8%%"
+        case .epic: return "8%"
         case .legendary: return "1%"
         case .HolyT: return "0.1%"
         case .Season1: return "0.01%"
+        case .holographicEX: return "0.5%"
         }
     }
     
@@ -553,6 +510,8 @@ struct CollectionProgressBar: View {
             return Color(white: 0.8)
         case .Season1:
             return .red
+        case .holographicEX:
+            return .cyan
         }
     }
     
@@ -606,17 +565,19 @@ struct ZoomedCardView: View {
     private func haloColor(for rarity: CardRarity) -> Color {
         switch rarity {
         case .common:
-            return Color.white
+            return Color.white.opacity(0.7)
         case .rare:
-            return Color.blue
+            return Color.blue.opacity(0.7)
         case .epic:
-            return Color.purple
+            return Color.purple.opacity(0.7)
         case .legendary:
-            return Color(red: 1, green: 0.84, blue: 0)
+            return Color(red: 1, green: 0.84, blue: 0).opacity(0.7)
         case .HolyT:
-            return Color.black
+            return Color.black.opacity(0.7)
         case .Season1:
-            return Color.red
+            return Color.red.opacity(0.7)
+        case .holographicEX:
+            return Color.cyan.opacity(0.6)
         }
     }
     
@@ -635,7 +596,8 @@ struct ZoomedCardView: View {
                     HolographicCard(
                         cardImage: selectedCard?.name ?? "",
                         rarity: selectedCard?.rarity ?? .common,
-                        cardNumber: selectedCard?.number ?? 0
+                        cardNumber: selectedCard?.number ?? 0,
+                        isInteractive: true 
                     )
                     .scaledToFit()
                     .frame(width: 300, height: 420)
@@ -652,7 +614,6 @@ struct ZoomedCardView: View {
                         HapticManager.shared.impact(style: .heavy)
                         isSelling = true
                         if collectionManager.sellCard(card) {
-                            // Jouer le son avant de fermer la vue
                             AudioServicesPlaySystemSound(1104)
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 selectedCard = nil

@@ -476,18 +476,19 @@ struct ContentView: View {
                                         Spacer()
                                         
                                         // Booster Info and Daily Quest Capsules
-                                        HStack(spacing: 8) { 
-                                            styledCapsuleBackground {
-                                                boosterStatusContentView()
-                                            }
-                                            .frame(maxWidth: UIScreen.main.bounds.width * 0.58) 
-                                            
+                                        HStack(spacing: 8) {
+                                            // Item 1: Daily Quest Button (Sidequest)
                                             styledCapsuleBackground {
                                                 dailyQuestButtonView()
                                             }
                                             .frame(width: 60) // Fixed width for quest button capsule
+                                            
+                                            // Item 2: Booster Status (Compteur de booster)
+                                            styledCapsuleBackground {
+                                                boosterStatusContentView()
+                                            }
+                                            .frame(maxWidth: UIScreen.main.bounds.width * 0.58)
                                         }
-                                        .padding(.horizontal) // Add horizontal padding to the HStack containing the capsules
                                         .offset(y: 0)
                                         .zIndex(1)
                                     }
@@ -711,7 +712,7 @@ struct ContentView: View {
                         // startBreathingAnimation() is called in main onAppear
                         withAnimation(
                             .linear(duration: 2)
-                            .repeatForever(autoreverses: false)
+                            .repeatForever()
                         ) {
                             waveOffset = 1
                         }

@@ -219,6 +219,7 @@ class CollectionManager: ObservableObject {
         case .legendary: return 75
         case .HolyT: return 200
         case .Season1: return 1000
+        case .holographicEX: return 150 // Exemple: entre Legendary et HolyT, à ajuster
         }
     }
     
