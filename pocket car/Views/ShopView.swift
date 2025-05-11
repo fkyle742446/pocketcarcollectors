@@ -159,9 +159,10 @@ struct ShopView: View {
                                         .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                                     
                                     HStack(spacing: 20) {
-                                        Image(systemName: "person.2.fill")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.orange)
+                                        Image("referral_icon")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 30, height: 30)
                                         
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text("Referral Program")

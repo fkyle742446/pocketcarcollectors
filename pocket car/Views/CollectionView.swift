@@ -60,7 +60,7 @@ struct CollectionView: View {
     }
     
     private var allSlots: [Int] {
-        [254, 253, 252, 251] + Array((1...250).reversed())
+        Array((256...305).reversed()) + [255] + [254, 253, 252, 251] + Array((1...250).reversed())
     }
     
     private func getCard(for number: Int) -> (card: BoosterCard, count: Int)? {
@@ -87,7 +87,8 @@ struct CollectionView: View {
                         
                         Spacer()
                         
-                        Text("\(collectionManager.cards.count)/505")
+                        // This text should already be showing /605 from previous changes.
+                        Text("\(collectionManager.cards.count)/605")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.gray)
                         Text("•")
@@ -115,6 +116,7 @@ struct CollectionView: View {
                             spacing: 8
                         ) {
                             if showEXCards {
+                                // Logic for showing EX cards (remains the same)
                                 ForEach(collectionManager.cards.filter { $0.card.rarity == .holographicEX }.sorted(by: { $0.card.number > $1.card.number }), id: \.card.number) { cardData in
                                     CardView(card: cardData.card, count: cardData.count)
                                         .contentShape(Rectangle())
@@ -128,6 +130,7 @@ struct CollectionView: View {
                                 }
                             } else {
                                 if showingCompleteView {
+                                    // Logic for showing owned non-EX cards (remains the same)
                                     ForEach(collectionManager.cards.filter { $0.card.rarity != .holographicEX }.sorted(by: { $0.card.number > $1.card.number }), id: \.card.number) { cardData in
                                         CardView(card: cardData.card, count: cardData.count)
                                             .contentShape(Rectangle())
@@ -140,8 +143,11 @@ struct CollectionView: View {
                                             }
                                     }
                                 } else {
+                                    // Logic for showing all slots (uses the updated allSlots)
                                     ForEach(allSlots, id: \.self) { number in
                                         if let cardData = getCard(for: number) {
+                                            // If card is owned, decide whether to show CardView or EmptySlotView
+                                            // The existing logic correctly hides EX cards here, showing EmptySlotView instead if the number matches an EX card.
                                             if cardData.card.rarity == .holographicEX {
                                                 EmptySlotView(number: number)
                                             } else {
@@ -156,6 +162,7 @@ struct CollectionView: View {
                                                     }
                                             }
                                         } else {
+                                            // If card is not owned, show EmptySlotView
                                             EmptySlotView(number: number)
                                         }
                                     }
@@ -240,7 +247,7 @@ struct EmptySlotView: View {
                 )
                 .blur(radius: 0.5)
             
-            Text(number > 250 ? "?" : "\(number)")
+            Text("\(number)")
                 .font(.system(size: 42, weight: .bold, design: .rounded))
                 .foregroundStyle(
                     LinearGradient(
@@ -254,7 +261,7 @@ struct EmptySlotView: View {
                 )
                 .shadow(color: .white.opacity(0.3), radius: 1, x: 0, y: 1)
                 .overlay(
-                    Text(number > 250 ? "?" : "\(number)")
+                    Text("\(number)")
                         .font(.system(size: 42, weight: .bold, design: .rounded))
                         .foregroundColor(.white.opacity(0.3))
                         .offset(x: 0.5, y: 0.5)

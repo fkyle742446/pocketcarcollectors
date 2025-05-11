@@ -485,7 +485,7 @@ struct ContentView: View {
                         .font(.system(size: viewSize == .compact ? 12 : 16))
                         .foregroundColor(.gray)
                     Spacer()
-                    Text("\(collectionManager.cards.count)/505")
+                    Text("\(collectionManager.cards.count)/605")
                         .font(.system(size: viewSize == .compact ? 12 : 16))
                         .foregroundColor(.gray)
                 }
@@ -507,7 +507,7 @@ struct ContentView: View {
                         
                         GeometryReader { geometry in
                             let width = geometry.size.width
-                            let baseProgress = Double(collectionManager.cards.count) / 505.0
+                            let baseProgress = Double(collectionManager.cards.count) / 605.0
                             let totalProgress = baseProgress + (breathingProgress * 0.05)
                             
                             Rectangle()
@@ -530,7 +530,7 @@ struct ContentView: View {
                                 )
                         }
                     }
-                    .frame(width: calculateProgressWidth(), height: 8) // CALLING METHOD
+                    .frame(width: calculateProgressWidth(), height: 8)
                     .animation(.spring(dampingFraction: 0.8), value: breathingProgress)
                     .onAppear {
                         // startBreathingAnimation() is called in main onAppear
@@ -541,7 +541,7 @@ struct ContentView: View {
                             waveOffset = 1
                         }
                     }
-                    milestoneMarkersView() // CALLING METHOD
+                    milestoneMarkersView()
                 }
                 .frame(height: 35)
             }
@@ -579,9 +579,9 @@ struct ContentView: View {
             let milestoneID = milestone_local.identifier
 
             Button(action: {
-                let progressPercentage = Double(collectionManager.cards.count) / 505.0 * 100.0
-                let milestoneTargetProgressDecimal = milestone_local.progress // Use computed progress
-                let isReachable = (Double(collectionManager.cards.count) / 505.0) >= milestoneTargetProgressDecimal
+                let progressPercentage = Double(collectionManager.cards.count) / 605.0 * 100.0
+                let milestoneTargetProgressDecimal = milestone_local.progress
+                let isReachable = (Double(collectionManager.cards.count) / 605.0) >= milestoneTargetProgressDecimal
 
                 if isReachable && !collectionManager.claimedMilestones.contains(milestoneID) {
                     var rewardDesc = ""
@@ -604,7 +604,7 @@ struct ContentView: View {
                         id: milestoneID,
                         title: "Reward Unlocked!",
                         rewardDescription: rewardDesc,
-                        iconName: milestone_local.icon, // Use computed icon
+                        iconName: milestone_local.icon,
                         rewardCard: rewardCardForPopup,
                         rewardBoosters: rewardBoostersForPopup
                     )
@@ -614,7 +614,7 @@ struct ContentView: View {
                     print("Milestone \(milestoneID.rawValue) already claimed.")
                     HapticManager.shared.impact(style: .light)
                 } else {
-                    print("Milestone \(milestoneID.rawValue) not yet reached. Current progress: \(Double(collectionManager.cards.count) / 505.0), Target: \(milestoneTargetProgressDecimal)")
+                    print("Milestone \(milestoneID.rawValue) not yet reached. Current progress: \(Double(collectionManager.cards.count) / 605.0), Target: \(milestoneTargetProgressDecimal)")
                     HapticManager.shared.impact(style: .soft)
                 }
             }) {
@@ -624,14 +624,14 @@ struct ContentView: View {
                         .frame(width: 24, height: 24)
                         .shadow(color: .black.opacity(0.1), radius: 2)
                     
-                    if milestoneID == .progress04 { // Assuming .progress04 uses your custom PNG
+                    if milestoneID == .progress04 {
                         Image(milestone_local.icon)
                             .resizable()
                             .scaledToFill()
                             .frame(width: 14, height: 14)
                             .clipShape(Circle())
                             .opacity(milestone_local.isReached ? 1.0 : 0.5)
-                    } else { // For other icons (SF Symbols or other assets)
+                    } else {
                         Image(milestone_local.icon)
                             .resizable()
                             .renderingMode(.template)
@@ -667,7 +667,7 @@ struct ContentView: View {
             }
             .position(x: (UIScreen.main.bounds.width * 0.85 - 30) * CGFloat(milestone_local.progress), y: 17.5)
             .onChange(of: collectionManager.cards.count) { _, newCount in
-                let currentProgress = Double(newCount) / 505.0
+                let currentProgress = Double(newCount) / 605.0
                 if !milestone_local.isReached && currentProgress >= milestone_local.progress {
                     milestone_local.isReached = true
                 }
@@ -863,9 +863,9 @@ struct ContentView: View {
     }
 
     private func calculateProgressWidth() -> CGFloat {
-        let availableWidth = UIScreen.main.bounds.width - (2 * horizontalPadding) - (2 * 15) // Approximate width after outer and inner paddings
+        let availableWidth = UIScreen.main.bounds.width - (2 * horizontalPadding) - (2 * 15)
         
-        let baseProgress = Double(collectionManager.cards.count) / 505.0
+        let baseProgress = Double(collectionManager.cards.count) / 605.0
         
         let cappedVisualProgress = min(baseProgress + (breathingProgress * 0.05), 1.0)
 
@@ -1078,7 +1078,7 @@ struct ContentView: View {
 
     private func updateLocalMilestoneStates() {
         let currentCardCount = collectionManager.cards.count
-        let totalCardsForProgress = 505.0
+        let totalCardsForProgress = 605.0
         
         for i in milestones.indices {
             let milestoneTargetProgress = milestones[i].progress

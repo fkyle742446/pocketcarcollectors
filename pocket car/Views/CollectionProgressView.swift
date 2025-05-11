@@ -10,6 +10,7 @@ struct CollectionProgressView: View {
     @State private var holyProgress: Double = 0
     @State private var legendaryProgress: Double = 0
     @State private var epicProgress: Double = 0
+    @State private var referralProgress: Double = 0 
     @State private var rareProgress: Double = 0
     @State private var commonProgress: Double = 0
 
@@ -55,7 +56,7 @@ struct CollectionProgressView: View {
                             title: "Total Collection",
                             subtitle: nil,
                             count: collectionManager.cards.count,
-                            total: 250,
+                            total: 605,
                             colors: [.yellow, .orange],
                             progress: totalProgress,
                             milestoneIdentifier: nil,
@@ -92,6 +93,16 @@ struct CollectionProgressView: View {
                             total: 50,
                             colors: [.purple, .pink],
                             progress: epicProgress,
+                            milestoneIdentifier: nil, isClaimed: false, canClaim: false, claimAction: {}
+                        )
+                        
+                        ProgressCard(
+                            title: "Electric",
+                            subtitle: "Drop rate: 8%",
+                            count: countCardsByRarity(.referral),
+                            total: 50,
+                            colors: [.green, Color(hex: "A7F3D0")],
+                            progress: referralProgress,
                             milestoneIdentifier: nil, isClaimed: false, canClaim: false, claimAction: {}
                         )
                         
@@ -163,12 +174,14 @@ struct CollectionProgressView: View {
         }
         .onAppear {
             totalProgress = 0
+            referralProgress = 0
 
             withAnimation(.easeOut(duration: 2.0)) {
                 totalProgress = Double(collectionManager.cards.count)
                 holyProgress = Double(countCardsByRarity(.HolyT))
                 legendaryProgress = Double(countCardsByRarity(.legendary))
                 epicProgress = Double(countCardsByRarity(.epic))
+                referralProgress = Double(countCardsByRarity(.referral))
                 rareProgress = Double(countCardsByRarity(.rare))
                 commonProgress = Double(countCardsByRarity(.common))
             }
@@ -185,6 +198,7 @@ struct CollectionProgressView: View {
             holyProgress = 0
             legendaryProgress = 0
             epicProgress = 0
+            referralProgress = 0
             rareProgress = 0
             commonProgress = 0
         }

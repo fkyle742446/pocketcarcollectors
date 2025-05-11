@@ -408,15 +408,15 @@ struct GestureHintView: View {
 }
 
 enum BoosterContext {
-    case generic(boosterNumber: Int) 
-    case referral 
+    case generic(boosterNumber: Int)
+    case referral
     
     var imageName: String {
         switch self {
         case .generic(let number):
             return "booster_closed_\(number)"
         case .referral:
-            return "referral_booster_icon" 
+            return "referral_booster_icon"
         }
     }
 
@@ -499,12 +499,12 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Volvo V60", rarity: .common, number: 43),
         BoosterCard(name: "Skoda Superb Combi", rarity: .common, number: 44),
         BoosterCard(name: "Audi A4 Avant", rarity: .common, number: 45),
-        BoosterCard(name: "BMW M8 Competition", rarity: .common, number: 46), 
+        BoosterCard(name: "BMW M8 Competition", rarity: .common, number: 46),
         BoosterCard(name: "Mercedes Classe E Break", rarity: .common, number: 47),
         BoosterCard(name: "Peugeot 508 SW", rarity: .common, number: 48),
         BoosterCard(name: "Volkswagen Passat Variant", rarity: .common, number: 49),
         BoosterCard(name: "Ford Mondeo Estate", rarity: .common, number: 50),
-        BoosterCard(name: "Subaru Outback", rarity: .common, number: 51), 
+        BoosterCard(name: "Subaru Outback", rarity: .common, number: 51),
         BoosterCard(name: "SEAT Leon ST", rarity: .common, number: 52),
         BoosterCard(name: "Tesla Model 3", rarity: .common, number: 53),
         BoosterCard(name: "Renault Zoe", rarity: .common, number: 54),
@@ -526,26 +526,26 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Toyota Proace City Verso", rarity: .common, number: 70),
         BoosterCard(name: "Ford F-150", rarity: .common, number: 71),
         BoosterCard(name: "Chevrolet Silverado", rarity: .common, number: 72),
-        BoosterCard(name: "Toyota RAV4", rarity: .common, number: 73), 
+        BoosterCard(name: "Toyota RAV4", rarity: .common, number: 73),
         BoosterCard(name: "Honda CR-V", rarity: .common, number: 74),
         BoosterCard(name: "Tesla Model Y", rarity: .common, number: 75),
         BoosterCard(name: "Ram Pickups", rarity: .common, number: 76),
         BoosterCard(name: "GMC Sierra", rarity: .common, number: 77),
         BoosterCard(name: "Toyota Camry", rarity: .common, number: 78),
         BoosterCard(name: "Nissan Rogue", rarity: .common, number: 79),
-        BoosterCard(name: "Honda Civic", rarity: .common, number: 80), 
+        BoosterCard(name: "Honda Civic", rarity: .common, number: 80),
         BoosterCard(name: "Chevrolet Equinox", rarity: .common, number: 81),
-        BoosterCard(name: "Toyota Corolla", rarity: .common, number: 82), 
+        BoosterCard(name: "Toyota Corolla", rarity: .common, number: 82),
         BoosterCard(name: "Jeep Grand Cherokee", rarity: .common, number: 83),
-        BoosterCard(name: "Hyundai Tucson", rarity: .common, number: 84), 
+        BoosterCard(name: "Hyundai Tucson", rarity: .common, number: 84),
         BoosterCard(name: "Chevrolet Trax", rarity: .common, number: 85),
         BoosterCard(name: "Ford Explorer", rarity: .common, number: 86),
         BoosterCard(name: "Toyota Tacoma", rarity: .common, number: 87),
         BoosterCard(name: "Subaru Crosstrek", rarity: .common, number: 88),
         BoosterCard(name: "Subaru Forester", rarity: .common, number: 89),
-        BoosterCard(name: "Subaru Outback", rarity: .common, number: 90), 
+        BoosterCard(name: "Subaru Outback", rarity: .common, number: 90),
         BoosterCard(name: "Honda Accord", rarity: .common, number: 91),
-        BoosterCard(name: "Kia Sportage", rarity: .common, number: 92), 
+        BoosterCard(name: "Kia Sportage", rarity: .common, number: 92),
         BoosterCard(name: "Toyota Tundra", rarity: .common, number: 93),
         BoosterCard(name: "Ford Transit", rarity: .common, number: 94),
         BoosterCard(name: "Nissan Sentra", rarity: .common, number: 95),
@@ -717,64 +717,64 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Cyber Truck EX", rarity: .holographicEX, number: 255),
     ]
 
-    private let allCards: [BoosterCard] 
+    private let allCards: [BoosterCard]
     private let referralCardPool: [BoosterCard] = [
-        BoosterCard(name: "Tesla Model S", rarity: .referral, number: 256, imageName: "Tesla_Model_S"),
-        BoosterCard(name: "Tesla Model 3", rarity: .referral, number: 257, imageName: "Tesla_Model_3"),
-        BoosterCard(name: "Tesla Model X", rarity: .referral, number: 258, imageName: "Tesla_Model_X"),
-        BoosterCard(name: "Tesla Model Y", rarity: .referral, number: 259, imageName: "Tesla_Model_Y"),
-        BoosterCard(name: "Porsche Taycan", rarity: .referral, number: 260, imageName: "Porsche_Taycan"),
-        BoosterCard(name: "Audi e-tron GT", rarity: .referral, number: 261, imageName: "Audi_e-tron_GT"),
-        BoosterCard(name: "Jaguar I-PACE", rarity: .referral, number: 262, imageName: "Jaguar_I-PACE"),
-        BoosterCard(name: "Nissan Leaf", rarity: .referral, number: 263, imageName: "Nissan_Leaf"),
-        BoosterCard(name: "Chevrolet Bolt EV", rarity: .referral, number: 264, imageName: "Chevrolet_Bolt_EV"),
-        BoosterCard(name: "Ford Mustang Mach-E", rarity: .referral, number: 265, imageName: "Ford_Mustang_Mach-E"),
-        BoosterCard(name: "BMW i3", rarity: .referral, number: 266, imageName: "BMW_i3"),
-        BoosterCard(name: "Hyundai Kona Electric", rarity: .referral, number: 267, imageName: "Hyundai_Kona_Electric"),
-        BoosterCard(name: "Kia Soul EV", rarity: .referral, number: 268, imageName: "Kia_Soul_EV"),
-        BoosterCard(name: "Rivian R1T", rarity: .referral, number: 269, imageName: "Rivian_R1T"),
-        BoosterCard(name: "Rivian R1S", rarity: .referral, number: 270, imageName: "Rivian_R1S"),
-        BoosterCard(name: "Lucid Air", rarity: .referral, number: 271, imageName: "Lucid_Air"),
-        BoosterCard(name: "Polestar 2", rarity: .referral, number: 272, imageName: "Polestar_2"),
-        BoosterCard(name: "Ford F-150 Lightning", rarity: .referral, number: 273, imageName: "Ford_F-150_Lightning"),
-        BoosterCard(name: "GMC Hummer EV", rarity: .referral, number: 274, imageName: "GMC_Hummer_EV"),
-        BoosterCard(name: "Volkswagen ID.4", rarity: .referral, number: 275, imageName: "Volkswagen_ID.4"),
-        BoosterCard(name: "Tesla Cybertruck", rarity: .referral, number: 276, imageName: "Tesla_Cybertruck"),
-        BoosterCard(name: "BMW i8", rarity: .referral, number: 277, imageName: "BMW_i8"),
-        BoosterCard(name: "Tesla Roadster", rarity: .referral, number: 278, imageName: "Tesla_Roadster"),
-        BoosterCard(name: "Audi e-tron", rarity: .referral, number: 279, imageName: "Audi_e-tron"),
-        BoosterCard(name: "Mercedes-Benz EQC", rarity: .referral, number: 280, imageName: "Mercedes-Benz_EQC"),
-        BoosterCard(name: "Volvo XC40 Recharge", rarity: .referral, number: 281, imageName: "Volvo_XC40_Recharge"),
-        BoosterCard(name: "Hyundai Ioniq 5", rarity: .referral, number: 282, imageName: "Hyundai_Ioniq_5"),
-        BoosterCard(name: "Kia EV6", rarity: .referral, number: 283, imageName: "Kia_EV6"),
-        BoosterCard(name: "Nissan Ariya", rarity: .referral, number: 284, imageName: "Nissan_Ariya"),
-        BoosterCard(name: "Ford E-Transit", rarity: .referral, number: 285, imageName: "Ford_E-Transit"),
-        BoosterCard(name: "Chevrolet Silverado EV", rarity: .referral, number: 286, imageName: "Chevrolet_Silverado_EV"),
-        BoosterCard(name: "GMC Sierra EV", rarity: .referral, number: 287, imageName: "GMC_Sierra_EV"),
-        BoosterCard(name: "Ram 1500 EV", rarity: .referral, number: 288, imageName: "Ram_1500_EV"),
-        BoosterCard(name: "Tesla Semi", rarity: .referral, number: 289, imageName: "Tesla_Semi"),
-        BoosterCard(name: "Rivian EDV", rarity: .referral, number: 290, imageName: "Rivian_EDV"),
-        BoosterCard(name: "BrightDrop EV600", rarity: .referral, number: 291, imageName: "BrightDrop_EV600"),
-        BoosterCard(name: "Ford E-Transit Van", rarity: .referral, number: 292, imageName: "Ford_E-Transit_Van"),
-        BoosterCard(name: "Mercedes-Benz eSprinter", rarity: .referral, number: 293, imageName: "Mercedes-Benz_eSprinter"),
-        BoosterCard(name: "Volkswagen ID. Buzz", rarity: .referral, number: 294, imageName: "Volkswagen_ID_Buzz"),
-        BoosterCard(name: "Canter E-Cell", rarity: .referral, number: 295, imageName: "Canter_E-Cell"),
-        BoosterCard(name: "BYD T3", rarity: .referral, number: 296, imageName: "BYD_T3"),
-        BoosterCard(name: "Nissan e-NV200", rarity: .referral, number: 297, imageName: "Nissan_e-NV200"),
-        BoosterCard(name: "Renault Kangoo Z.E.", rarity: .referral, number: 298, imageName: "Renault_Kangoo_Z.E."),
-        BoosterCard(name: "Peugeot e-Partner", rarity: .referral, number: 299, imageName: "Peugeot_e-Partner"),
-        BoosterCard(name: "Citroën e-Berlingo", rarity: .referral, number: 300, imageName: "Citroën_e-Berlingo"),
-        BoosterCard(name: "Opel Vivaro-e", rarity: .referral, number: 301, imageName: "Opel_Vivaro-e"),
-        BoosterCard(name: "Fiat E-Ducato", rarity: .referral, number: 302, imageName: "Fiat_E-Ducato"),
-        BoosterCard(name: "Iveco Daily Electric", rarity: .referral, number: 303, imageName: "Iveco_Daily_Electric"),
-        BoosterCard(name: "Maxus eDeliver 3", rarity: .referral, number: 304, imageName: "Maxus_eDeliver_3"),
-        BoosterCard(name: "LDV EV80", rarity: .referral, number: 305, imageName: "LDV_EV80")
+        BoosterCard(name: "Tesla Model S", rarity: .referral, number: 256, imageName: "Tesl Model S"),
+        BoosterCard(name: "Tesla Model 3", rarity: .referral, number: 257, imageName: "Tesla Model 3"),
+        BoosterCard(name: "Tesla Model X", rarity: .referral, number: 258, imageName: "Tesla Model X"),
+        BoosterCard(name: "Tesla Model Y", rarity: .referral, number: 259, imageName: "Tesla Model Y"),
+        BoosterCard(name: "Porsche Taycan", rarity: .referral, number: 260, imageName: "Porsche Taycan"),
+        BoosterCard(name: "Audi e-tron GT", rarity: .referral, number: 261, imageName: "Audi e tron GT"),
+        BoosterCard(name: "Jaguar I-PACE", rarity: .referral, number: 262, imageName: "Jaguar I PACE"),
+        BoosterCard(name: "Nissan Leaf", rarity: .referral, number: 263, imageName: "Nissan Leaf"),
+        BoosterCard(name: "Chevrolet Bolt EV", rarity: .referral, number: 264, imageName: "Chevrolet Bolt EV"),
+        BoosterCard(name: "Ford Mustang Mach-E", rarity: .referral, number: 265, imageName: "Ford Mustang Mach E"),
+        BoosterCard(name: "BMW i3", rarity: .referral, number: 266, imageName: "BMW i3"),
+        BoosterCard(name: "Hyundai Kona Electric", rarity: .referral, number: 267, imageName: "Hyundai Kona Electric"),
+        BoosterCard(name: "Kia Soul EV", rarity: .referral, number: 268, imageName: "Kia Soul EV"),
+        BoosterCard(name: "Rivian R1T", rarity: .referral, number: 269, imageName: "Rivian R1T"),
+        BoosterCard(name: "Rivian R1S", rarity: .referral, number: 270, imageName: "Rivian R1S"),
+        BoosterCard(name: "Lucid Air", rarity: .referral, number: 271, imageName: "Lucid Air"),
+        BoosterCard(name: "Polestar 2", rarity: .referral, number: 272, imageName: "Polestar 2"),
+        BoosterCard(name: "Ford F-150 Lightning", rarity: .referral, number: 273, imageName: "Ford F 150 Lightning"),
+        BoosterCard(name: "GMC Hummer EV", rarity: .referral, number: 274, imageName: "GMC Hummer EV"),
+        BoosterCard(name: "Volkswagen ID.4", rarity: .referral, number: 275, imageName: "Volkswagen ID.4"),
+        BoosterCard(name: "Tesla Cybertruck", rarity: .referral, number: 276, imageName: "Tesla Cybertruck"),
+        BoosterCard(name: "BMW i8", rarity: .referral, number: 277, imageName: "BMW i8"),
+        BoosterCard(name: "Tesla Roadster", rarity: .referral, number: 278, imageName: "Tesla Roadster"),
+        BoosterCard(name: "Audi e-tron", rarity: .referral, number: 279, imageName: "Audi e tron"),
+        BoosterCard(name: "Mercedes-Benz EQC", rarity: .referral, number: 280, imageName: "Mercedes Benz EQC"),
+        BoosterCard(name: "Volvo XC40 Recharge", rarity: .referral, number: 281, imageName: "Volvo XC40 Recharge"),
+        BoosterCard(name: "Hyundai Ioniq 5", rarity: .referral, number: 282, imageName: "Hyundai Ioniq 5"),
+        BoosterCard(name: "Kia EV6", rarity: .referral, number: 283, imageName: "Kia EV6"),
+        BoosterCard(name: "Nissan Ariya", rarity: .referral, number: 284, imageName: "Nissan Ariya"),
+        BoosterCard(name: "Ford E-Transit", rarity: .referral, number: 285, imageName: "Ford E Transit"),
+        BoosterCard(name: "Chevrolet Silverado EV", rarity: .referral, number: 286, imageName: "Chevrolet Silverado EV"),
+        BoosterCard(name: "GMC Sierra EV", rarity: .referral, number: 287, imageName: "GMC Sierra EV"),
+        BoosterCard(name: "Ram 1500 EV", rarity: .referral, number: 288, imageName: "Ram 1500 EV"),
+        BoosterCard(name: "Tesla Semi", rarity: .referral, number: 289, imageName: "Tesla Semi"),
+        BoosterCard(name: "Rivian EDV", rarity: .referral, number: 290, imageName: "Rivian EDV"),
+        BoosterCard(name: "BrightDrop EV600", rarity: .referral, number: 291, imageName: "BrightDrop EV600"),
+        BoosterCard(name: "Ford E-Transit Van", rarity: .referral, number: 292, imageName: "Ford E- Transit Van"),
+        BoosterCard(name: "Mercedes-Benz eSprinter", rarity: .referral, number: 293, imageName: "Mercedes Benz eSprinter"),
+        BoosterCard(name: "Volkswagen ID. Buzz", rarity: .referral, number: 294, imageName: "Volkswagen ID Buzz"),
+        BoosterCard(name: "Canter E-Cell", rarity: .referral, number: 295, imageName: "Canter E Cell"),
+        BoosterCard(name: "BYD T3", rarity: .referral, number: 296, imageName: "BYD T3"),
+        BoosterCard(name: "Nissan e-NV200", rarity: .referral, number: 297, imageName: "Nissan e NV200"),
+        BoosterCard(name: "Renault Kangoo Z.E.", rarity: .referral, number: 298, imageName: "Renault Kangoo Z.E."),
+        BoosterCard(name: "Peugeot e-Partner", rarity: .referral, number: 299, imageName: "Peugeot e Partner"),
+        BoosterCard(name: "Citroen e-Berlingo", rarity: .referral, number: 300, imageName: "Citroen e Berlingo"),
+        BoosterCard(name: "Opel Vivaro-e", rarity: .referral, number: 301, imageName: "Opel Vivaro e"),
+        BoosterCard(name: "Fiat E-Ducato", rarity: .referral, number: 302, imageName: "Fiat E Ducato"),
+        BoosterCard(name: "Iveco Daily Electric", rarity: .referral, number: 303, imageName: "Iveco Daily Electric"),
+        BoosterCard(name: "Maxus eDeliver 3", rarity: .referral, number: 304, imageName: "Maxus eDeliver 3"),
+        BoosterCard(name: "LDV EV80", rarity: .referral, number: 305, imageName: "LDV EV80")
 
         // Add more referral-specific cards here
     ]
 
     private let referralTierProbabilities: [CardRarity: Double] = [
-        .referral: 1.0 
+        .referral: 1.0
     ]
 
     private let probabilityToDrawReferralCardInEarlySlots: Double = 0.20 // 20% chance
@@ -782,25 +782,25 @@ struct BoosterOpeningView: View {
     init(collectionManager: CollectionManager, context: BoosterContext) {
         self._collectionManager = ObservedObject(wrappedValue: collectionManager)
         self._storeManager = ObservedObject(wrappedValue: StoreManager.shared)
-        self.context = context 
+        self.context = context
 
         var generatedCards = baseCards
-        for card in baseCards { 
+        for card in baseCards {
             if card.number >= 1 && card.number <= 250 &&
                card.rarity != .holographicEX && card.rarity != .HolyT && card.rarity != .Season1 {
                 let exCard = BoosterCard(
                     name: "\(card.name) EX",
-                    rarity: .holographicEX, 
-                    number: card.number + 255, 
-                    imageName: "\(card.imageName)_EX" 
+                    rarity: .holographicEX,
+                    number: card.number + 255,
+                    imageName: "\(card.imageName)EX"
                 )
                 generatedCards.append(exCard)
             }
         }
         self.allCards = generatedCards
-        print("BoosterOpeningView: Initialized. Context: \(context). Total generic cards (incl. derived EX): \(self.allCards.count)")
-        if self.allCards.count != 505 && !context.isReferral { 
-            print("WARNING: Expected 505 generic cards, but found \(self.allCards.count). Check baseCards and EX generation logic.")
+        print("BoosterOpeningView: Initialized. Context: \(context). Total generic cards (incl. derived EX from numbers <=250): \(self.allCards.count)")
+        if self.allCards.count != 605 && !context.isReferral {
+            print("WARNING: Expected 605 generic cards, but found \(self.allCards.count). Check baseCards and EX generation logic if all cards are intended to be in this list.")
         }
         print("ELECTRIC card pool size: \(self.referralCardPool.count)")
     }
@@ -817,7 +817,7 @@ struct BoosterOpeningView: View {
                     if isOpening {
                         VStack(spacing: 30) {
                             Spacer()
-                            Image(context.imageName) 
+                            Image(context.imageName)
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 300, height: 400)
@@ -903,7 +903,7 @@ struct BoosterOpeningView: View {
                     ZStack {
                         ZStack(alignment: .topTrailing) {
                             HolographicCard(
-                                cardImage: selectedCard.imageName, 
+                                cardImage: selectedCard.imageName,
                                 rarity: selectedCard.rarity,
                                 cardNumber: selectedCard.number
                             )
@@ -916,7 +916,7 @@ struct BoosterOpeningView: View {
                                     cardScale = cardScale == 1.3 ? 2.0 : 1.3
                                 }
                             }
-                            if collectionManager.isNewCard(selectedCard) { 
+                            if collectionManager.isNewCard(selectedCard) {
                                 NewCardBadge().offset(x: -20, y: 20)
                                     .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .scale.combined(with: .opacity)))
                             }
@@ -951,7 +951,7 @@ struct BoosterOpeningView: View {
         withAnimation { showGestureHint = false }
         withAnimation(.easeInOut(duration: 0.3)) { cardOffset = -UIScreen.main.bounds.height }
         
-        if !drawnCards.contains(where: { $0.number == selectedCard.number }) { 
+        if !drawnCards.contains(where: { $0.number == selectedCard.number }) {
             drawnCards.append(selectedCard)
         }
         
@@ -978,10 +978,10 @@ struct BoosterOpeningView: View {
     }
 
     private func drawNextCardForReferralBooster() -> BoosterCard {
-        if currentCardIndex == 4 { 
+        if currentCardIndex == 4 {
             print("Drawing GUARANTEED ELECTRIC card for slot 5 (index 4).")
             return randomReferralCard()
-        } else { 
+        } else {
             if Double.random(in: 0...1) < probabilityToDrawReferralCardInEarlySlots {
                 print("Drawing ELECTRIC card for early slot \(currentCardIndex + 1) due to probability roll.")
                 return randomReferralCard()
@@ -1002,9 +1002,9 @@ struct BoosterOpeningView: View {
         for (_, prob) in sortedTierProbabilities { totalTierProb += prob }
         if abs(totalTierProb - 1.0) > 0.00001 { print("WARNING: Generic tier prob sum is \(totalTierProb)")}
 
-        let randomTarget = Double.random(in: 0.0..<totalTierProb) 
+        let randomTarget = Double.random(in: 0.0..<totalTierProb)
         var cumulativeProbability: Double = 0.0
-        var selectedRarity: CardRarity = .common 
+        var selectedRarity: CardRarity = .common
 
         for (rarity, probability) in sortedTierProbabilities {
             cumulativeProbability += probability
@@ -1028,7 +1028,7 @@ struct BoosterOpeningView: View {
 
         let randomTarget = Double.random(in: 0.0..<totalTierProb)
         var cumulativeProbability: Double = 0.0
-        var selectedRarity: CardRarity = .common 
+        var selectedRarity: CardRarity = .common
 
         for (rarity, probability) in sortedTierProbabilities {
             cumulativeProbability += probability

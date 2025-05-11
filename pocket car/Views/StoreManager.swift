@@ -120,6 +120,7 @@ class StoreManager: ObservableObject {
             }
             UserDefaults.standard.set(currentTime, forKey: lastValidatedBoosterTimestampKey)
             UserDefaults.standard.set(currentUptime, forKey: lastValidatedBoosterUptimeKey)
+            UserDefaults.standard.synchronize() // Consider if needed, usually auto-syncs
             return
         }
 
@@ -127,44 +128,59 @@ class StoreManager: ObservableObject {
             let timeShiftDetected = validReferenceTimestamp - currentTime
             print("StoreManager (Booster): ⚠️ Time cheat detected (clock moved backwards by \(timeShiftDetected)s). Current: \(Date(timeIntervalSince1970:currentTime)), Ref: \(Date(timeIntervalSince1970:validReferenceTimestamp))")
             
-            let newTargetUnlockTime = validReferenceTimestamp + boosterCooldown
+            let newTargetUnlockTime = validReferenceTimestamp + boosterCooldown // Base penalty on last known good time
             self.nextFreeBoosterDate = Date(timeIntervalSince1970: newTargetUnlockTime)
             
             print("StoreManager (Booster): Adjusted target unlock to \(self.nextFreeBoosterDate!) due to time cheat.")
             
-            UserDefaults.standard.set(currentTime, forKey: lastValidatedBoosterTimestampKey)
+            UserDefaults.standard.set(currentTime, forKey: lastValidatedBoosterTimestampKey) // Update to current (cheated) time to prevent repeated penalty for same event
             UserDefaults.standard.set(currentUptime, forKey: lastValidatedBoosterUptimeKey)
-            return 
+            UserDefaults.standard.synchronize() // Ensure save
+            return
         }
 
         var didApplyForwardPenalty = false
-        if currentUptime >= previousUptime {
-            let wallTimeDelta = currentTime - validReferenceTimestamp 
-            let uptimeDelta = currentUptime - previousUptime     
-            let detectedJump = wallTimeDelta - uptimeDelta
+        if currentUptime >= previousUptime { // No reboot detected
+            let wallTimeDelta = currentTime - validReferenceTimestamp
+            let uptimeDelta = currentUptime - previousUptime
+            let rawDetectedJump = wallTimeDelta - uptimeDelta
 
-            print("StoreManager (Booster): Forward check - WallTimeDelta: \(wallTimeDelta)s, UptimeDelta: \(uptimeDelta)s, DetectedJump: \(detectedJump)s")
+            print("StoreManager (Booster): Forward check - WallTimeDelta: \(wallTimeDelta)s, UptimeDelta: \(uptimeDelta)s, RawDetectedJump: \(rawDetectedJump)s")
 
-            if detectedJump > minAdvanceForPenalty + timeCheatTolerance {
-                print("StoreManager (Booster): ⚠️ Forward time cheat detected (Jump: \(detectedJump)s).")
+            var jumpToPenalize = rawDetectedJump
+            
+            if rawDetectedJump > 0 {
+                let maxExpectedSleepDiscrepancyRatio = 0.95
+                let expectedMaxDiscrepancyDueToSleep = wallTimeDelta * maxExpectedSleepDiscrepancyRatio
+                let unexplainedJumpBeyondSleep = max(0, rawDetectedJump - expectedMaxDiscrepancyDueToSleep)
+                
+                if unexplainedJumpBeyondSleep < rawDetectedJump { // Log if adjustment happened
+                    print("StoreManager (Booster): Adjusted raw jump. Expected max sleep discrepancy: \(expectedMaxDiscrepancyDueToSleep)s. Unexplained jump beyond sleep: \(unexplainedJumpBeyondSleep)s.")
+                }
+                jumpToPenalize = unexplainedJumpBeyondSleep
+            }
+
+            if jumpToPenalize > minAdvanceForPenalty + timeCheatTolerance {
+                print("StoreManager (Booster): ⚠️ Forward time cheat detected (Penalizable Jump: \(jumpToPenalize)s).")
                 
                 let penaltyMultiplier = self.forwardTimeCheatPenaltyFactor > 1.0 ? (self.forwardTimeCheatPenaltyFactor - 1.0) : 0.0
-                let penaltyAmount = detectedJump * penaltyMultiplier 
+                let penaltyAmount = jumpToPenalize * penaltyMultiplier
 
                 let newTargetUnlockTimeWithPenalty = currentTime + self.boosterCooldown + penaltyAmount
                 self.nextFreeBoosterDate = Date(timeIntervalSince1970: newTargetUnlockTimeWithPenalty)
                 
-                print("StoreManager (Booster): Forward cheat penalized. Next booster at \(self.nextFreeBoosterDate!).")
+                print("StoreManager (Booster): Forward cheat penalized. Next booster at \(self.nextFreeBoosterDate!). Penalty amount: \(penaltyAmount)s.")
                 didApplyForwardPenalty = true
             } else {
-                print("StoreManager (Booster): No forward time cheat detected or jump (\(detectedJump)s) is insignificant.")
+                print("StoreManager (Booster): No significant forward time cheat detected or jump (\(jumpToPenalize)s after sleep adjustment) is insignificant.")
             }
-        } else { 
-            print("StoreManager (Booster): Device reboot detected. Skipping forward time cheat detection.")
+        } else {
+            print("StoreManager (Booster): Device reboot detected (currentUptime \(currentUptime) < previousUptime \(previousUptime)). Skipping forward time cheat detection for this cycle.")
         }
 
         UserDefaults.standard.set(currentTime, forKey: lastValidatedBoosterTimestampKey)
         UserDefaults.standard.set(currentUptime, forKey: lastValidatedBoosterUptimeKey)
+        UserDefaults.standard.synchronize() // Ensure these critical values are saved
 
         if !didApplyForwardPenalty {
             if let storedTimestamp = UserDefaults.standard.object(forKey: "nextBoosterTimestamp_v2") as? TimeInterval {
@@ -195,7 +211,7 @@ class StoreManager: ObservableObject {
 
         if validReferenceTimestamp == 0 || previousUptime == 0 {
             print("StoreManager (DailyQuest): Initializing daily quest timestamps. ValidRefTS: \(validReferenceTimestamp), PrevUptime: \(previousUptime)")
-            if UserDefaults.standard.object(forKey: "nextDailyQuestTimestamp") == nil { // Check if it was ever set
+            if UserDefaults.standard.object(forKey: "nextDailyQuestTimestamp") == nil {
                 nextDailyQuestDate = Date(timeIntervalSince1970: currentTime)
                 print("StoreManager (DailyQuest): Initialized nextDailyQuestDate to current time: \(self.nextDailyQuestDate!)")
             } else if let storedTimestamp = UserDefaults.standard.object(forKey: "nextDailyQuestTimestamp") as? TimeInterval {
@@ -204,6 +220,7 @@ class StoreManager: ObservableObject {
             }
             UserDefaults.standard.set(currentTime, forKey: lastValidatedDailyQuestTimestampKey)
             UserDefaults.standard.set(currentUptime, forKey: lastValidatedDailyQuestUptimeKey)
+            UserDefaults.standard.synchronize()
             return
         }
 
@@ -218,37 +235,52 @@ class StoreManager: ObservableObject {
             
             UserDefaults.standard.set(currentTime, forKey: lastValidatedDailyQuestTimestampKey)
             UserDefaults.standard.set(currentUptime, forKey: lastValidatedDailyQuestUptimeKey)
+            UserDefaults.standard.synchronize()
             return
         }
 
         var didApplyForwardPenalty = false
-        if currentUptime >= previousUptime {
+        if currentUptime >= previousUptime { // No reboot
             let wallTimeDelta = currentTime - validReferenceTimestamp
             let uptimeDelta = currentUptime - previousUptime
-            let detectedJump = wallTimeDelta - uptimeDelta
+            let rawDetectedJump = wallTimeDelta - uptimeDelta
 
-            print("StoreManager (DailyQuest): Forward check - WallTimeDelta: \(wallTimeDelta)s, UptimeDelta: \(uptimeDelta)s, DetectedJump: \(detectedJump)s")
+            print("StoreManager (DailyQuest): Forward check - WallTimeDelta: \(wallTimeDelta)s, UptimeDelta: \(uptimeDelta)s, RawDetectedJump: \(rawDetectedJump)s")
+            
+            var jumpToPenalize = rawDetectedJump
 
-            if detectedJump > minAdvanceForPenalty + timeCheatTolerance {
-                print("StoreManager (DailyQuest): ⚠️ Forward time cheat detected (Jump: \(detectedJump)s).")
+            if rawDetectedJump > 0 {
+                let maxExpectedSleepDiscrepancyRatio = 0.95
+                let expectedMaxDiscrepancyDueToSleep = wallTimeDelta * maxExpectedSleepDiscrepancyRatio
+                let unexplainedJumpBeyondSleep = max(0, rawDetectedJump - expectedMaxDiscrepancyDueToSleep)
+                
+                if unexplainedJumpBeyondSleep < rawDetectedJump {
+                     print("StoreManager (DailyQuest): Adjusted raw jump. Expected max sleep discrepancy: \(expectedMaxDiscrepancyDueToSleep)s. Unexplained jump beyond sleep: \(unexplainedJumpBeyondSleep)s.")
+                }
+                jumpToPenalize = unexplainedJumpBeyondSleep
+            }
+
+            if jumpToPenalize > minAdvanceForPenalty + timeCheatTolerance {
+                print("StoreManager (DailyQuest): ⚠️ Forward time cheat detected (Penalizable Jump: \(jumpToPenalize)s).")
                 
                 let penaltyMultiplier = self.forwardTimeCheatPenaltyFactor > 1.0 ? (self.forwardTimeCheatPenaltyFactor - 1.0) : 0.0
-                let penaltyAmount = detectedJump * penaltyMultiplier
+                let penaltyAmount = jumpToPenalize * penaltyMultiplier
 
                 let newTargetUnlockTimeWithPenalty = currentTime + self.dailyQuestCooldown + penaltyAmount
                 self.nextDailyQuestDate = Date(timeIntervalSince1970: newTargetUnlockTimeWithPenalty)
                 
-                print("StoreManager (DailyQuest): Forward cheat penalized. Next quest at \(self.nextDailyQuestDate!).")
+                print("StoreManager (DailyQuest): Forward cheat penalized. Next quest at \(self.nextDailyQuestDate!). Penalty amount: \(penaltyAmount)s.")
                 didApplyForwardPenalty = true
             } else {
-                print("StoreManager (DailyQuest): No forward time cheat detected or jump (\(detectedJump)s) is insignificant.")
+                print("StoreManager (DailyQuest): No significant forward time cheat detected or jump (\(jumpToPenalize)s after sleep adjustment) is insignificant.")
             }
         } else {
-            print("StoreManager (DailyQuest): Device reboot detected. Skipping forward time cheat detection.")
+            print("StoreManager (DailyQuest): Device reboot detected (currentUptime \(currentUptime) < previousUptime \(previousUptime)). Skipping forward time cheat detection for this cycle.")
         }
 
         UserDefaults.standard.set(currentTime, forKey: lastValidatedDailyQuestTimestampKey)
         UserDefaults.standard.set(currentUptime, forKey: lastValidatedDailyQuestUptimeKey)
+        UserDefaults.standard.synchronize()
 
         if !didApplyForwardPenalty {
             if let storedTimestamp = UserDefaults.standard.object(forKey: "nextDailyQuestTimestamp") as? TimeInterval {
