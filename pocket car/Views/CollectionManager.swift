@@ -230,6 +230,7 @@ class CollectionManager: ObservableObject {
         case .rare: return 20
         case .epic: return 50
         case .legendary: return 75
+        case .referral: return 75
         case .HolyT: return 200
         case .Season1: return 1000
         case .holographicEX: return 150

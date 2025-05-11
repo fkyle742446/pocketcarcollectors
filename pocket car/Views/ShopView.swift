@@ -5,16 +5,15 @@ import StoreKit
 struct ShopView: View {
     @ObservedObject var collectionManager: CollectionManager
     @ObservedObject var storeManager: StoreManager
+    @StateObject private var referralManager = ReferralManager.shared
     @StateObject private var iapManager = IAPManager.shared
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.presentationMode) var presentationMode
     @State private var showingInsufficientCoinsAlert = false
     @State private var showingPurchaseAlert = false
-    @State private var showingBundlePurchaseAlert = false
     @State private var showingPurchaseErrorAlert = false
     @State private var glowRotationAngle: Double = 0
     @State private var selectedBoosterType: BoosterType = .single
-    
+
     enum BoosterType {
         case single
         case bundle
@@ -55,10 +54,7 @@ struct ShopView: View {
             if iapManager.productsLoaded {
                 VStack(spacing: 0) {
                     ScrollView {
-                        VStack(spacing: 20) {
-                            Spacer(minLength: 20)
-                            
-                            // Top coins display
+                        VStack(spacing: 16) {
                             HStack {
                                 Spacer()
                                 HStack(spacing: 10) {
@@ -80,21 +76,15 @@ struct ShopView: View {
                             }
                             .padding(.horizontal)
                             
-                            Spacer(minLength: 20)
-                            
-                            // Boosters section
                             HStack(spacing: 15) {
-                                // Single Booster
                                 boosterCard(image: "booster_closed_1", price: 100, count: 1, type: .single)
                                     .frame(maxWidth: .infinity)
                                 
-                                // Bundle Pack
                                 boosterCard(image: "booster_closed_2", price: 400, count: 5, type: .bundle, isBundle: true)
                                     .frame(maxWidth: .infinity)
                             }
                             .padding(.horizontal)
                             
-                            // IAP Section
                             if iapManager.productsLoaded {
                                 VStack(spacing: 12) {
                                     let sortedProducts = iapManager.products.sorted { product1, product2 in
@@ -108,15 +98,12 @@ struct ShopView: View {
                                         coinPurchaseCard(for: product)
                                     }
                                 }
-                                .padding(.top, 8)
                             } else {
-                                // Loading indicator for products
                                 ProgressView()
                                     .scaleEffect(1.5)
                                     .frame(height: 100)
                             }
                             
-                            // Slot Machine Button
                             NavigationLink(destination: SlotMachineView(collectionManager: collectionManager)) {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 25)
@@ -163,13 +150,40 @@ struct ShopView: View {
                                 }
                             }
                             .padding(.horizontal)
-                            .padding(.top, 8)
                             
-                            Spacer(minLength: 100)
+                            NavigationLink(destination: ReferralView(referralManager: referralManager, storeManager: storeManager, collectionManager: collectionManager)) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .fill(Color.white)
+                                        .frame(height: 80)
+                                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                                    
+                                    HStack(spacing: 20) {
+                                        Image(systemName: "person.2.fill")
+                                            .font(.system(size: 24))
+                                            .foregroundColor(.orange)
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Referral Program")
+                                                .font(.system(size: 18, weight: .bold))
+                                                .foregroundColor(.gray)
+                                            
+                                            Text("Invite friends, earn rewards!")
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.gray.opacity(0.8))
+                                        }
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                           .foregroundColor(.gray.opacity(0.5))
+                                    }
+                                    .padding(.horizontal, 20)
+                                }
+                            }
+                            .padding(.horizontal)
                         }
+                        .padding(.vertical, 20)
                     }
                     
-                    // Home button en bas fixe
                     Button(action: {
                         dismiss()
                     }) {
@@ -204,7 +218,8 @@ struct ShopView: View {
                             }
                         )
                     }
-                    .padding(.vertical, 20)
+                    .padding(.bottom, 20)
+                    .padding(.top, 10)
                 }
             } else {
                 VStack {
@@ -219,9 +234,10 @@ struct ShopView: View {
         }
         .onAppear {
             if iapManager.products.isEmpty {
-                Task {
-                    await iapManager.loadProducts()
-                }
+                Task { await iapManager.loadProducts() }
+            }
+            withAnimation(.linear(duration: 5).repeatForever(autoreverses: false)) {
+                glowRotationAngle = 360
             }
         }
         .alert("Erreur d'achat", isPresented: $showingPurchaseErrorAlert) {
@@ -266,8 +282,6 @@ struct ShopView: View {
                             } else if product.id == "com.pocketcarcollectors.pack500coins" {
                                 collectionManager.coins += 500
                             }
-                            // NOTE: You might want to add a general save function for collectionManager here if needed
-                            // e.g., collectionManager.saveCollection()
                         }
                     }
                 } catch {
@@ -284,7 +298,6 @@ struct ShopView: View {
                     .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                 
                 HStack(spacing: 20) {
-                    // Coin stack visualization
                     ZStack {
                         ForEach(0..<(product.id.contains("500") ? 3 : 1), id: \.self) { index in
                             Image("coin")
@@ -332,43 +345,34 @@ struct ShopView: View {
                 showingInsufficientCoinsAlert = true
             }
         }) {
-            ZStack { // Arrière-plan de la carte
+            ZStack {
                 RoundedRectangle(cornerRadius: 25)
                     .fill(Color.white)
                     .frame(height: 180)
                     .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                 
-                VStack(spacing: 15) { // Contenu principal de la carte
-                    ZStack { // Conteneur pour les images de boosters
+                VStack(spacing: 15) {
+                    ZStack {
                         if isBundle {
-                            // Affichage des 5 boosters avec décalages
                             ZStack {
                                 ForEach(0..<5) { index in
-                                    // Index normalisé de -2 (gauche) à +2 (droite), 0 au centre
                                     let normalizedIndex = index - 2
                                     
-                                    // Décalage horizontal pour les espacer ou les faire se chevaucher
-                                    // Un facteur plus petit les rapproche (chevauchement si < largeur image)
-                                    // Un facteur plus grand les espace davantage
-                                    let xOffset = CGFloat(normalizedIndex) * 35.0 // Ajustez 35.0 pour l'espacement désiré
+                                    let xOffset = CGFloat(normalizedIndex) * 35.0
                                     
-                                    // Léger décalage vertical pour les boosters extérieurs pour un effet de profondeur ou d'arc très subtil
-                                    // Mettre à 0 si vous voulez un alignement vertical parfait.
                                     let yOffset = abs(normalizedIndex) == 2 ? CGFloat(5.0) : (abs(normalizedIndex) == 1 ? CGFloat(2.0) : CGFloat(0.0))
                                                                         
                                     Image(index % 2 == 0 ? "booster_closed_1" : "booster_closed_2")
                                         .resizable()
                                         .aspectRatio(contentMode: .fit)
-                                        .frame(height: 80) // Hauteur de chaque image de booster
+                                        .frame(height: 80)
                                         .offset(x: xOffset, y: yOffset)
-                                        // zIndex pour que le booster central (index 2) soit au-dessus
                                         .zIndex(Double(-abs(normalizedIndex)))
                                 }
                             }
-                            .frame(height: 90) // Hauteur du conteneur des boosters, ajustez si besoin
+                            .frame(height: 90)
                             .shadow(color: .black.opacity(0.15), radius: 3, y: 1)
                             
-                            // Badge "1 FREE"
                             Text("1 FREE")
                                 .font(.system(size: 12, weight: .heavy))
                                 .foregroundColor(.white)
@@ -380,21 +384,18 @@ struct ShopView: View {
                                         Capsule().stroke(Color.white, lineWidth: 1.5)
                                     }
                                 )
-                                .rotationEffect(.degrees(-10)) // Garder une petite rotation pour le style du badge
-                                // Ajuster l'offset du badge
-                                .offset(x: 50, y: -30) // Ajustez selon la nouvelle disposition des boosters
+                                .rotationEffect(.degrees(-10))
+                                .offset(x: 50, y: -30)
                                 .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
                         } else {
-                            // Affichage pour un booster unique
                             Image(image)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
                                 .frame(height: 80)
                                 .shadow(radius: 5)
                         }
-                    } // Fin ZStack images boosters
+                    }
 
-                    // VStack pour le texte (nombre de boosters et prix)
                     VStack(spacing: 4) {
                         Text(isBundle ? "5 boosters" : "1 booster")
                             .font(.system(size: 14, weight: .medium))
@@ -402,12 +403,12 @@ struct ShopView: View {
                         
                         HStack(spacing: 6) {
                             if isBundle {
-                                Text("500") // Prix barré
+                                Text("500")
                                     .strikethrough()
                                     .foregroundColor(.gray)
                                     .font(.system(size: 12))
                             }
-                            HStack(spacing: 4) { // Prix actuel
+                            HStack(spacing: 4) {
                                 Text("\(price)")
                                     .fontWeight(.semibold)
                                     .foregroundColor(Color.primary)
@@ -425,10 +426,10 @@ struct ShopView: View {
                             .fill(Color.white)
                             .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                     )
-                } // Fin VStack contenu principal
+                }
                 .padding(.vertical, 15)
-            } // Fin ZStack arrière-plan carte
-        } // Fin Button
+            }
+        }
         .buttonStyle(ScaleButtonStyle())
     }
 

@@ -226,8 +226,10 @@ struct PocketCardView: View {
             return .blue
         case .epic:
             return .purple
-        case .legendary:
+        case.legendary:
             return Color(red: 1, green: 0.84, blue: 0)
+        case .referral:
+            return .cyan
         case .HolyT:
             return Color(white: 0.8)
         case .Season1:

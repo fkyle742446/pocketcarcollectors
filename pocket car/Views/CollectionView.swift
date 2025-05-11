@@ -298,6 +298,7 @@ struct CardView: View {
                 cardNumber: card.number,
                 isInteractive: false
             )
+            .id("\(card.id)-\(card.rarity)-\(count)") // card.id (BoosterCard is Identifiable), card.rarity and count
             .scaleEffect(120 / 250)
             .frame(width: 120, height: 180)
 
@@ -376,6 +377,7 @@ struct RarityInfoView: View {
         case .rare: totalCards = 75
         case .epic: totalCards = 50
         case .legendary: totalCards = 25
+        case .referral: totalCards = 25
         case .HolyT: totalCards = 3
         case .Season1: totalCards = 1
         case .holographicEX: totalCards = 5
@@ -456,6 +458,7 @@ struct RarityInfoView: View {
         case .rare: return "star.fill"
         case .epic: return "sparkles"
         case .legendary: return "crown.fill"
+        case .referral: return "bolt.fill"
         case .HolyT: return "bolt.fill"
         case .Season1: return "bolt.fill"
         case .holographicEX: return "burst.fill"
@@ -468,6 +471,7 @@ struct RarityInfoView: View {
         case .rare: return .blue
         case .epic: return .purple
         case .legendary: return Color(red: 1, green: 0.84, blue: 0)
+        case .referral: return .green
         case .HolyT: return Color(white: 0.9)
         case .Season1: return .red
         case .holographicEX: return .cyan
@@ -479,6 +483,7 @@ struct RarityInfoView: View {
         case .common: return "70%"
         case .rare: return "25%"
         case .epic: return "8%"
+        case .referral: return "8%"
         case .legendary: return "1%"
         case .HolyT: return "0.1%"
         case .Season1: return "0.01%"
@@ -506,6 +511,8 @@ struct CollectionProgressBar: View {
             return .purple
         case .legendary:
             return Color(red: 1, green: 0.84, blue: 0)
+        case .referral:
+            return .green
         case .HolyT:
             return Color(white: 0.8)
         case .Season1:
@@ -743,7 +750,7 @@ struct CombinationSuspenseView: View {
                     Image(systemName: "sparkles.square.filled.on.square")
                         .font(.system(size: 80))
                         .foregroundColor(.cyan.opacity(0.3))
-                        .blur(radius: 3)
+                        .blur(radius: 1.5)
                     
                     Image(systemName: "sparkles.square.filled.on.square")
                         .font(.system(size: 70))
@@ -752,25 +759,24 @@ struct CombinationSuspenseView: View {
                         )
                         .rotationEffect(shimmerAngle)
                         .scaleEffect(scaleEffect)
-                        .shadow(color: .blue.opacity(0.5), radius: 10, x: 0, y: 0)
+                        .shadow(color: .blue.opacity(0.4), radius: 5, x: 0, y: 0)
 
-                    // Sparkles effect
-                    ForEach(0..<10) { _ in
+                    ForEach(0..<5) { _ in
                         Circle()
-                            .fill(Color.white.opacity(Double.random(in: 0.3...0.8)))
-                            .frame(width: CGFloat.random(in: 3...8), height: CGFloat.random(in: 3...8))
-                            .offset(x: CGFloat.random(in: -60...60), y: CGFloat.random(in: -60...60))
+                            .fill(Color.white.opacity(Double.random(in: 0.3...0.7)))
+                            .frame(width: CGFloat.random(in: 3...7), height: CGFloat.random(in: 3...7))
+                            .offset(x: CGFloat.random(in: -55...55), y: CGFloat.random(in: -55...55))
                             .opacity(sparklesOpacity)
-                            .scaleEffect(CGFloat.random(in: 0.5...1.2))
+                            .scaleEffect(CGFloat.random(in: 0.5...1.1))
                     }
                 }
                 .onAppear {
                     withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
                         shimmerAngle = .degrees(360)
                     }
-                    withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true).delay(0.1)) {
-                        sparklesOpacity = sparklesOpacity == 0.5 ? 1.0 : 0.5
-                        scaleEffect = scaleEffect == 1.0 ? 1.1 : 1.0
+                    withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true).delay(0.1)) {
+                        sparklesOpacity = sparklesOpacity == 0.5 ? 0.9 : 0.5
+                        scaleEffect = scaleEffect == 1.0 ? 1.08 : 1.0
                     }
                 }
 
@@ -780,7 +786,7 @@ struct CombinationSuspenseView: View {
                     .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
             }
         }
-        .zIndex(15) // Ensure it's above ZoomedCardView content but below result popup if layered
+        .zIndex(15)
     }
 }
 
@@ -812,6 +818,8 @@ struct ZoomedCardView: View {
             return Color.purple.opacity(0.7)
         case .legendary:
             return Color(red: 1, green: 0.84, blue: 0).opacity(0.7)
+        case .referral:
+            return Color.green.opacity(0.7)
         case .HolyT:
             return Color.black.opacity(0.7)
         case .Season1:
@@ -942,7 +950,7 @@ struct ZoomedCardView: View {
                                     hapticFailure.notificationOccurred(.warning)
                                 }
                                 showCombinationResultPopup = true
-                                updateCombinationState() 
+                                updateCombinationState()
                             }
                         }) {
                             VStack(spacing: 3) { // VStack for two lines of text

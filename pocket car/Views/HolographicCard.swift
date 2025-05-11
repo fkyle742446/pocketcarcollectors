@@ -48,11 +48,13 @@ struct HolographicCard: View {
         case .common:
             return Color(red: 0.75, green: 0.75, blue: 0.75)
         case .rare:
-            return Color(red: 0.0, green: 0.48, blue: 0.97)
+            return Color(red: 0.0, green: 0.48, blue: 0.97) // Bleu pour rare
         case .epic:
             return Color(red: 0.5, green: 0.0, blue: 0.5)
         case .legendary:
             return Color(red: 1, green: 0.84, blue: 0)
+        case .referral:
+            return Color(red: 0.2, green: 0.7, blue: 0.3) // Un joli vert
         case .HolyT:
             return Color(red: 0.1, green: 0.1, blue: 0.1)
         case .Season1:

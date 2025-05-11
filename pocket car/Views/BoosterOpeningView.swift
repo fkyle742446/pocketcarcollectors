@@ -22,7 +22,9 @@ class SoundManager {
         case .legendary:
             soundName = "legendary_reveal"
             volume = 0.7
-            
+        case .referral:
+            soundName = "referral_reveal"
+            volume = 0.75
         case .HolyT:
             soundName = "legendary_reveal"
             volume = 0.9
@@ -187,6 +189,8 @@ struct ParticleSystem: View {
             return .purple
         case .legendary:
             return Color(red: 1, green: 0.84, blue: 0)
+        case .referral:
+            return Color(red: 0.2, green: 0.7, blue: 0.3)
         case .HolyT:
             return Color(white: 0.8)
         case .Season1:
@@ -210,6 +214,8 @@ struct EnhancedRarityButton: View {
             return "8%"
         case .legendary:
             return "1%"
+        case .referral:
+            return "Special"
         case .HolyT:
             return "0.1%"
             
@@ -230,6 +236,8 @@ struct EnhancedRarityButton: View {
             return [Color(red: 0.4, green: 0.0, blue: 0.4), Color(red: 0.6, green: 0.0, blue: 0.6)]
         case .legendary:
             return [Color(red: 0.8, green: 0.6, blue: 0.0), Color(red: 1.0, green: 0.84, blue: 0.0)]
+        case .referral:
+            return [Color(red: 0.1, green: 0.6, blue: 0.2), Color(red: 0.3, green: 0.8, blue: 0.4)]
         case .HolyT:
             return [Color(red: 0.1, green: 0.1, blue: 0.1), Color(red: 0.2, green: 0.2, blue: 0.2)]
         case .Season1:
@@ -242,6 +250,9 @@ struct EnhancedRarityButton: View {
     private func displayName(for rarity: CardRarity) -> String {
         if rarity == .holographicEX {
             return "EX"
+        }
+        if rarity == .referral {
+            return "ELECTRIC"
         }
         return rarity.rawValue.uppercased()
     }
@@ -396,13 +407,31 @@ struct GestureHintView: View {
     }
 }
 
+enum BoosterContext {
+    case generic(boosterNumber: Int) 
+    case referral 
+    
+    var imageName: String {
+        switch self {
+        case .generic(let number):
+            return "booster_closed_\(number)"
+        case .referral:
+            return "referral_booster_icon" 
+        }
+    }
+
+    var isReferral: Bool {
+        if case .referral = self { return true }
+        return false
+    }
+}
+
 struct BoosterOpeningView: View {
     @ObservedObject var collectionManager: CollectionManager
     @ObservedObject var storeManager = StoreManager.shared
     @Environment(\.dismiss) var dismiss
-    let boosterImage: String
+    let context: BoosterContext
     
-    // State properties
     @State private var isOpening = true
     @State private var boosterScale: CGFloat = 1.0
     @State private var boosterOpacity: Double = 1.0
@@ -425,9 +454,7 @@ struct BoosterOpeningView: View {
     @State private var hasConsumedBoosterForThisOpening = false
 
     private let baseCards: [BoosterCard] = [
-        // Common (70%) - Cards 1-100
         BoosterCard(name: "Renault Clio", rarity: .common, number: 1),
-        // ... (all your existing 255 card definitions remain here) ...
         BoosterCard(name: "Peugeot 208", rarity: .common, number: 2),
         BoosterCard(name: "Volkswagen Polo", rarity: .common, number: 3),
         BoosterCard(name: "Ford Fiesta", rarity: .common, number: 4),
@@ -472,12 +499,12 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Volvo V60", rarity: .common, number: 43),
         BoosterCard(name: "Skoda Superb Combi", rarity: .common, number: 44),
         BoosterCard(name: "Audi A4 Avant", rarity: .common, number: 45),
-        BoosterCard(name: "BMW M8 Competition", rarity: .common, number: 46), // This name is duplicated, one is Common, one is Rare. OK.
+        BoosterCard(name: "BMW M8 Competition", rarity: .common, number: 46), 
         BoosterCard(name: "Mercedes Classe E Break", rarity: .common, number: 47),
         BoosterCard(name: "Peugeot 508 SW", rarity: .common, number: 48),
         BoosterCard(name: "Volkswagen Passat Variant", rarity: .common, number: 49),
         BoosterCard(name: "Ford Mondeo Estate", rarity: .common, number: 50),
-        BoosterCard(name: "Subaru Outback", rarity: .common, number: 51), // Duplicated name. OK.
+        BoosterCard(name: "Subaru Outback", rarity: .common, number: 51), 
         BoosterCard(name: "SEAT Leon ST", rarity: .common, number: 52),
         BoosterCard(name: "Tesla Model 3", rarity: .common, number: 53),
         BoosterCard(name: "Renault Zoe", rarity: .common, number: 54),
@@ -499,26 +526,26 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Toyota Proace City Verso", rarity: .common, number: 70),
         BoosterCard(name: "Ford F-150", rarity: .common, number: 71),
         BoosterCard(name: "Chevrolet Silverado", rarity: .common, number: 72),
-        BoosterCard(name: "Toyota RAV4", rarity: .common, number: 73), // Duplicated name. OK.
+        BoosterCard(name: "Toyota RAV4", rarity: .common, number: 73), 
         BoosterCard(name: "Honda CR-V", rarity: .common, number: 74),
         BoosterCard(name: "Tesla Model Y", rarity: .common, number: 75),
         BoosterCard(name: "Ram Pickups", rarity: .common, number: 76),
         BoosterCard(name: "GMC Sierra", rarity: .common, number: 77),
         BoosterCard(name: "Toyota Camry", rarity: .common, number: 78),
         BoosterCard(name: "Nissan Rogue", rarity: .common, number: 79),
-        BoosterCard(name: "Honda Civic", rarity: .common, number: 80), // Duplicated name. OK.
+        BoosterCard(name: "Honda Civic", rarity: .common, number: 80), 
         BoosterCard(name: "Chevrolet Equinox", rarity: .common, number: 81),
-        BoosterCard(name: "Toyota Corolla", rarity: .common, number: 82), // Duplicated name. OK.
+        BoosterCard(name: "Toyota Corolla", rarity: .common, number: 82), 
         BoosterCard(name: "Jeep Grand Cherokee", rarity: .common, number: 83),
-        BoosterCard(name: "Hyundai Tucson", rarity: .common, number: 84), // Duplicated name. OK.
+        BoosterCard(name: "Hyundai Tucson", rarity: .common, number: 84), 
         BoosterCard(name: "Chevrolet Trax", rarity: .common, number: 85),
         BoosterCard(name: "Ford Explorer", rarity: .common, number: 86),
         BoosterCard(name: "Toyota Tacoma", rarity: .common, number: 87),
         BoosterCard(name: "Subaru Crosstrek", rarity: .common, number: 88),
         BoosterCard(name: "Subaru Forester", rarity: .common, number: 89),
-        BoosterCard(name: "Subaru Outback", rarity: .common, number: 90), // Duplicated name. OK.
+        BoosterCard(name: "Subaru Outback", rarity: .common, number: 90), 
         BoosterCard(name: "Honda Accord", rarity: .common, number: 91),
-        BoosterCard(name: "Kia Sportage", rarity: .common, number: 92), // Duplicated name. OK.
+        BoosterCard(name: "Kia Sportage", rarity: .common, number: 92), 
         BoosterCard(name: "Toyota Tundra", rarity: .common, number: 93),
         BoosterCard(name: "Ford Transit", rarity: .common, number: 94),
         BoosterCard(name: "Nissan Sentra", rarity: .common, number: 95),
@@ -528,7 +555,6 @@ struct BoosterOpeningView: View {
         BoosterCard(name: "Mazda CX-5", rarity: .common, number: 99),
         BoosterCard(name: "Kia Sorento", rarity: .common, number: 100),
 
-        // Rare (25%) - Cards 101-175
         BoosterCard(name: "Porsche 911", rarity: .rare, number: 101),
               BoosterCard(name: "Mercedes-AMG GT", rarity: .rare, number: 102),
               BoosterCard(name: "Audi RS6", rarity: .rare, number: 103),
@@ -605,7 +631,6 @@ struct BoosterOpeningView: View {
               BoosterCard(name: "Porsche 718 Cayman GT4", rarity: .rare, number: 174),
               BoosterCard(name: "Mercedes-AMG CLA 45", rarity: .rare, number: 175),
 
-        // Epic (8%) - Cards 176-225
         BoosterCard(name: "Bugatti Chiron", rarity: .epic, number: 176),
               BoosterCard(name: "Koenigsegg Jesko", rarity: .epic, number: 177),
               BoosterCard(name: "Pagani Huayra BC", rarity: .epic, number: 178),
@@ -657,7 +682,6 @@ struct BoosterOpeningView: View {
               BoosterCard(name: "Bugatti Chiron Super Sport", rarity: .epic, number: 224),
               BoosterCard(name: "Koenigsegg Regera Final Edition", rarity: .epic, number: 225),
 
-        // Legendary (0.1%) - Cards 226-250
         BoosterCard(name: "Koenigsegg Jesko Absolut", rarity: .legendary, number: 226),
                BoosterCard(name: "Pagani Zonda Cinque", rarity: .legendary, number: 227),
                BoosterCard(name: "Lamborghini Sesto Elemento", rarity: .legendary, number: 228),
@@ -684,41 +708,103 @@ struct BoosterOpeningView: View {
                BoosterCard(name: "Lamborghini Miura SV", rarity: .legendary, number: 249),
                BoosterCard(name: "Bugatti Chiron Super Sport 300+", rarity: .legendary, number: 250),
 
-        // HolyT (0.01%) - Cards 251-252
         BoosterCard(name: "McLaren P1 Holy Trinity", rarity: .HolyT, number: 251),
         BoosterCard(name: "Porsche 918 Spyder Holy Trinity", rarity: .HolyT, number: 252),
         BoosterCard(name: "Ferrari LaFerrari Holy Trinity", rarity: .HolyT, number: 253),
         
-        
-        // Season1 (0.001%) - Cards 253-254 (Card 253 was Ferrari LaFerrari Holy Trinity)
         BoosterCard(name: "Formula 1", rarity: .Season1, number: 254),
       
-        // holographicEX (0.05%) Card 255
         BoosterCard(name: "Cyber Truck EX", rarity: .holographicEX, number: 255),
     ]
 
-    private let allCards: [BoosterCard] // This will be initialized in init
+    private let allCards: [BoosterCard] 
+    private let referralCardPool: [BoosterCard] = [
+        BoosterCard(name: "Tesla Model S", rarity: .referral, number: 256, imageName: "Tesla_Model_S"),
+        BoosterCard(name: "Tesla Model 3", rarity: .referral, number: 257, imageName: "Tesla_Model_3"),
+        BoosterCard(name: "Tesla Model X", rarity: .referral, number: 258, imageName: "Tesla_Model_X"),
+        BoosterCard(name: "Tesla Model Y", rarity: .referral, number: 259, imageName: "Tesla_Model_Y"),
+        BoosterCard(name: "Porsche Taycan", rarity: .referral, number: 260, imageName: "Porsche_Taycan"),
+        BoosterCard(name: "Audi e-tron GT", rarity: .referral, number: 261, imageName: "Audi_e-tron_GT"),
+        BoosterCard(name: "Jaguar I-PACE", rarity: .referral, number: 262, imageName: "Jaguar_I-PACE"),
+        BoosterCard(name: "Nissan Leaf", rarity: .referral, number: 263, imageName: "Nissan_Leaf"),
+        BoosterCard(name: "Chevrolet Bolt EV", rarity: .referral, number: 264, imageName: "Chevrolet_Bolt_EV"),
+        BoosterCard(name: "Ford Mustang Mach-E", rarity: .referral, number: 265, imageName: "Ford_Mustang_Mach-E"),
+        BoosterCard(name: "BMW i3", rarity: .referral, number: 266, imageName: "BMW_i3"),
+        BoosterCard(name: "Hyundai Kona Electric", rarity: .referral, number: 267, imageName: "Hyundai_Kona_Electric"),
+        BoosterCard(name: "Kia Soul EV", rarity: .referral, number: 268, imageName: "Kia_Soul_EV"),
+        BoosterCard(name: "Rivian R1T", rarity: .referral, number: 269, imageName: "Rivian_R1T"),
+        BoosterCard(name: "Rivian R1S", rarity: .referral, number: 270, imageName: "Rivian_R1S"),
+        BoosterCard(name: "Lucid Air", rarity: .referral, number: 271, imageName: "Lucid_Air"),
+        BoosterCard(name: "Polestar 2", rarity: .referral, number: 272, imageName: "Polestar_2"),
+        BoosterCard(name: "Ford F-150 Lightning", rarity: .referral, number: 273, imageName: "Ford_F-150_Lightning"),
+        BoosterCard(name: "GMC Hummer EV", rarity: .referral, number: 274, imageName: "GMC_Hummer_EV"),
+        BoosterCard(name: "Volkswagen ID.4", rarity: .referral, number: 275, imageName: "Volkswagen_ID.4"),
+        BoosterCard(name: "Tesla Cybertruck", rarity: .referral, number: 276, imageName: "Tesla_Cybertruck"),
+        BoosterCard(name: "BMW i8", rarity: .referral, number: 277, imageName: "BMW_i8"),
+        BoosterCard(name: "Tesla Roadster", rarity: .referral, number: 278, imageName: "Tesla_Roadster"),
+        BoosterCard(name: "Audi e-tron", rarity: .referral, number: 279, imageName: "Audi_e-tron"),
+        BoosterCard(name: "Mercedes-Benz EQC", rarity: .referral, number: 280, imageName: "Mercedes-Benz_EQC"),
+        BoosterCard(name: "Volvo XC40 Recharge", rarity: .referral, number: 281, imageName: "Volvo_XC40_Recharge"),
+        BoosterCard(name: "Hyundai Ioniq 5", rarity: .referral, number: 282, imageName: "Hyundai_Ioniq_5"),
+        BoosterCard(name: "Kia EV6", rarity: .referral, number: 283, imageName: "Kia_EV6"),
+        BoosterCard(name: "Nissan Ariya", rarity: .referral, number: 284, imageName: "Nissan_Ariya"),
+        BoosterCard(name: "Ford E-Transit", rarity: .referral, number: 285, imageName: "Ford_E-Transit"),
+        BoosterCard(name: "Chevrolet Silverado EV", rarity: .referral, number: 286, imageName: "Chevrolet_Silverado_EV"),
+        BoosterCard(name: "GMC Sierra EV", rarity: .referral, number: 287, imageName: "GMC_Sierra_EV"),
+        BoosterCard(name: "Ram 1500 EV", rarity: .referral, number: 288, imageName: "Ram_1500_EV"),
+        BoosterCard(name: "Tesla Semi", rarity: .referral, number: 289, imageName: "Tesla_Semi"),
+        BoosterCard(name: "Rivian EDV", rarity: .referral, number: 290, imageName: "Rivian_EDV"),
+        BoosterCard(name: "BrightDrop EV600", rarity: .referral, number: 291, imageName: "BrightDrop_EV600"),
+        BoosterCard(name: "Ford E-Transit Van", rarity: .referral, number: 292, imageName: "Ford_E-Transit_Van"),
+        BoosterCard(name: "Mercedes-Benz eSprinter", rarity: .referral, number: 293, imageName: "Mercedes-Benz_eSprinter"),
+        BoosterCard(name: "Volkswagen ID. Buzz", rarity: .referral, number: 294, imageName: "Volkswagen_ID_Buzz"),
+        BoosterCard(name: "Canter E-Cell", rarity: .referral, number: 295, imageName: "Canter_E-Cell"),
+        BoosterCard(name: "BYD T3", rarity: .referral, number: 296, imageName: "BYD_T3"),
+        BoosterCard(name: "Nissan e-NV200", rarity: .referral, number: 297, imageName: "Nissan_e-NV200"),
+        BoosterCard(name: "Renault Kangoo Z.E.", rarity: .referral, number: 298, imageName: "Renault_Kangoo_Z.E."),
+        BoosterCard(name: "Peugeot e-Partner", rarity: .referral, number: 299, imageName: "Peugeot_e-Partner"),
+        BoosterCard(name: "Citroën e-Berlingo", rarity: .referral, number: 300, imageName: "Citroën_e-Berlingo"),
+        BoosterCard(name: "Opel Vivaro-e", rarity: .referral, number: 301, imageName: "Opel_Vivaro-e"),
+        BoosterCard(name: "Fiat E-Ducato", rarity: .referral, number: 302, imageName: "Fiat_E-Ducato"),
+        BoosterCard(name: "Iveco Daily Electric", rarity: .referral, number: 303, imageName: "Iveco_Daily_Electric"),
+        BoosterCard(name: "Maxus eDeliver 3", rarity: .referral, number: 304, imageName: "Maxus_eDeliver_3"),
+        BoosterCard(name: "LDV EV80", rarity: .referral, number: 305, imageName: "LDV_EV80")
 
-    init(collectionManager: CollectionManager, boosterNumber: Int) {
+        // Add more referral-specific cards here
+    ]
+
+    private let referralTierProbabilities: [CardRarity: Double] = [
+        .referral: 1.0 
+    ]
+
+    private let probabilityToDrawReferralCardInEarlySlots: Double = 0.20 // 20% chance
+
+    init(collectionManager: CollectionManager, context: BoosterContext) {
         self._collectionManager = ObservedObject(wrappedValue: collectionManager)
         self._storeManager = ObservedObject(wrappedValue: StoreManager.shared)
-        self.boosterImage = "booster_closed_\(boosterNumber)"
+        self.context = context 
 
         var generatedCards = baseCards
-        for card in baseCards {
-            if card.number >= 1 && card.number <= 250 { // Only for cards 1-250
+        for card in baseCards { 
+            if card.number >= 1 && card.number <= 250 &&
+               card.rarity != .holographicEX && card.rarity != .HolyT && card.rarity != .Season1 {
                 let exCard = BoosterCard(
                     name: "\(card.name) EX",
-                    rarity: .holographicEX,
-                    number: card.number + 255 // New numbering scheme for EX
+                    rarity: .holographicEX, 
+                    number: card.number + 255, 
+                    imageName: "\(card.imageName)_EX" 
                 )
                 generatedCards.append(exCard)
             }
         }
         self.allCards = generatedCards
-        // print("Total cards including EX versions: \(self.allCards.count)") // Should be 505
+        print("BoosterOpeningView: Initialized. Context: \(context). Total generic cards (incl. derived EX): \(self.allCards.count)")
+        if self.allCards.count != 505 && !context.isReferral { 
+            print("WARNING: Expected 505 generic cards, but found \(self.allCards.count). Check baseCards and EX generation logic.")
+        }
+        print("ELECTRIC card pool size: \(self.referralCardPool.count)")
     }
-    
+
     var body: some View {
         ZStack {
             Color(isOpening ? .white : .black).opacity(0.9)
@@ -726,13 +812,12 @@ struct BoosterOpeningView: View {
             
             if showSummary {
                 BoosterSummaryView(drawnCards: drawnCards)
-            } else if (storeManager.boosters > 0 || !hasConsumedBoosterForThisOpening) || !isOpening {
+            } else if (context.isReferral ? storeManager.referralBoostersToOpen > 0 : storeManager.boosters > 0) || !hasConsumedBoosterForThisOpening || !isOpening {
                 VStack {
                     if isOpening {
                         VStack(spacing: 30) {
                             Spacer()
-                            
-                            Image(boosterImage)
+                            Image(context.imageName) 
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 300, height: 400)
@@ -742,17 +827,11 @@ struct BoosterOpeningView: View {
                                     .degrees(rotationAngle),
                                     axis: (x: -1.0, y: 1.0, z: 0.0)
                                 )
-                                .onTapGesture {
-                                    openBooster()
-                                }
+                                .onTapGesture { openBooster() }
                                 .padding(.top, 80)
-                            
                             Spacer()
-                            
-                            AnimatedButton(title: "OPEN") {
-                                openBooster()
-                            }
-                            .padding(.bottom, 50)
+                            AnimatedButton(title: "OPEN") { openBooster() }
+                                .padding(.bottom, 50)
                         }
                     } else if let selectedCard = currentCard {
                         cardRevealView(for: selectedCard)
@@ -760,44 +839,31 @@ struct BoosterOpeningView: View {
                 }
             } else {
                 VStack {
-                    Text("No booster")
-                        .font(.title)
-                        .foregroundColor(.white)
-                    
-                    AnimatedButton(title: "Retour") {
-                        dismiss()
-                    }
+                    Text("No booster available")
+                        .font(.title).foregroundColor(.white)
+                    AnimatedButton(title: "Retour") { dismiss() }
                 }
             }
         }
         .navigationBarBackButtonHidden(true)
         .onAppear {
-            if storeManager.boosters == 0 && isOpening {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    dismiss()
-                }
+            let noBoostersAvailable = context.isReferral ? (storeManager.referralBoostersToOpen == 0) : (storeManager.boosters == 0)
+            if noBoostersAvailable && isOpening {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) { dismiss() }
             }
         }
     }
     
     private func openBooster() {
-        guard !hasConsumedBoosterForThisOpening else {
-            print("BoosterOpeningView: openBooster() called, but booster already consumed for this session.")
+        guard !hasConsumedBoosterForThisOpening else { return }
+
+        let canOpen = context.isReferral ? (storeManager.referralBoostersToOpen > 0) : (storeManager.boosters > 0)
+        guard canOpen else {
+            print("BoosterOpeningView: openBooster() called, but no \(context.isReferral ? "ELECTRIC" : "GENERIC") boosters available.")
             return
         }
 
-        // Bien que l'UI doive déjà gérer ça, c'est une double sécurité.
-        guard storeManager.boosters > 0 else {
-            print("BoosterOpeningView: openBooster() called, but no boosters available (StoreManager count is 0 or less).")
-            // Optionnel: Gérer ce cas, par exemple en fermant la vue si elle ne devrait pas être ouverte.
-            // dismiss()
-            return
-        }
-
-        print("🔊 Playing button press sound...")
         AudioManager.shared.playButtonPress()
-
-        // Cela empêche les appels multiples à cette fonction de passer le garde ci-dessus.
         hasConsumedBoosterForThisOpening = true
 
         withAnimation(.easeInOut(duration: 0.5)) {
@@ -806,22 +872,23 @@ struct BoosterOpeningView: View {
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            isOpening = false // Change l'état de l'UI pour montrer les cartes
-            currentCard = randomCard()
+            isOpening = false
+            if context.isReferral {
+                currentCard = self.drawNextCardForReferralBooster()
+            } else {
+                currentCard = self.randomGenericCard()
+            }
             
-            // La consommation réelle du booster dans le StoreManager.
-            // Le flag hasConsumedBoosterForThisOpening et le guard storeManager.boosters > 0
-            // au début de la fonction protègent contre les appels multiples qui mèneraient
-            // à plusieurs exécutions de ce bloc asyncAfter et donc à plusieurs useBooster().
-            storeManager.useBooster()
+            if context.isReferral {
+                storeManager.useReferralBooster()
+            } else {
+                storeManager.useBooster()
+            }
             
-            // S'assurer que currentCard n'est pas nil avant d'accéder à sa rareté.
-            // randomCard() est conçu pour ne jamais retourner nil, mais c'est une bonne pratique.
             if let cardToPlaySoundFor = currentCard {
                 SoundManager.shared.playSound(for: cardToPlaySoundFor.rarity)
             } else {
-                print("BoosterOpeningView: Error - currentCard is nil after randomCard() call. Cannot play sound.")
-                // Gérer l'erreur si nécessaire, par exemple, fermer la vue ou afficher un message.
+                print("BoosterOpeningView: Error - currentCard is nil for the first card. Cannot play sound.")
             }
         }
     }
@@ -829,214 +896,168 @@ struct BoosterOpeningView: View {
     @ViewBuilder
     private func cardRevealView(for selectedCard: BoosterCard) -> some View {
         ZStack {
-            Color.black.opacity(0.9)
-                .ignoresSafeArea()
-
+            Color.black.opacity(0.9).ignoresSafeArea()
             VStack {
                 Spacer()
-                
                 VStack(spacing: 60) {
                     ZStack {
                         ZStack(alignment: .topTrailing) {
                             HolographicCard(
-                                cardImage: selectedCard.name,
+                                cardImage: selectedCard.imageName, 
                                 rarity: selectedCard.rarity,
                                 cardNumber: selectedCard.number
                             )
-                            .gesture(
-                                DragGesture(minimumDistance: 0)
-                                    .onChanged { gesture in
-                                        print("HolographicCard DragGesture: onChanged")
-                                        dragOffset = gesture.translation.height
-                                        
-                                    }
-                                    .onEnded { _ in
-                                        withAnimation(.spring()) {
-                                            dragOffset = 0
-                                        }
-                                    }
+                            .gesture(DragGesture(minimumDistance: 0)
+                                .onChanged { gesture in dragOffset = gesture.translation.height }
+                                .onEnded { _ in withAnimation(.spring()) { dragOffset = 0 } }
                             )
                             .onTapGesture {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                                     cardScale = cardScale == 1.3 ? 2.0 : 1.3
                                 }
                             }
-                            
-                            if collectionManager.isNewCard(selectedCard) {
-                                NewCardBadge()
-                                    .offset(x: -20, y: 20)
-                                    .transition(.asymmetric(
-                                        insertion: .scale.combined(with: .opacity),
-                                        removal: .scale.combined(with: .opacity)
-                                    ))
+                            if collectionManager.isNewCard(selectedCard) { 
+                                NewCardBadge().offset(x: -20, y: 20)
+                                    .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .scale.combined(with: .opacity)))
                             }
                         }
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(haloColor(for: selectedCard.rarity))
-                                .blur(radius: 20)
-                                .opacity(0.7)
-                        )
+                        .background(RoundedRectangle(cornerRadius: 20).fill(haloColor(for: selectedCard.rarity)).blur(radius: 20).opacity(0.7))
                         .scaleEffect(cardScale)
                         .offset(y: cardOffset + dragOffset)
                         .modifier(AutoHolographicAnimation())
                     }
-                    
-                    EnhancedRarityButton(rarity: selectedCard.rarity)
-                        .allowsHitTesting(false)
+                    EnhancedRarityButton(rarity: selectedCard.rarity).allowsHitTesting(false)
                 }
                 .padding(.top, 80)
-                
                 Spacer()
-                
-                AnimatedButton(title: "NEXT CARD") {
-                    handleCardReveal(selectedCard)
-                }
-                .padding(.bottom, 50)
+                AnimatedButton(title: "NEXT CARD") { handleCardReveal(selectedCard) }
+                    .padding(.bottom, 50)
             }
         }
-        .contentShape(Rectangle()) // Rend toute la ZStack tappable
-        .simultaneousGesture(
-            TapGesture()
-                .onEnded { _ in
-                    if cardScale == 2.0 {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                            cardScale = 1.3
-                        }
-                    } else {
-                        handleCardReveal(selectedCard)
-                    }
-                }
-        )
+        .contentShape(Rectangle())
+        .simultaneousGesture(TapGesture().onEnded { _ in
+            if cardScale == 2.0 {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { cardScale = 1.3 }
+            } else {
+                handleCardReveal(selectedCard)
+            }
+        })
     }
 
     private func handleCardReveal(_ selectedCard: BoosterCard) {
-        print("BoosterOpeningView - handleCardReveal: Called. isTransitioning: \(isTransitioning)")
-        if isTransitioning {
-            print("BoosterOpeningView - handleCardReveal: Already transitioning, returning.")
-            return
-        }
+        if isTransitioning { return }
         isTransitioning = true
-        
-        print("🔊 Playing next card sound...")
         AudioManager.shared.playNextCard()
+        withAnimation { showGestureHint = false }
+        withAnimation(.easeInOut(duration: 0.3)) { cardOffset = -UIScreen.main.bounds.height }
         
-        withAnimation {
-            showGestureHint = false
-        }
-        
-        withAnimation(.easeInOut(duration: 0.3)) {
-            cardOffset = -UIScreen.main.bounds.height
-        }
-        
-        if !drawnCards.contains(where: { $0.name == selectedCard.name }) {
+        if !drawnCards.contains(where: { $0.number == selectedCard.number }) { 
             drawnCards.append(selectedCard)
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             cardOffset = 0
-            currentCardIndex += 1
+            currentCardIndex += 1 // This tracks how many cards have been revealed (0 to 4 for 5 cards)
             dragOffset = 0
             showArrowIndicator = true
-            if currentCardIndex < 5 {
-                currentCard = randomCard()
+            
+            if currentCardIndex < 5 { // Assuming 5 cards per booster
+                if context.isReferral {
+                    currentCard = self.drawNextCardForReferralBooster()
+                } else {
+                    currentCard = self.randomGenericCard()
+                }
                 showGestureHint = true
-                SoundManager.shared.playSound(for: currentCard!.rarity)
+                if let card = currentCard { SoundManager.shared.playSound(for: card.rarity) }
             } else {
                 showSummary = true
             }
             isTransitioning = false
         }
-        
         collectionManager.addCard(selectedCard)
     }
-    
-    private func randomCard() -> BoosterCard {
-        // Définir les probabilités de base POUR CHAQUE TIER de rareté
-        let tierProbabilities: [CardRarity: Double] = [
-            .common:        0.70,
-            .rare:          0.25,
-            .epic:          0.08,
-            .legendary:     0.01,
-            .HolyT:         0.001,
-            .Season1:       0.0001,
-            .holographicEX: 0.01
-        ]
 
-        // --- Log Tier Probabilities (can be removed in production) ---
-        print("--- Tier Probabilities for randomCard() ---")
+    private func drawNextCardForReferralBooster() -> BoosterCard {
+        if currentCardIndex == 4 { 
+            print("Drawing GUARANTEED ELECTRIC card for slot 5 (index 4).")
+            return randomReferralCard()
+        } else { 
+            if Double.random(in: 0...1) < probabilityToDrawReferralCardInEarlySlots {
+                print("Drawing ELECTRIC card for early slot \(currentCardIndex + 1) due to probability roll.")
+                return randomReferralCard()
+            } else {
+                print("Drawing generic card for early slot \(currentCardIndex + 1) due to probability roll.")
+                return randomGenericCard()
+            }
+        }
+    }
+
+    private func randomGenericCard() -> BoosterCard {
+        let tierProbabilities: [CardRarity: Double] = [
+            .common:        0.70, .rare:   0.25, .epic:    0.08, .legendary: 0.01,
+            .HolyT:         0.001, .Season1: 0.0001, .holographicEX: 0.01
+        ]
         var totalTierProb: Double = 0
         let sortedTierProbabilities = tierProbabilities.sorted { $0.key.sortOrder < $1.key.sortOrder }
-        for (rarity, prob) in sortedTierProbabilities {
-            print("Tier \(rarity.rawValue): \(String(format: "%.5f", prob*100))%")
-            totalTierProb += prob
-        }
-        print("Total Tier Probability Sum: \(String(format: "%.5f", totalTierProb))")
-        if abs(totalTierProb - 1.0) > 0.00001 {
-             print("WARNING: Total tier probability sum is \(totalTierProb), not 1.0. Please check tierProbabilities.")
-        }
-        // --- End Log ---
+        for (_, prob) in sortedTierProbabilities { totalTierProb += prob }
+        if abs(totalTierProb - 1.0) > 0.00001 { print("WARNING: Generic tier prob sum is \(totalTierProb)")}
 
-        // 1. Select a Rarity Tier based on probabilities
-        let randomTarget = Double.random(in: 0.0..<totalTierProb) // Use totalTierProb for normalization
+        let randomTarget = Double.random(in: 0.0..<totalTierProb) 
         var cumulativeProbability: Double = 0.0
-        var selectedRarity: CardRarity = .common // Default, should be overwritten
+        var selectedRarity: CardRarity = .common 
 
         for (rarity, probability) in sortedTierProbabilities {
             cumulativeProbability += probability
-            if randomTarget < cumulativeProbability {
-                selectedRarity = rarity
-                break
-            }
+            if randomTarget < cumulativeProbability { selectedRarity = rarity; break }
         }
-        print("Selected Rarity Tier: \(selectedRarity.rawValue) (Target: \(String(format: "%.5f", randomTarget)) of \(String(format: "%.5f", totalTierProb)))")
-
-        // 2. Filter allCards to get only cards of the selectedRarity
+        
         let cardsInSelectedRarity = self.allCards.filter { $0.rarity == selectedRarity }
-        
-        print("Found \(cardsInSelectedRarity.count) cards for rarity \(selectedRarity.rawValue).")
-
-        // --- Detailed Log for cards in the selected pool (especially if count is small or for debugging) ---
-        if cardsInSelectedRarity.count < 10 || selectedRarity == .rare || selectedRarity == .epic { // Log for small pools or specific rarities you're testing
-            let cardNamesInPool = cardsInSelectedRarity.map { "\($0.name) (#\($0.number))" }.joined(separator: ", ")
-            print("Cards in pool for \(selectedRarity.rawValue): [\(cardNamesInPool)]")
+        guard let drawnCard = cardsInSelectedRarity.randomElement() else {
+            print("Error: No generic cards for rarity \(selectedRarity). Fallback.");
+            return self.allCards.randomElement() ?? BoosterCard(name: "Generic Fallback", rarity: .common, number: 0, imageName: "fallback_generic")
         }
-        // --- End Detailed Log ---
+        print("Generic Card: \(drawnCard.name) (\(drawnCard.rarity)) drawn for generic booster or ELECTRIC early slot.")
+        return drawnCard
+    }
 
+    private func randomReferralCard() -> BoosterCard {
+        var totalTierProb: Double = 0
+        let sortedTierProbabilities = referralTierProbabilities.sorted { $0.key.sortOrder < $1.key.sortOrder }
+        for (_, prob) in sortedTierProbabilities { totalTierProb += prob }
+        if abs(totalTierProb - 1.0) > 0.00001 { print("WARNING: Referral tier prob sum is \(totalTierProb)")}
 
-        guard !cardsInSelectedRarity.isEmpty else {
-            print("Error: No cards found for selected rarity \(selectedRarity.rawValue). This should not happen if allCards is populated correctly and all rarities have cards.")
-            // Fallback: return a random card from allCards or a default card
-            return self.allCards.randomElement() ?? BoosterCard(name: "Fallback Card EX", rarity: .common, number: 0)
+        let randomTarget = Double.random(in: 0.0..<totalTierProb)
+        var cumulativeProbability: Double = 0.0
+        var selectedRarity: CardRarity = .common 
+
+        for (rarity, probability) in sortedTierProbabilities {
+            cumulativeProbability += probability
+            if randomTarget < cumulativeProbability { selectedRarity = rarity; break }
         }
 
-        // 3. Randomly select one card from that filtered list
-        let drawnCard = cardsInSelectedRarity.randomElement()!
-        
-        print("Card drawn: \(drawnCard.name) (#\(drawnCard.number)) - Rarity: \(drawnCard.rarity.rawValue)")
+        let cardsInSelectedRarity = self.referralCardPool.filter { $0.rarity == selectedRarity }
+        guard let drawnCard = cardsInSelectedRarity.randomElement() else {
+             print("Error: No ELECTRIC cards for rarity \(selectedRarity). Fallback.");
+            return self.referralCardPool.randomElement() ?? BoosterCard(name: "ELECTRIC Fallback", rarity: .common, number: 800, imageName: "fallback_referral")
+        }
+        print("ELECTRIC Card: \(drawnCard.name) (\(drawnCard.rarity)) drawn from ELECTRIC pool.")
         return drawnCard
     }
     
     private func countCards(for rarity: CardRarity) -> Int {
-        return allCards.filter { $0.rarity == rarity }.count
+        return (context.isReferral ? referralCardPool : allCards).filter { $0.rarity == rarity }.count
     }
 
     private func haloColor(for rarity: CardRarity) -> Color {
         switch rarity {
-        case .common:
-            return Color.white
-        case .rare:
-            return Color.blue
-        case .epic:
-            return Color.purple
-        case .legendary:
-            return Color(red: 1, green: 0.84, blue: 0)
-        case .HolyT:
-            return Color(red: 0.1, green: 0.1, blue: 0.1)
-        case .Season1:
-            return Color.red
-        case .holographicEX:
-            return Color.cyan.opacity(0.8)
+        case .common: return Color.white
+        case .rare: return Color.blue
+        case .epic: return Color.purple
+        case .legendary: return Color(red: 1, green: 0.84, blue: 0)
+        case .referral: return Color(red: 0.2, green: 0.7, blue: 0.3)
+        case .HolyT: return Color(red: 0.1, green: 0.1, blue: 0.1)
+        case .Season1: return Color.red
+        case .holographicEX: return Color.cyan.opacity(0.8)
         }
     }
 }
@@ -1113,7 +1134,7 @@ struct AnimatedButton: View {
 
 struct BoosterOpeningPreview: View {
     var body: some View {
-        BoosterOpeningView(collectionManager: CollectionManager(), boosterNumber: 1)
+        BoosterOpeningView(collectionManager: CollectionManager(), context: .referral)
     }
 }
 

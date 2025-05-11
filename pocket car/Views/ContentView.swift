@@ -375,185 +375,9 @@ struct ContentView: View {
 
                             VStack(spacing: viewSize == .compact ? 15 : 25) {
                                 // Boosters section
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 25)
-                                        .fill(
-                                            .angularGradient(
-                                                colors: [.blue, .purple, .red, .orange, .yellow, .blue],
-                                                center: .center,
-                                                startAngle: .degrees(45),
-                                                endAngle: .degrees(405)
-                                            )
-                                        )
-                                        .blur(radius: 15)
-                                        .opacity(0.25)
-                                        .frame(height: viewSize == .compact ? 320 : 420)
-                                        .scaleEffect(1.01)
-                                    
-                                    RoundedRectangle(cornerRadius: 25)
-                                        .fill(Color.white.opacity(1))
-                                        .frame(height: viewSize == .compact ? 320 : 420)
-                                        .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 2)
-                                        .scaleEffect(0.99)
-
-                                    VStack {
-                                        Spacer()
-                                        HStack(spacing: viewSize == .compact ? -20 : -10) {
-                                            // First booster
-                                            Button(action: {
-                                                if StoreManager.shared.boosters == 0 {
-                                                    showLockedBoosterInfo = true
-                                                    HapticManager.shared.impact(style: .medium)
-                                                }
-                                            }) {
-                                                NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 1)) {
-                                                    ZStack {
-                                                        Image("booster_closed_1")
-                                                            .resizable()
-                                                            .scaledToFit()
-                                                            .frame(height: boosterHeight)
-                                                        Rectangle()
-                                                            .fill(
-                                                                LinearGradient(
-                                                                    gradient: Gradient(colors: [.clear, .white.opacity(0.05), .white.opacity(0.3), .white.opacity(0.05), .clear]),
-                                                                    startPoint: .topLeading,
-                                                                    endPoint: .bottomTrailing
-                                                                )
-                                                            )
-                                                            .frame(width: 120)
-                                                            .rotationEffect(.degrees(-65))
-                                                            .offset(x: booster1GlareOffset, y: booster1GlareOffset/3)
-                                                            .blur(radius: 3)
-                                                    }
-                                                    .mask(
-                                                        Image("booster_closed_1")
-                                                            .resizable()
-                                                            .scaledToFit()
-                                                            .frame(height: boosterHeight)
-                                                    )
-                                                }
-                                                .allowsHitTesting(StoreManager.shared.boosters > 0)
-                                            }
-                                            .opacity(StoreManager.shared.boosters == 0 ? 0.5 : 1)
-
-                                            // Second booster
-                                            Button(action: {
-                                                if StoreManager.shared.boosters == 0 {
-                                                    showLockedBoosterInfo = true
-                                                    HapticManager.shared.impact(style: .medium)
-                                                }
-                                            }) {
-                                                NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, boosterNumber: 2)) {
-                                                    ZStack {
-                                                        Image("booster_closed_2")
-                                                            .resizable()
-                                                            .scaledToFit()
-                                                            .frame(height: boosterHeight)
-                                                        Rectangle()
-                                                            .fill(
-                                                                LinearGradient(
-                                                                    gradient: Gradient(colors: [.clear, .white.opacity(0.05), .white.opacity(0.3), .white.opacity(0.05), .clear]),
-                                                                    startPoint: .topLeading,
-                                                                    endPoint: .bottomTrailing
-                                                                )
-                                                            )
-                                                            .frame(width: 120)
-                                                            .rotationEffect(.degrees(-65))
-                                                            .offset(x: booster2GlareOffset, y: booster2GlareOffset/3)
-                                                            .blur(radius: 3)
-                                                    }
-                                                    .mask(
-                                                        Image("booster_closed_2")
-                                                            .resizable()
-                                                            .scaledToFit()
-                                                            .frame(height: boosterHeight)
-                                                    )
-                                                }
-                                                .allowsHitTesting(StoreManager.shared.boosters > 0)
-                                            }
-                                            .opacity(StoreManager.shared.boosters == 0 ? 0.5 : 1)
-                                        }
-                                        Spacer()
-                                        
-                                        // Booster Info and Daily Quest Capsules
-                                        HStack(spacing: 8) {
-                                            // Item 1: Daily Quest Button (Sidequest)
-                                            styledCapsuleBackground {
-                                                dailyQuestButtonView()
-                                            }
-                                            .frame(width: 60) // Fixed width for quest button capsule
-                                            
-                                            // Item 2: Booster Status (Compteur de booster)
-                                            styledCapsuleBackground {
-                                                boosterStatusContentView()
-                                            }
-                                            .frame(maxWidth: UIScreen.main.bounds.width * 0.58)
-                                        }
-                                        .offset(y: 0)
-                                        .zIndex(1)
-                                    }
-                                    .padding(.top, 10)
-                                }
-                                .padding(.horizontal, horizontalPadding)
-                                .padding(.vertical, viewSize == .compact ? 8 : 15)
-                                .onAppear {
-                                    withAnimation(Animation.linear(duration: 7.0).repeatForever(autoreverses: true)) {
-                                        booster1GlareOffset = 250
-                                    }
-                                    withAnimation(Animation.linear(duration: 7.0).delay(0.7).repeatForever(autoreverses: true)) {
-                                        booster2GlareOffset = 250
-                                    }
-                                }
+                                boostersDisplaySection()
  
-                                // Collection and Shop buttons
-                                HStack(spacing: 15) {
-                                    NavigationLink(destination: CollectionView(collectionManager: collectionManager).navigationBarTitleDisplayMode(.inline)) {
-                                        buttonView(icon: "", text: "", colors: [.gray.opacity(0.3)], textColor: .gray)
-                                            .overlay(
-                                                VStack(spacing: 4) {
-                                                    Image("collection")
-                                                        .resizable()
-                                                        .scaledToFit()
-                                                        .frame(width: 35, height: 35)
-                                                    Text("Collection")
-                                                        .font(.system(size: 12, weight: .medium))
-                                                        .foregroundColor(.gray)
-                                                }
-                                            )
-                                    }
-                                    .simultaneousGesture(TapGesture().onEnded {
-                                        HapticManager.shared.impact(style: .medium)
-                                    })
-                                    
-                                    NavigationLink(destination: ShopView(collectionManager: collectionManager, storeManager: StoreManager.shared)) {
-                                        buttonView(icon: "", text: "", colors: [.gray.opacity(0.3)], textColor: .gray)
-                                            .overlay(
-                                                HStack(spacing: 4) {
-                                                    Text("\(collectionManager.coins)")
-                                                        .font(.system(size: 16, weight: .medium))
-                                                        .foregroundColor(.gray)
-                                                    Image("coin")
-                                                        .resizable()
-                                                        .scaledToFit()
-                                                        .frame(width: 50, height: 50)
-                                                        .scaleEffect(coinScale)
-                                                        .onAppear {
-                                                            withAnimation(
-                                                                .easeInOut(duration: 1.0)
-                                                                .repeatForever(autoreverses: true)
-                                                            ) {
-                                                                coinScale = 1.1
-                                                            }
-                                                        }
-                                                }
-                                            )
-                                    }
-                                    .simultaneousGesture(TapGesture().onEnded {
-                                        HapticManager.shared.impact(style: .medium)
-                                    })
-                                }
-                                .padding(.horizontal, horizontalPadding)
-                                .padding(.vertical, viewSize == .compact ? 4 : 8)
+                                navigationButtonsSection()
 
                                 progressBarSection
                                     .padding(.bottom, 15)
@@ -561,7 +385,7 @@ struct ContentView: View {
                         }
                         .frame(maxWidth: viewSize == .compact ? .infinity : min(geometry.size.width * 0.8, 800))
                         .frame(maxWidth: .infinity)
-                        .animation(hasAppeared ? .default : nil, value: hasAppeared)
+                        // .animation(hasAppeared ? .default : nil, value: hasAppeared)
                         
                         if showMilestoneRewardPopup, let milestonePopupInfo = currentMilestoneForPopup {
                             MilestoneRewardPopup(
@@ -801,14 +625,11 @@ struct ContentView: View {
                         .shadow(color: .black.opacity(0.1), radius: 2)
                     
                     if milestoneID == .progress04 { // Assuming .progress04 uses your custom PNG
-                        Image(milestone_local.icon) // This is your "nom_de_votre_image_png"
-                            .resizable() // Permet à l'image d'être redimensionnée
-                            .scaledToFill() // S'assure que l'image remplit le cadre, peut couper des parties si le ratio ne correspond pas
-                                            // ou .scaledToFit() si vous voulez voir toute l'image et accepter des espaces vides.
-                                            // Pour "étirer au max" sans déformer mais en remplissant, .scaledToFill() est souvent ce qu'on veut dans un cercle.
-                            .frame(width: 14, height: 14) // Le cadre dans lequel l'image doit s'adapter
-                            .clipShape(Circle()) // Important si .scaledToFill() est utilisé et que l'image n'est pas carrée
-                                                 // pour qu'elle ne dépasse pas le cercle implicite de l'icône.
+                        Image(milestone_local.icon)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 14, height: 14)
+                            .clipShape(Circle())
                             .opacity(milestone_local.isReached ? 1.0 : 0.5)
                     } else { // For other icons (SF Symbols or other assets)
                         Image(milestone_local.icon)
@@ -844,7 +665,7 @@ struct ContentView: View {
                     }
                 )
             }
-            .position(x: (UIScreen.main.bounds.width * 0.85 - 30) * CGFloat(milestone_local.progress), y: 17.5) // Adjusted x position calculation
+            .position(x: (UIScreen.main.bounds.width * 0.85 - 30) * CGFloat(milestone_local.progress), y: 17.5)
             .onChange(of: collectionManager.cards.count) { _, newCount in
                 let currentProgress = Double(newCount) / 505.0
                 if !milestone_local.isReached && currentProgress >= milestone_local.progress {
@@ -855,6 +676,191 @@ struct ContentView: View {
     }
 
     // MARK: - Helper Functions for View Logic
+
+    @ViewBuilder
+    private func boostersDisplaySection() -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 25)
+                .fill(
+                    .angularGradient(
+                        colors: [.blue, .purple, .red, .orange, .yellow, .blue],
+                        center: .center,
+                        startAngle: .degrees(45),
+                        endAngle: .degrees(405)
+                    )
+                )
+                .blur(radius: 15)
+                .opacity(0.25)
+                .frame(height: viewSize == .compact ? 320 : 420)
+                .scaleEffect(1.01)
+            
+            RoundedRectangle(cornerRadius: 25)
+                .fill(Color.white.opacity(1))
+                .frame(height: viewSize == .compact ? 320 : 420)
+                .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 2)
+                .scaleEffect(0.99)
+
+            VStack {
+                Spacer()
+                HStack(spacing: viewSize == .compact ? -20 : -10) {
+                    // First booster
+                    Button(action: {
+                        if StoreManager.shared.boosters == 0 {
+                            showLockedBoosterInfo = true
+                            HapticManager.shared.impact(style: .medium)
+                        }
+                    }) {
+                        NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, context: .generic(boosterNumber: 1))) {
+                            ZStack {
+                                Image("booster_closed_1")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: boosterHeight)
+                                Rectangle()
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [.clear, .white.opacity(0.05), .white.opacity(0.3), .white.opacity(0.05), .clear]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .frame(width: 120)
+                                    .rotationEffect(.degrees(-65))
+                                    .offset(x: booster1GlareOffset, y: booster1GlareOffset/3)
+                                    .blur(radius: 3)
+                            }
+                            .mask(
+                                Image("booster_closed_1")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: boosterHeight)
+                            )
+                        }
+                        .allowsHitTesting(StoreManager.shared.boosters > 0)
+                    }
+                    .opacity(StoreManager.shared.boosters == 0 ? 0.5 : 1)
+
+                    // Second booster
+                    Button(action: {
+                        if StoreManager.shared.boosters == 0 {
+                            showLockedBoosterInfo = true
+                            HapticManager.shared.impact(style: .medium)
+                        }
+                    }) {
+                        NavigationLink(destination: BoosterOpeningView(collectionManager: collectionManager, context: .generic(boosterNumber: 2))) {
+                            ZStack {
+                                Image("booster_closed_2")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: boosterHeight)
+                                Rectangle()
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [.clear, .white.opacity(0.05), .white.opacity(0.3), .white.opacity(0.05), .clear]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .frame(width: 120)
+                                    .rotationEffect(.degrees(-65))
+                                    .offset(x: booster2GlareOffset, y: booster2GlareOffset/3)
+                                    .blur(radius: 3)
+                            }
+                            .mask(
+                                Image("booster_closed_2")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: boosterHeight)
+                            )
+                        }
+                        .allowsHitTesting(StoreManager.shared.boosters > 0)
+                    }
+                    .opacity(StoreManager.shared.boosters == 0 ? 0.5 : 1)
+                }
+                Spacer()
+                
+                // Booster Info and Daily Quest Capsules
+                HStack(spacing: 8) {
+                    // Item 1: Daily Quest Button (Sidequest)
+                    styledCapsuleBackground {
+                        dailyQuestButtonView()
+                    }
+                    .frame(width: 60) // Fixed width for quest button capsule
+                    
+                    // Item 2: Booster Status (Compteur de booster)
+                    styledCapsuleBackground {
+                        boosterStatusContentView()
+                    }
+                    .frame(maxWidth: UIScreen.main.bounds.width * 0.58)
+                }
+                .offset(y: 0)
+                .zIndex(1)
+            }
+            .padding(.top, 10)
+        }
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, viewSize == .compact ? 8 : 15)
+        .onAppear {
+            withAnimation(Animation.linear(duration: 7.0).repeatForever(autoreverses: true)) {
+                booster1GlareOffset = 250
+            }
+            withAnimation(Animation.linear(duration: 7.0).delay(0.7).repeatForever(autoreverses: true)) {
+                booster2GlareOffset = 250
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func navigationButtonsSection() -> some View {
+        HStack(spacing: 15) {
+            NavigationLink(destination: CollectionView(collectionManager: collectionManager).navigationBarTitleDisplayMode(.inline)) {
+                buttonView(icon: "", text: "", colors: [.gray.opacity(0.3)], textColor: .gray)
+                    .overlay(
+                        VStack(spacing: 4) {
+                            Image("collection")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 35, height: 35)
+                            Text("Collection")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.gray)
+                        }
+                    )
+            }
+            .simultaneousGesture(TapGesture().onEnded {
+                HapticManager.shared.impact(style: .medium)
+            })
+            
+            NavigationLink(destination: ShopView(collectionManager: collectionManager, storeManager: StoreManager.shared)) {
+                buttonView(icon: "", text: "", colors: [.gray.opacity(0.3)], textColor: .gray)
+                    .overlay(
+                        HStack(spacing: 4) {
+                            Text("\(collectionManager.coins)")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.gray)
+                            Image("coin")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 50, height: 50)
+                                .scaleEffect(coinScale)
+                                .onAppear {
+                                    withAnimation(
+                                        .easeInOut(duration: 1.0)
+                                        .repeatForever(autoreverses: true)
+                                    ) {
+                                        coinScale = 1.1
+                                    }
+                                }
+                        }
+                    )
+            }
+            .simultaneousGesture(TapGesture().onEnded {
+                HapticManager.shared.impact(style: .medium)
+            })
+        }
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, viewSize == .compact ? 4 : 8)
+    }
 
     private func calculateProgressWidth() -> CGFloat {
         let availableWidth = UIScreen.main.bounds.width - (2 * horizontalPadding) - (2 * 15) // Approximate width after outer and inner paddings
@@ -971,7 +977,7 @@ struct ContentView: View {
         let questInProgress = !(currentDailyQuestDisplayInfo?.isCompleted ?? true) && !(currentDailyQuestDisplayInfo?.cooldownActive ?? true) && (currentDailyQuestDisplayInfo != nil)
 
         Button(action: {
-            updateDailyQuestStatus() // CALLING METHOD
+            updateDailyQuestStatus()
             showDailyQuestPopup = true
             HapticManager.shared.impact(style: .medium)
         }) {
@@ -1014,7 +1020,7 @@ struct ContentView: View {
         if currentTime < nextQuestDate && isCurrentDailyQuestRewardClaimed {
             cooldownIsActive = true
             let remaining = nextQuestDate.timeIntervalSince(currentTime)
-            timeRemainingString = formatTimeInterval(remaining) // CALLING METHOD
+            timeRemainingString = formatTimeInterval(remaining)
         } else if currentTime >= nextQuestDate && isCurrentDailyQuestRewardClaimed {
             isCurrentDailyQuestRewardClaimed = false
             dailyQuestSpinsCount = 0
@@ -1045,7 +1051,7 @@ struct ContentView: View {
         let twelveHours: TimeInterval = 12 * 60 * 60
         nextDailyQuestTime = Date().timeIntervalSince1970 + twelveHours
         
-        updateDailyQuestStatus() // CALLING METHOD
+        updateDailyQuestStatus()
         
         NotificationCenter.default.post(name: .coinsDidUpdate, object: nil)
     }
@@ -1058,8 +1064,6 @@ struct ContentView: View {
     }
 
     private func startBreathingAnimation() {
-        // Guard against starting multiple animations if isAnimating is already true
-        // or if hasAppeared is false to prevent animation before view is ready.
         guard !isAnimating, hasAppeared else { return }
         
         isAnimating = true

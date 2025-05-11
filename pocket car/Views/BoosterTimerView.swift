@@ -41,12 +41,12 @@ struct BoosterTimerView: View {
             
             timeString = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
         } else {
-            storeManager.validateAndRetrieveTimestamps()
-            timeString = "00:00:00"
-            // After validateAndRetrieveTimestamps, the @Published nextFreeBoosterDate
+            storeManager.validateBoosterTimer()
+            timeString = "00:00:00" 
+            // After validateBoosterTimer, the @Published nextFreeBoosterDate
             // in StoreManager might update. This should trigger a view update, and
             // updateTimeString will be called again by the system or the timer.
-            // If validateAndRetrieveTimestamps itself determines a new timer should start,
+            // If validateBoosterTimer itself determines a new timer should start,
             // it will update nextFreeBoosterDate which then gets reflected here.
         }
     }
