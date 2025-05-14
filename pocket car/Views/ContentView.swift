@@ -385,8 +385,8 @@ struct ContentView: View {
                         }
                         .frame(maxWidth: viewSize == .compact ? .infinity : min(geometry.size.width * 0.8, 800))
                         .frame(maxWidth: .infinity)
-                        // .animation(hasAppeared ? .default : nil, value: hasAppeared)
-                        
+                        .animation(nil, value: UUID())
+
                         if showMilestoneRewardPopup, let milestonePopupInfo = currentMilestoneForPopup {
                             MilestoneRewardPopup(
                                 milestoneInfo: milestonePopupInfo,
@@ -1158,20 +1158,22 @@ struct DailyQuestPopupView: View {
                             onClose()
                         }
                     }) {
-                        Text(questInfo.canClaim ? "Claim Reward!" : (questInfo.cooldownActive ? "Come Back Later" : "Awesome!"))
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.vertical, 12)
-                            .padding(.horizontal, 30)
-                            .background(
-                                LinearGradient(
-                                    gradient: Gradient(colors: questInfo.canClaim ? [Color.green, Color.blue] : [Color.orange, Color.pink]),
-                                    startPoint: .leading,
-                                    endPoint: .trailing
+                        Group {
+                            Text(questInfo.canClaim ? "Claim Reward!" : (questInfo.cooldownActive ? "Come Back Later" : "Awesome!"))
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.vertical, 12)
+                                .padding(.horizontal, 30)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: questInfo.canClaim ? [Color.green, Color.blue] : [Color.orange, Color.pink]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
                                 )
-                            )
-                            .cornerRadius(15)
-                            .shadow(color: (questInfo.canClaim ? Color.blue : Color.pink).opacity(0.4), radius: 5, y: 3)
+                                .cornerRadius(15)
+                                .shadow(color: (questInfo.canClaim ? Color.blue : Color.pink).opacity(0.4), radius: 5, y: 3)
+                        }
                     }
                     // The button's action already handles different states for closing.
                     // .disabled(!questInfo.canClaim && !questInfo.cooldownActive && !questInfo.isCompleted)
