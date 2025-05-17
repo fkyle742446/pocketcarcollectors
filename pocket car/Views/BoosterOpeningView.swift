@@ -1000,7 +1000,7 @@ struct BoosterOpeningView: View {
     private func randomGenericCard() -> BoosterCard {
         let tierProbabilities: [CardRarity: Double] = [
             .common:        0.70, .rare:   0.25, .epic:    0.08, .legendary: 0.01,
-            .HolyT:         0.001, .Season1: 0.0001, .holographicEX: 1
+            .HolyT:         0.001, .Season1: 0.0001, .holographicEX: 0.01
         ]
         var totalTierProb: Double = 0
         let sortedTierProbabilities = tierProbabilities.sorted { $0.key.sortOrder < $1.key.sortOrder }
