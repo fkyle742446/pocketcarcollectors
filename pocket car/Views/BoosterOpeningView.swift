@@ -788,11 +788,16 @@ struct BoosterOpeningView: View {
         for card in baseCards {
             if card.number >= 1 && card.number <= 250 &&
                card.rarity != .holographicEX && card.rarity != .HolyT && card.rarity != .Season1 {
+                // If your EX assets are named like "Card Name EX" (with a space), use this:
+                let exImageName = "\(card.imageName) EX" // Adds a space before EX
+                // If your EX assets are named like "CardNameEX" (no space), original was likely fine:
+                // let exImageName = "\(card.imageName)EX" 
+
                 let exCard = BoosterCard(
                     name: "\(card.name) EX",
                     rarity: .holographicEX,
                     number: card.number + 255,
-                    imageName: "\(card.imageName)EX"
+                    imageName: exImageName // Use the potentially corrected imageName
                 )
                 generatedCards.append(exCard)
             }
@@ -995,7 +1000,7 @@ struct BoosterOpeningView: View {
     private func randomGenericCard() -> BoosterCard {
         let tierProbabilities: [CardRarity: Double] = [
             .common:        0.70, .rare:   0.25, .epic:    0.08, .legendary: 0.01,
-            .HolyT:         0.001, .Season1: 0.0001, .holographicEX: 0.01
+            .HolyT:         0.001, .Season1: 0.0001, .holographicEX: 1
         ]
         var totalTierProb: Double = 0
         let sortedTierProbabilities = tierProbabilities.sorted { $0.key.sortOrder < $1.key.sortOrder }

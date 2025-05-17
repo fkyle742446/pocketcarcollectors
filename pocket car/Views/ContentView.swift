@@ -98,6 +98,7 @@ extension Color {
 
 struct ContentView: View {
     @StateObject var collectionManager = CollectionManager()
+    @ObservedObject private var storeManager = StoreManager.shared
     @State private var shadowRadius: CGFloat = 15
     @State private var boosterAvailableIn: TimeInterval = 6 * 3600
     @State private var timer: Timer? = nil
@@ -443,7 +444,7 @@ struct ContentView: View {
         }
         .background(
             NavigationLink(
-                destination: ShopView(collectionManager: collectionManager, storeManager: StoreManager.shared),
+                destination: ShopView(collectionManager: collectionManager, storeManager: storeManager),
                 isActive: $navigateToBooster
             ) { EmptyView() }
         )
@@ -705,7 +706,7 @@ struct ContentView: View {
                 HStack(spacing: viewSize == .compact ? -20 : -10) {
                     // First booster
                     Button(action: {
-                        if StoreManager.shared.boosters == 0 {
+                        if storeManager.boosters == 0 {
                             showLockedBoosterInfo = true
                             HapticManager.shared.impact(style: .medium)
                         }
@@ -736,13 +737,13 @@ struct ContentView: View {
                                     .frame(height: boosterHeight)
                             )
                         }
-                        .allowsHitTesting(StoreManager.shared.boosters > 0)
+                        .allowsHitTesting(storeManager.boosters > 0)
                     }
-                    .opacity(StoreManager.shared.boosters == 0 ? 0.5 : 1)
+                    .opacity(storeManager.boosters == 0 ? 0.5 : 1)
 
                     // Second booster
                     Button(action: {
-                        if StoreManager.shared.boosters == 0 {
+                        if storeManager.boosters == 0 {
                             showLockedBoosterInfo = true
                             HapticManager.shared.impact(style: .medium)
                         }
@@ -773,9 +774,9 @@ struct ContentView: View {
                                     .frame(height: boosterHeight)
                             )
                         }
-                        .allowsHitTesting(StoreManager.shared.boosters > 0)
+                        .allowsHitTesting(storeManager.boosters > 0)
                     }
-                    .opacity(StoreManager.shared.boosters == 0 ? 0.5 : 1)
+                    .opacity(storeManager.boosters == 0 ? 0.5 : 1)
                 }
                 Spacer()
                 
@@ -831,7 +832,7 @@ struct ContentView: View {
                 HapticManager.shared.impact(style: .medium)
             })
             
-            NavigationLink(destination: ShopView(collectionManager: collectionManager, storeManager: StoreManager.shared)) {
+            NavigationLink(destination: ShopView(collectionManager: collectionManager, storeManager: storeManager)) {
                 buttonView(icon: "", text: "", colors: [.gray.opacity(0.3)], textColor: .gray)
                     .overlay(
                         HStack(spacing: 4) {
@@ -937,7 +938,7 @@ struct ContentView: View {
     @ViewBuilder
     private func boosterStatusContentView() -> some View {
         HStack {
-            if StoreManager.shared.boosters > 0 {
+            if storeManager.boosters > 0 {
                 Image("gift")
                     .resizable()
                     .scaledToFit()
@@ -952,14 +953,14 @@ struct ContentView: View {
                         }
                     }
                 HStack(spacing: 4) {
-                    Text("\(StoreManager.shared.boosters)")
+                    Text("\(storeManager.boosters)")
                         .foregroundColor(.gray)
-                    Text("booster")
+                    Text(storeManager.boosters == 1 ? "booster" : "boosters")
                 }
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.gray)
-            } else if StoreManager.shared.nextFreeBoosterDate != nil {
-                BoosterTimerView(storeManager: StoreManager.shared)
+            } else if storeManager.nextFreeBoosterDate != nil {
+                BoosterTimerView(storeManager: storeManager)
             } else {
                 Image(systemName: "hand.tap")
                     .foregroundColor(.gray)

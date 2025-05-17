@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum MilestoneIdentifier: String, CaseIterable, Codable {
     case progress04 = "progress04"
@@ -99,6 +100,7 @@ class CollectionManager: ObservableObject {
         
         print("Loaded collection with \(cards.count) cards and \(claimedMilestones.count) claimed milestones.")
         validateLoadedData()
+        verifyEXCardImages()
     }
     
     private func validateLoadedData() {
@@ -398,6 +400,29 @@ class CollectionManager: ObservableObject {
         
         print("Milestone \(milestone.rawValue) claimed. New coin total: \(coins).")
         NotificationCenter.default.post(name: .milestoneClaimed, object: milestone)
+    }
+    
+    func verifyEXCardImages() {
+        guard !allGameEXCards.isEmpty else {
+            print("EX Card Image Verification: `allGameEXCards` is empty. Cannot verify images.")
+            return
+        }
+
+        print("\n--- Verifying EX Card Images ---")
+        var missingCount = 0
+        for exCard in allGameEXCards {
+            if UIImage(named: exCard.name) == nil {
+                print("MISSING IMAGE for EX Card: \(exCard.name) (imageName: '\(exCard.name)')")
+                missingCount += 1
+            }
+        }
+
+        if missingCount == 0 {
+            print("All EX cards in `allGameEXCards` have corresponding images found.")
+        } else {
+            print("\(missingCount) EX card(s) in `allGameEXCards` are missing images.")
+        }
+        print("--- End EX Card Image Verification ---\n")
     }
 }
 

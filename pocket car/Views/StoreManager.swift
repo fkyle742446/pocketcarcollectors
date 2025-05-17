@@ -4,7 +4,7 @@ import UIKit
 class StoreManager: ObservableObject {
     static let shared = StoreManager()
     
-    private let boosterCooldown: TimeInterval = 6 * 3600 // 6 heures
+    private let boosterCooldown: TimeInterval = 6*3600// 6 heures
     private let dailyQuestCooldown: TimeInterval = 24 * 3600 // 24 heures
 
     private let timeCheatTolerance: TimeInterval = 60 // 60 secondes de tolérance
@@ -195,7 +195,9 @@ class StoreManager: ObservableObject {
             }
 
             if let nextDate = self.nextFreeBoosterDate, currentTime >= nextDate.timeIntervalSince1970 {
-                print("StoreManager (Booster): Booster is available (current time \(Date(timeIntervalSince1970:currentTime)) is past nextFreeBoosterDate \(nextDate)).")
+                print("StoreManager (Booster): Booster is available (current time \(Date(timeIntervalSince1970:currentTime)) is past nextFreeBoosterDate \(nextDate)). Granting booster.")
+                self.boosters += 1
+                self.nextFreeBoosterDate = nil
             } else if let nextDate = self.nextFreeBoosterDate {
                 print("StoreManager (Booster): Booster is still on cooldown until \(nextDate). No cheat detected impacting timer.")
             }
